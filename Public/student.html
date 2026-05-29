@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng nhập hệ thống Sinh viên 5 tốt khoa Hóa học</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- ── BƯỚC 1: Nhập MSSV ── -->
+    <div id="step1">
+      <h2>Đăng nhập sinh viên</h2>
+
+      <label for="studentId">Mã số sinh viên</label>
+      <input
+        type="text"
+        id="studentId"
+        placeholder="Nhập MSSV"
+        autocomplete="username"
+      />
+
+      <button onclick="checkMSSV()">Tiếp tục</button>
+
+      <p id="message1"></p>
+    </div>
+
+    <!-- ── BƯỚC 2: Xác nhận danh tính ── -->
+    <div id="step2" class="hidden">
+      <h2>Xác nhận danh tính</h2>
+
+      <div class="info-box">
+        <p class="info-label">Họ và tên</p>
+        <p class="info-value" id="fullName"></p>
+
+        <p class="info-label">Lớp</p>
+        <p class="info-value" id="className"></p>
+      </div>
+
+      <button onclick="confirmStudent()">Đúng, tiếp tục</button>
+      <button class="btn-ghost" onclick="goBackToMSSV()">Không phải tôi</button>
+    </div>
+
+    <!-- ── BƯỚC 3A: Tạo mật khẩu lần đầu ── -->
+    <div id="createPasswordForm" class="hidden">
+      <h2>Tạo mật khẩu</h2>
+
+      <label for="newPassword">Mật khẩu mới</label>
+      <div class="password-field">
+        <input
+          type="password"
+          id="newPassword"
+          placeholder="Ít nhất 6 ký tự"
+          autocomplete="new-password"
+        />
+
+        <button
+          type="button"
+          class="password-toggle"
+          onclick="togglePassword('newPassword', this)"
+          aria-label="Hiện hoặc ẩn mật khẩu"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+
+      <label for="confirmPassword">Nhập lại mật khẩu</label>
+      <div class="password-field">
+        <input
+          type="password"
+          id="confirmPassword"
+          placeholder="Nhập lại mật khẩu"
+          autocomplete="new-password"
+        />
+
+        <button
+          type="button"
+          class="password-toggle"
+          onclick="togglePassword('confirmPassword', this)"
+          aria-label="Hiện hoặc ẩn mật khẩu"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+
+      <button onclick="createPassword()">Tạo mật khẩu</button>
+
+      <p id="message2"></p>
+    </div>
+
+    <!-- ── BƯỚC 3B: Đăng nhập ── -->
+    <div id="loginForm" class="hidden">
+      <h2>Nhập mật khẩu</h2>
+
+      <label for="loginPassword">Mật khẩu</label>
+      <div class="password-field">
+        <input
+          type="password"
+          id="loginPassword"
+          placeholder="Mật khẩu của bạn"
+          autocomplete="current-password"
+        />
+
+        <button
+          type="button"
+          class="password-toggle"
+          onclick="togglePassword('loginPassword', this)"
+          aria-label="Hiện hoặc ẩn mật khẩu"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+
+      <button onclick="loginStudent()">Đăng nhập</button>
+
+      <p id="message3"></p>
+
+      <button class="btn-link" onclick="showResetForm()">Quên mật khẩu?</button>
+    </div>
+
+   <!-- ── RESET MẬT KHẨU ── -->
+<div id="resetPasswordForm" class="hidden">
+  <h2>Đặt lại mật khẩu</h2>
+
+  <p class="hint">
+    Vui lòng liên hệ admin lớp để được cấp mã reset.<br> Mã reset chỉ có hiệu lực trong 10 phút.
+    <br>
+    <span class="reset-account-badge">
+      MSSV <strong id="resetStudentIdText"></strong>
+    </span>
+  </p>
+
+  <div class="reset-password-card">
+    <label for="resetCode">Mã reset do admin cấp</label>
+    <input
+      type="text"
+      id="resetCode"
+      placeholder="Nhập mã 6 số"
+      inputmode="numeric"
+      maxlength="6"
+      autocomplete="one-time-code"
+    />
+
+    <label for="resetNewPassword">Mật khẩu mới</label>
+    <div class="password-field">
+      <input
+        type="password"
+        id="resetNewPassword"
+        placeholder="Ít nhất 6 ký tự"
+        autocomplete="new-password"
+      />
+
+      <button
+        type="button"
+        class="password-toggle"
+        onclick="togglePassword('resetNewPassword', this)"
+        aria-label="Hiện hoặc ẩn mật khẩu"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
+
+    <label for="resetConfirmPassword">Nhập lại mật khẩu</label>
+    <div class="password-field">
+      <input
+        type="password"
+        id="resetConfirmPassword"
+        placeholder="Nhập lại mật khẩu"
+        autocomplete="new-password"
+      />
+
+      <button
+        type="button"
+        class="password-toggle"
+        onclick="togglePassword('resetConfirmPassword', this)"
+        aria-label="Hiện hoặc ẩn mật khẩu"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
+
+    <button class="reset-submit-btn" onclick="resetPassword()">
+      Đặt lại mật khẩu
+    </button>
+
+    <p id="resetMessage"></p>
+
+    <button class="btn-ghost reset-back-btn" onclick="cancelReset()">
+      Quay lại đăng nhập
+    </button>
+  </div>
+</div>
+
+    <!-- ── FOOTER: Link quản trị ── -->
+    <div class="footer-link">
+      <a href="/admin.html">🔐 Đăng nhập quản trị</a>
+    </div>
+  </div>
+
+<footer class="site-footer auth-footer">
+    <p>
+      © 2026 SV5T Khoa Hóa học. Liên Chi Hội Khoa Hóa học.
+    </p>
+    <p>
+      Phát triển nhằm hỗ trợ quá trình theo dõi và xét thưởng Sinh viên 5 tốt
+    </p>
+  </footer>
+
+  <script src="./js/student.js"></script>
+</body>
+</html>

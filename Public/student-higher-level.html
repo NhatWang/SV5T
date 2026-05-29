@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Xét danh hiệu Sinh viên 5 tốt cấp cao hơn</title>
+
+  <link rel="stylesheet" href="./css/student-higher-level-style.css" />
+</head>
+
+<body class="higher-award-theme">
+  <div class="dashboard-layout">
+
+    <aside class="sidebar">
+      <h2>SV5T+</h2>
+
+      <button class="tab-btn active" onclick="showTab('overview', this)">
+        Tổng quan
+      </button>
+
+      <button class="tab-btn" onclick="showTab('daoDucTot', this)">
+        Đạo đức tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('hocTapTot', this)">
+        Học tập tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('theLucTot', this)">
+        Thể lực tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('tinhNguyenTot', this)">
+        Tình nguyện tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('hoiNhapTot', this)">
+        Hội nhập tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('storage', this)">
+        Kho minh chứng
+      </button>
+
+      <button onclick="goBackToSchoolLevel()">
+        Quay lại cấp Trường
+      </button>
+
+      <button onclick="logoutStudent()">
+        Đăng xuất
+      </button>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- TAB TỔNG QUAN -->
+      <section id="overview" class="tab-content active">
+        <h1 id="higherLevelTitle">Xét danh hiệu Sinh viên 5 tốt cấp cao hơn</h1>
+
+        <div class="profile-card higher-hero-card">
+          <div class="higher-level-badge">
+            Danh hiệu cấp cao hơn
+          </div>
+
+          <h2 id="studentName">Đang tải...</h2>
+          <p>MSSV: <span id="studentIdText"></span></p>
+          <p>Lớp: <span id="classNameText"></span></p>
+
+          <div class="higher-award-note">
+            Trang này dùng lại dữ liệu đã khai và kết quả đã đạt ở cấp Trường.
+            Riêng phần Đạo đức tốt và Học tập tốt sẽ lấy điểm rèn luyện/GPA sinh viên đã khai ở cấp Trường,
+            sau đó hệ thống tự so với điều kiện của cấp ĐHQG-HCM hoặc cấp Thành phố.
+          </div>
+        </div>
+
+        <div class="higher-summary-grid">
+          <div class="higher-summary-card">
+            <h3>Điều kiện nền tảng</h3>
+            <p id="schoolLevelStatus">Đang kiểm tra điều kiện cấp Trường...</p>
+          </div>
+
+          <div class="higher-summary-card">
+            <h3 id="higherProgressTitle">Tiến độ xét cấp cao hơn</h3>
+
+            <div class="progress-bar">
+              <div id="progressFill"></div>
+            </div>
+
+            <p id="progressText">0/5 tiêu chí đã đạt</p>
+          </div>
+        </div>
+
+        <div class="ai-card">
+          <h3>Gợi ý hoàn thiện hồ sơ</h3>
+          <ul id="aiSuggestions"></ul>
+        </div>
+      </section>
+
+      <!-- TAB ĐẠO ĐỨC TỐT -->
+      <section id="daoDucTot" class="tab-content">
+        <h1>Đạo đức tốt</h1>
+
+        <div class="school-data-note">
+          Phần này không cho khai lại. Hệ thống sẽ lấy điểm rèn luyện và thông tin đạo đức đã khai ở cấp Trường,
+          sau đó tự so với chuẩn của cấp xét hiện tại.
+        </div>
+
+        <div id="daoDucTotContent"></div>
+      </section>
+
+      <!-- TAB HỌC TẬP TỐT -->
+      <section id="hocTapTot" class="tab-content">
+        <h1>Học tập tốt</h1>
+
+        <div class="school-data-note">
+          Phần GPA không cho khai lại. Hệ thống sẽ lấy GPA đã khai ở cấp Trường để so với chuẩn cấp ĐHQG-HCM hoặc cấp Thành phố.
+          Để hoàn thành Học tập tốt ở cấp cao hơn, sinh viên vẫn cần đạt thêm tiêu chuẩn học thuật khác theo quy chế cấp đó.
+        </div>
+
+        <div id="hocTapTotContent"></div>
+      </section>
+
+      <!-- TAB THỂ LỰC TỐT -->
+      <section id="theLucTot" class="tab-content">
+        <h1>Thể lực tốt</h1>
+        <div id="theLucTotContent"></div>
+      </section>
+
+      <!-- TAB TÌNH NGUYỆN TỐT -->
+      <section id="tinhNguyenTot" class="tab-content">
+        <h1>Tình nguyện tốt</h1>
+        <div id="tinhNguyenTotContent"></div>
+      </section>
+
+      <!-- TAB HỘI NHẬP TỐT -->
+      <section id="hoiNhapTot" class="tab-content">
+        <h1>Hội nhập tốt</h1>
+        <div id="hoiNhapTotContent"></div>
+      </section>
+
+      <!-- KHO MINH CHỨNG -->
+      <section id="storage" class="tab-content">
+        <h1>Kho minh chứng cấp xét hiện tại</h1>
+
+        <div class="school-data-note">
+          Khu vực này chỉ hiển thị minh chứng thuộc cấp xét hiện tại.
+          Minh chứng cấp Trường sẽ được dùng làm nền, nhưng minh chứng bổ sung cho cấp cao hơn cần được upload theo đúng cấp xét.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tên file</th>
+              <th>Tiêu chí</th>
+              <th>Trạng thái</th>
+              <th>Ngày upload</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+
+          <tbody id="storageTable"></tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+
+    <footer class="site-footer dashboard-footer">
+    <p>
+      © 2026 SV5T Khoa Hóa học. Liên Chi Hội Khoa Hóa học. 
+    </p>
+    <p>
+      Phát triển nhằm hỗ trợ quá trình theo dõi và xét thưởng Sinh viên 5 tốt.
+    </p>
+  </footer>
+
+  <script src="./js/student-higher-level.js"></script>
+</body>
+</html>

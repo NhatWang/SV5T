@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bảng điều khiển Sinh viên 5 tốt khoa Hóa học</title>
+  <link rel="stylesheet" href="./css/student-dashboard-style.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+
+    <aside class="sidebar">
+      <h2>SV5T</h2>
+
+      <button class="tab-btn active" onclick="showTab('overview', this)">
+        Tổng quan
+      </button>
+
+      <button class="tab-btn" onclick="showTab('daoDucTot', this)">
+        Đạo đức tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('hocTapTot', this)">
+        Học tập tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('theLucTot', this)">
+        Thể lực tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('tinhNguyenTot', this)">
+        Tình nguyện tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('hoiNhapTot', this)">
+        Hội nhập tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('storage', this)">
+        Kho lưu trữ
+      </button>
+
+      <button class="tab-btn" onclick="showTab('support', this)">
+        Hỗ trợ
+      </button>
+
+      <button onclick="logoutStudent()">Đăng xuất</button>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- TAB TỔNG QUAN -->
+      <section id="overview" class="tab-content active">
+        <h1>Tổng quan</h1>
+
+        <div class="profile-card">
+          <h2 id="studentName">Đang tải...</h2>
+          <p>MSSV: <span id="studentIdText"></span></p>
+          <p>Lớp: <span id="classNameText"></span></p>
+        </div>
+
+        <div class="progress-card">
+          <h3>Tiến độ Sinh viên 5 tốt</h3>
+
+          <div class="progress-bar">
+            <div id="progressFill"></div>
+          </div>
+
+          <p id="progressText">0/5 tiêu chí đã đạt</p>
+        </div>
+
+        <div id="higherLevelCard" class="higher-level-card hidden">
+          <h3>Đủ điều kiện xét danh hiệu cấp cao hơn</h3>
+
+          <p>
+            Bạn đã hoàn thành 5/5 tiêu chí Sinh viên 5 tốt cấp Trường.
+            Bạn có thể tiếp tục kiểm tra điều kiện xét danh hiệu ở cấp ĐHQG-HCM hoặc cấp Thành phố.
+          </p>
+
+          <div class="higher-level-actions">
+            <button onclick="goToHigherLevel('dhqg')">
+              Xét SV5T cấp ĐHQG-HCM
+            </button>
+
+            <button onclick="goToHigherLevel('thanh')">
+              Xét SV5T cấp Thành phố
+            </button>
+          </div>
+        </div>
+
+        <div class="ai-card">
+          <h3>Đề xuất từ AI</h3>
+          <ul id="aiSuggestions"></ul>
+        </div>
+      </section>
+
+      <!-- TAB ĐẠO ĐỨC TỐT -->
+      <section id="daoDucTot" class="tab-content">
+        <h1>Đạo đức tốt</h1>
+        <div id="daoDucTotContent"></div>
+
+        <div class="criterion-card" id="daoDucForm">
+          <h3>Khai báo tiêu chí Đạo đức tốt</h3>
+
+          <p class="form-note">
+            Hệ thống sẽ tự kiểm tra điều kiện dựa trên thông tin bạn khai báo.
+            Thông tin cần đúng với kết quả rèn luyện và đánh giá Đoàn viên/Hội viên cuối năm.
+          </p>
+
+          <div class="form-group">
+            <label>
+              Điểm rèn luyện năm học, thang 100
+              <span class="required">*</span>
+            </label>
+
+            <input
+              type="number"
+              id="diemRenLuyen"
+              placeholder="Ví dụ: 85"
+              min="0"
+              max="100"
+              step="1"
+            />
+
+            <small>
+              Cấp Trường cần từ 70 điểm trở lên. Cấp ĐHQG cần từ 80 điểm trở lên.
+              Cấp Thành cần từ 90 điểm trở lên.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label>
+              Đánh giá Đoàn viên/Hội viên cuối năm
+              <span class="required">*</span>
+            </label>
+
+            <select id="danhGiaDoanVien">
+              <option value="">-- Chọn đánh giá --</option>
+              <option value="hoan_thanh_xuat_sac">Hoàn thành xuất sắc nhiệm vụ</option>
+              <option value="hoan_thanh_tot">Hoàn thành tốt nhiệm vụ</option>
+              <option value="hoan_thanh">Hoàn thành nhiệm vụ</option>
+              <option value="khong_hoan_thanh">Không hoàn thành nhiệm vụ</option>
+            </select>
+
+            <small>Cần đạt Hoàn thành xuất sắc nhiệm vụ.</small>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="khongViPham" />
+              Tôi xác nhận không vi phạm pháp luật, quy chế, nội quy của trường/lớp/địa phương trong năm học
+              <span class="required">*</span>
+            </label>
+          </div>
+
+          <button onclick="submitDaoDuc()">Kiểm tra & Xác nhận</button>
+
+          <div id="daoDucResult" class="declare-result hidden"></div>
+        </div>
+      </section>
+
+      <!-- TAB HỌC TẬP TỐT -->
+      <section id="hocTapTot" class="tab-content">
+        <h1>Học tập tốt</h1>
+        <div id="hocTapTotContent"></div>
+
+        <div class="criterion-card" id="hocTapForm">
+          <h3>Khai báo tiêu chuẩn bắt buộc của Học tập tốt</h3>
+
+          <p class="form-note">
+            Phần này chỉ kiểm tra điều kiện bắt buộc gồm GPA, không nợ môn,
+            không gian lận và thái độ học tập. Để hoàn thành tiêu chí Học tập tốt,
+            bạn vẫn cần đạt thêm ít nhất một tiêu chuẩn học thuật khác.
+          </p>
+
+          <div class="form-group">
+            <label>Thang điểm <span class="required">*</span></label>
+
+            <select id="thangDiem" onchange="updateGPAHint()">
+              <option value="4">Thang 4 (hệ tín chỉ)</option>
+              <option value="10">Thang 10</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>GPA cả năm học <span class="required">*</span></label>
+
+            <input
+              type="number"
+              id="gpaInput"
+              placeholder="Ví dụ: 3.2"
+              min="0"
+              max="10"
+              step="0.01"
+            />
+
+            <small id="gpaHint">Cấp Trường cần đạt từ 2.8/4.0 trở lên</small>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="khongNoMon" />
+              Tôi xác nhận không nợ môn/học phần/tín chỉ nào trong năm học
+              <span class="required">*</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="noAcademicViolation" />
+              Tôi xác nhận không gian lận trong thi cử, kiểm tra hoặc các hoạt động học vụ
+              <span class="required">*</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="properLearningAttitude" />
+              Tôi xác nhận có động cơ, thái độ học tập đúng đắn
+              <span class="required">*</span>
+            </label>
+          </div>
+
+          <p class="form-note">
+            Trường hợp GPA chưa đạt nhưng có học bổng khuyến khích học tập sẽ do Hội đồng xem xét riêng,
+            không được hệ thống tự đánh dấu đạt tự động.
+          </p>
+
+          <button onclick="submitHocTap()">Kiểm tra & Xác nhận</button>
+
+          <div id="hocTapResult" class="declare-result hidden"></div>
+        </div>
+      </section>
+
+      <!-- TAB THỂ LỰC TỐT -->
+      <section id="theLucTot" class="tab-content">
+        <h1>Thể lực tốt</h1>
+        <div id="theLucTotContent"></div>
+      </section>
+
+      <!-- TAB TÌNH NGUYỆN TỐT -->
+      <section id="tinhNguyenTot" class="tab-content">
+        <h1>Tình nguyện tốt</h1>
+        <div id="tinhNguyenTotContent"></div>
+      </section>
+
+      <!-- TAB HỘI NHẬP TỐT -->
+      <section id="hoiNhapTot" class="tab-content">
+        <h1>Hội nhập tốt</h1>
+        <div id="hoiNhapTotContent"></div>
+      </section>
+
+      <!-- KHO LƯU TRỮ -->
+      <section id="storage" class="tab-content">
+        <h1>Kho lưu trữ</h1>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tên file</th>
+              <th>Tiêu chí</th>
+              <th>Trạng thái</th>
+              <th>Ngày upload</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+
+          <tbody id="storageTable"></tbody>
+        </table>
+      </section>
+
+      <section id="support" class="tab-content">
+        <h1>Hỗ trợ sinh viên</h1>
+
+        <div class="support-grid">
+          <div class="support-card">
+            <h2>Admin chi Hội <span id="supportClassNameText"></span></h2>
+            <div id="classSupportInfo">
+              Đang tải thông tin hỗ trợ...
+            </div>
+          </div>
+
+          <div class="support-card">
+            <h2>Liên chi Hội Khoa Hóa học</h2>
+            <div id="globalSupportInfo">
+              Đang tải thông tin liên hệ...
+            </div>
+          </div>
+        </div>
+        <div class="support-note-card">
+  <h2>Lưu ý khi cần hỗ trợ</h2>
+
+  <ul>
+    <li>
+      Để thuận tiện trong việc hỗ trợ, vui lòng liên hệ admin chi Hội trước.
+    </li>
+
+    <li>
+      Liên Chi Hội có thể trong tình trạng quá tải, vui lòng chờ cho đến khi vấn đề của bạn được phản hồi.
+    </li>
+
+    <li>
+      Trong tình huống cần xử lý gấp, vui lòng liên hệ Liên chi Hội qua fanpage hoặc group Zalo
+      <strong>“HÀNH TRÌNH CÙNG NHAU 5 TỐT”</strong> để được admin giải đáp kịp thời.
+    </li>
+
+    <li>
+      Mọi thắc mắc, vấn đề phát sinh trong quá trình sử dụng hệ thống vui lòng phản hồi về email của Liên chi Hội hoặc zalo Kỹ thuật: <strong>0906914621</strong> để được hỗ trợ nhanh chóng và hiệu quả.
+    </li>
+  </ul>
+</div>
+      </section>
+
+    </main>
+  </div>
+
+     <footer class="site-footer dashboard-footer">
+    <p>
+      © 2026 SV5T Khoa Hóa học. Liên Chi Hội Khoa Hóa học.
+    </p>
+    <p>
+      Phát triển nhằm hỗ trợ quá trình theo dõi và xét thưởng Sinh viên 5 tốt.
+    </p>
+  </footer>
+
+  <script src="./js/student-dashboard.js"></script>
+</body>
+</html>

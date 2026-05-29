@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bảng điều khiển Admin - Sinh viên 5 tốt khoa Hóa học</title>
+  <link rel="stylesheet" href="./css/admin-dashboard-style.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+
+    <aside class="sidebar">
+      <h2>Admin SV5T</h2>
+
+      <p id="adminInfo"></p>
+
+      <button id="overviewTabBtn" class="tab-btn active" onclick="showAdminTab('overview', this)">
+        Tổng quan
+      </button>
+
+      <button id="studentsTabBtn" class="tab-btn" onclick="showAdminTab('students', this)">
+        Sinh viên trong lớp
+      </button>
+
+      <button id="resetPasswordTabBtn" class="tab-btn" onclick="showAdminTab('resetPassword', this)">
+        Reset mật khẩu cho sinh viên trong lớp
+      </button>
+
+      <button id="collectiveTabBtn" class="tab-btn" onclick="showAdminTab('collective', this)">
+        Tiến độ tập thể
+      </button>
+
+      <button class="tab-btn" onclick="showAdminTab('uploadStudents', this)">
+        Upload sinh viên
+      </button>
+
+      <button class="tab-btn" onclick="showAdminTab('uploadClassSupport', this)">
+        Upload  admin lớp
+      </button>
+
+      <button class="tab-btn" onclick="showAdminTab('uploadActivities', this)">
+        Upload hoạt động
+      </button>
+
+      <button id="uploadedActivitiesTabBtn" class="tab-btn" onclick="showAdminTab('uploadedActivities', this)">
+        Hoạt động đã upload
+      </button>
+
+      <button id="evidenceTabBtn" class="tab-btn" onclick="showAdminTab('evidences', this)">
+        Duyệt minh chứng
+      </button>
+
+      <button id="classSummaryTabBtn" class="tab-btn" onclick="showAdminTab('classSummary', this)">
+        Tổng quan các lớp
+      </button>
+
+      <button id="collectiveEvaluationTabBtn" class="tab-btn" onclick="showAdminTab('collectiveEvaluation', this)">
+        Đánh giá Chi Hội
+      </button>
+
+      <button class="logout-btn" onclick="logoutAdmin()">
+        Đăng xuất
+      </button>
+    </aside>
+
+    <main class="main-content">
+
+      <section id="overview" class="tab-content active">
+        <h1>Tổng quan Admin</h1>
+
+        <div class="profile-card">
+          <h2 id="overviewTitle">Đang tải...</h2>
+          <p id="overviewDescription"></p>
+        </div>
+      </section>
+
+      <section id="students" class="tab-content">
+        <h1>Danh sách sinh viên</h1>
+
+        <table>
+          <thead>
+            <tr>
+              <th>MSSV</th>
+              <th>Họ tên</th>
+              <th>Lớp</th>
+              <th>Tiến độ</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTable"></tbody>
+        </table>
+      </section>
+
+      <section id="resetPassword" class="tab-content">
+  <h1>Reset mật khẩu sinh viên</h1>
+
+  <div class="criterion-card">
+    <div class="upload-guide-card">
+      <div class="upload-guide-header">
+        <span class="upload-guide-icon">i</span>
+        <div>
+          <h3>Tạo mã reset mật khẩu</h3>
+          <p>
+            Mã reset chỉ có hiệu lực trong 10 phút. Chỉ cấp mã sau khi đã xác minh đúng sinh viên.
+          </p>
+        </div>
+      </div>
+
+      <div class="upload-guide-note">
+        <strong>Lưu ý:</strong>
+        Admin lớp chỉ được tạo mã reset cho sinh viên thuộc lớp mình.
+        Super admin có thể tạo mã cho tất cả sinh viên.
+      </div>
+    </div>
+
+    <div class="reset-admin-form">
+      <label for="resetStudentIdByAdmin">Mã số sinh viên</label>
+      <input
+        type="text"
+        id="resetStudentIdByAdmin"
+        placeholder="Nhập MSSV cần reset"
+        autocomplete="off"
+      />
+
+      <button onclick="generateStudentResetCode()">
+        Tạo mã reset
+      </button>
+
+      <div id="adminResetResult" class="reset-result-box hidden"></div>
+    </div>
+  </div>
+</section>
+
+      <section id="collective" class="tab-content">
+        <h1>Tiến độ tập thể</h1>
+
+        <div class="progress-card">
+          <h3 id="collectiveClassName"></h3>
+
+          <div class="progress-bar">
+            <div id="collectiveProgressFill"></div>
+          </div>
+
+          <p id="collectiveProgressText"></p>
+        </div>
+
+        <div class="criterion-card">
+          <h3>Thống kê từng tiêu chí</h3>
+          <div id="categoryStats"></div>
+        </div>
+      </section>
+
+      <section id="uploadStudents" class="tab-content">
+        <h1>Upload danh sách sinh viên</h1>
+
+        <div class="criterion-card">
+  <div class="upload-guide-card upload-student-guide">
+    <div class="upload-guide-header">
+      <span class="upload-guide-icon">i</span>
+      <div>
+        <h3>Hướng dẫn file Excel upload sinh viên</h3>
+        <p>File dùng để tạo hoặc cập nhật danh sách sinh viên theo lớp.</p>
+      </div>
+    </div>
+
+    <div class="upload-guide-section">
+      <h4>Cột bắt buộc</h4>
+      <div class="code-pill-list">
+        <span>studentId</span>
+        <span>fullName</span>
+        <span>className</span>
+      </div>
+    </div>
+
+    <div class="upload-guide-note">
+      <strong>Lưu ý:</strong>
+      <code>studentId</code> là MSSV,
+      <code>fullName</code> là họ tên sinh viên,
+      <code>className</code> cần nhập đúng mã lớp trong hệ thống, ví dụ
+      <code>24HOH_CLC1</code>.
+    </div>
+  </div>
+
+  <div class="upload-action-box">
+    <input type="file" id="studentExcelFile" accept=".xlsx,.xls" />
+
+    <button onclick="uploadStudentsExcel()">
+      Upload sinh viên
+    </button>
+
+    <p id="uploadStudentsMessage"></p>
+  </div>
+</div>
+      </section>
+
+      <section id="uploadClassSupport" class="tab-content">
+  <h1>Upload thông tin hỗ trợ lớp</h1>
+
+  <div class="criterion-card">
+    <div class="upload-guide-card upload-student-guide">
+      <div class="upload-guide-header">
+        <span class="upload-guide-icon">i</span>
+        <div>
+          <h3>Hướng dẫn file Excel hỗ trợ lớp</h3>
+          <p>
+            File dùng để cập nhật Chi Hội trưởng và danh sách Chi Hội phó theo từng lớp.
+            Chỉ super admin được upload file này.
+          </p>
+        </div>
+      </div>
+
+      <div class="upload-guide-section">
+  <h4>Cột bắt buộc</h4>
+  <div class="code-pill-list">
+    <span>className</span>
+    <span>chiHoiTruongName</span>
+    <span>uyVienBCH1Name</span>
+    <span>uyVienBCH2Name</span>
+  </div>
+</div>
+
+<div class="upload-guide-section">
+  <h4>Cột thông tin liên hệ</h4>
+
+  <div class="guide-grid">
+    <div class="guide-item">
+      <strong>Chi Hội trưởng</strong>
+      <p>
+        <code>chiHoiTruongName</code>,
+        <code>chiHoiTruongPhone</code>,
+        <code>chiHoiTruongZalo</code>
+      </p>
+    </div>
+
+    <div class="guide-item">
+      <strong>Chi Hội phó</strong>
+      <p>
+        <code>chiHoiPhoName</code>,
+        <code>chiHoiPhoPhone</code>,
+        <code>chiHoiPhoZalo</code>
+      </p>
+      <p>Có thể để trống nếu lớp không có Chi Hội phó.</p>
+    </div>
+
+    <div class="guide-item">
+      <strong>Ủy viên BCH 1</strong>
+      <p>
+        <code>uyVienBCH1Name</code>,
+        <code>uyVienBCH1Phone</code>,
+        <code>uyVienBCH1Zalo</code>
+      </p>
+    </div>
+
+    <div class="guide-item">
+      <strong>Ủy viên BCH 2</strong>
+      <p>
+        <code>uyVienBCH2Name</code>,
+        <code>uyVienBCH2Phone</code>,
+        <code>uyVienBCH2Zalo</code>
+      </p>
+    </div>
+
+    <div class="guide-item">
+      <strong>Ủy viên BCH 3</strong>
+      <p>
+        <code>uyVienBCH3Name</code>,
+        <code>uyVienBCH3Phone</code>,
+        <code>uyVienBCH3Zalo</code>
+      </p>
+      <p>Có thể để trống nếu lớp chỉ có 2 Ủy viên BCH.</p>
+    </div>
+
+    <div class="guide-item">
+      <strong>CTV BCH</strong>
+      <p>
+        <code>ctvBCHName</code>,
+        <code>ctvBCHPhone</code>,
+        <code>ctvBCHZalo</code>
+      </p>
+      <p>Có thể để trống nếu lớp không có CTV BCH.</p>
+    </div>
+  </div>
+</div>
+
+<div class="upload-guide-note">
+  <strong>Lưu ý:</strong>
+  Mỗi lớp bắt buộc có <code>className</code>, <code>chiHoiTruongName</code>
+  và từ 2 đến 3 Ủy viên BCH. Chi Hội phó và CTV BCH có thể để trống.
+  Tên lớp cần đúng format trong hệ thống, ví dụ <code>24HOH_CLC2</code>.
+</div>
+
+    <div class="upload-action-box">
+      <input type="file" id="classSupportExcelFile" accept=".xlsx,.xls" />
+
+      <button onclick="uploadClassSupportExcel()">
+        Upload thông tin hỗ trợ lớp
+      </button>
+
+      <p id="uploadClassSupportMessage"></p>
+    </div>
+  </div>
+</section>
+
+      <section id="uploadActivities" class="tab-content">
+        <h1>Upload danh sách hoạt động</h1>
+
+        <div class="criterion-card">
+          <div class="upload-guide-card">
+  <div class="upload-guide-header">
+    <span class="upload-guide-icon">i</span>
+    <div>
+      <h3>Hướng dẫn file Excel upload hoạt động</h3>
+      <p>Điền đúng tên cột và mã kỹ thuật (được hướng dẫn trong worksheet mẫu) để hệ thống tự xét cấp phù hợp.</p>
+    </div>
+  </div>
+
+  <div class="upload-guide-section">
+    <h4>Cột bắt buộc</h4>
+    <div class="code-pill-list">
+      <span>title</span>
+      <span>category</span>
+      <span>organizerLevel</span>
+      <span>date</span>
+      <span>studentId</span>
+      <span>fullName</span>
+      <span>className</span>
+    </div>
+  </div>
+
+  <div class="upload-guide-section">
+    <h4>Cột bổ sung theo logic</h4>
+
+    <div class="guide-grid">
+      <div class="guide-item">
+        <strong>subCriteria</strong>
+        <p>Dùng cho Hội nhập tốt: <code>ngoaiNgu</code> <code>kyNang</code> <code>hoiNhap</code></p>
+      </div>
+
+      <div class="guide-item">
+        <strong>kyNangEvidenceType</strong>
+        <p>Bắt buộc nếu <code>category = hoiNhapTot</code> và <code>subCriteria = kyNang</code>.</p>
+      </div>
+
+      <div class="guide-item">
+        <strong>hoiNhapEvidenceType</strong>
+        <p>Bắt buộc nếu <code>category = hoiNhapTot</code> và <code>subCriteria = hoiNhap</code>.</p>
+      </div>
+
+      <div class="guide-item">
+        <strong>academicEvidenceType</strong>
+        <p>Dùng cho Học tập tốt để phân loại minh chứng học thuật.</p>
+      </div>
+
+      <div class="guide-item guide-item-center">
+  <strong>volunteerDays</strong>
+  <p>Dùng cho Tình nguyện tốt nếu hoạt động có số ngày tình nguyện.</p>
+</div>
+    </div>
+  </div>
+
+  <div class="upload-guide-note">
+    <strong>organizerLevel hợp lệ:</strong>
+    <code>bo_mon</code> <code>khoa</code> <code>truong</code>,
+    <code>dhqg</code> <code>thanh</code> <code>quoc_gia</code> <code>quoc_te</code>
+  </div>
+</div>
+
+          <input type="file" id="activityExcelFile" accept=".xlsx,.xls" />
+
+          <button onclick="uploadActivitiesExcel()">
+            Upload hoạt động
+          </button>
+
+          <p id="uploadActivitiesMessage"></p>
+        </div>
+      </section>
+
+      <section id="uploadedActivities" class="tab-content">
+        <h1>Hoạt động đã upload</h1>
+
+        <div class="filter-panel">
+  <div class="filter-item">
+    <label for="activityOrganizerLevelFilter">Cấp tổ chức</label>
+
+    <select id="activityOrganizerLevelFilter" onchange="loadUploadedActivities()">
+      <option value="">Tất cả cấp tổ chức</option>
+      <option value="bo_mon">Bộ môn</option>
+      <option value="khoa">Khoa</option>
+      <option value="truong">Trường</option>
+      <option value="dhqg">ĐHQG-HCM</option>
+      <option value="thanh">Thành phố</option>
+      <option value="quoc_gia">Quốc gia</option>
+      <option value="quoc_te">Quốc tế</option>
+    </select>
+  </div>
+</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tên hoạt động</th>
+              <th>Cấp tổ chức</th>
+              <th>Tiêu chí</th>
+              <th>Loại minh chứng</th>
+              <th>Phân nhóm</th>
+              <th>Ngày</th>
+              <th>Số SV</th>
+              <th>Người upload</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="uploadedActivitiesTable"></tbody>
+        </table>
+      </section>
+
+      <section id="collectiveEvaluation" class="tab-content">
+        <h1>Cập nhật đánh giá tập thể Chi Hội</h1>
+
+        <div id="collectiveEvaluationPanel" class="criterion-card hidden">
+          <p>
+            Chỉ Admin lớp được cập nhật các điều kiện thủ công của Chi Hội.
+          </p>
+
+          <label for="evaluationClassName">Lớp / Chi Hội</label>
+          <input
+            type="text"
+            id="evaluationClassName"
+            placeholder="Ví dụ: 24HOH_CLC1"
+          />
+
+          <label for="chiHoiRating">Đánh giá chất lượng Chi Hội cuối năm</label>
+          <select id="chiHoiRating">
+            <option value="unknown">Chưa cập nhật</option>
+            <option value="manh">Mạnh</option>
+            <option value="kha">Khá</option>
+            <option value="trung_binh">Trung bình</option>
+            <option value="yeu">Yếu</option>
+          </select>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasRegistrationForm" />
+            Có hình thức cụ thể để sinh viên đăng ký phấn đấu trở thành Sinh viên 5 tốt
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasSupportActivities" />
+            Có hoạt động tạo môi trường cho sinh viên phấn đấu đạt danh hiệu Sinh viên 5 tốt
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasViolation" />
+            Có sinh viên vi phạm pháp luật, quy chế, nội quy
+          </label>
+
+          <button onclick="updateCollectiveEvaluation()">
+            Cập nhật đánh giá Chi Hội
+          </button>
+
+          <p id="collectiveEvaluationMessage"></p>
+        </div>
+      </section>
+
+      <section id="evidences" class="tab-content">
+        <h1>Duyệt minh chứng</h1>
+
+        <div class="filter-panel">
+  <div class="filter-item">
+    <label for="evidenceAwardLevelFilter">Cấp xét</label>
+    <select id="evidenceAwardLevelFilter" onchange="loadAllEvidences()">
+      <option value="">Tất cả cấp xét</option>
+      <option value="truong">Cấp Trường</option>
+      <option value="dhqg">Cấp ĐHQG-HCM</option>
+      <option value="thanh">Cấp Thành phố</option>
+    </select>
+  </div>
+
+  <div class="filter-item">
+    <label for="evidenceStatusFilter">Trạng thái</label>
+    <select id="evidenceStatusFilter" onchange="loadAllEvidences()">
+      <option value="">Tất cả trạng thái</option>
+      <option value="pending">Đang chờ xử lý</option>
+      <option value="manual_review">Cần admin kiểm tra</option>
+      <option value="ai_valid">AI đánh giá hợp lệ</option>
+      <option value="ai_invalid">AI đánh giá không hợp lệ</option>
+      <option value="partial_valid">Hợp lệ một phần</option>
+      <option value="approved_by_admin">Admin đã duyệt</option>
+      <option value="rejected_by_admin">Admin từ chối</option>
+      <option value="need_more_info">Cần bổ sung</option>
+    </select>
+  </div>
+
+  <div class="filter-item">
+    <label for="evidenceCategoryFilter">Tiêu chí</label>
+    <select id="evidenceCategoryFilter" onchange="loadAllEvidences()">
+      <option value="">Tất cả tiêu chí</option>
+      <option value="daoDucTot">Đạo đức tốt</option>
+      <option value="hocTapTot">Học tập tốt</option>
+      <option value="theLucTot">Thể lực tốt</option>
+      <option value="tinhNguyenTot">Tình nguyện tốt</option>
+      <option value="hoiNhapTot">Hội nhập tốt</option>
+    </select>
+  </div>
+</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>MSSV</th>
+              <th>Họ tên</th>
+              <th>Lớp</th>
+              <th>Cấp xét</th>
+              <th>Tiêu chí</th>
+              <th>File</th>
+              <th>AI đánh giá</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="evidencesTable"></tbody>
+        </table>
+      </section>
+
+      <section id="classSummary" class="tab-content">
+        <h1>Tổng quan các lớp</h1>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Lớp</th>
+              <th>Tổng SV</th>
+              <th>SV hoàn thành 5/5</th>
+              <th>Tiến độ</th>
+              <th>Trạng thái tập thể</th>
+            </tr>
+          </thead>
+          <tbody id="classSummaryTable"></tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="./js/admin-dashboard.js"></script>
+</body>
+</html>
