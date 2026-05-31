@@ -1440,10 +1440,7 @@ const previousEvidences = await Evidence.find({
   createdAt: -1
 });
 
-    const TEST_CENTRAL_LEVEL = true;
-
 const canAccessCentral =
-  TEST_CENTRAL_LEVEL ||
   thanhStatus.isCompleted === true ||
   Number(thanhStatus.completedCount || 0) >= 5 ||
   Number(thanhStatus.progressPercent || 0) >= 100;
@@ -1788,7 +1785,6 @@ router.post(
       const thanhStatus = student.higherLevelStatus?.thanh || {};
 
       const canAccessCentral =
-        req.query.test === "1" ||
         thanhStatus.isCompleted === true ||
         Number(thanhStatus.completedCount || 0) >= 5 ||
         Number(thanhStatus.progressPercent || 0) >= 100;
@@ -1860,7 +1856,6 @@ const schoolNgoaiNguCourseScoreDeclaration = selfDeclarations.find((item) => {
   studentId,
   category,
   awardLevel: "trung_uong",
-
   evidenceType:
     evidenceType === "central_additional"
       ? "central_additional"
