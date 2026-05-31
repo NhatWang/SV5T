@@ -22,9 +22,24 @@ const evidenceSchema = new mongoose.Schema(
 
     awardLevel: {
       type: String,
-      enum: ["truong", "dhqg", "thanh"],
+      enum: ["truong", "dhqg", "thanh", "trung_uong"],
       default: "truong"
     },
+
+    evidenceType: {
+  type: String,
+  enum: [
+    "default",
+    "central_mandatory",
+    "central_additional"
+  ],
+  default: "default"
+},
+
+additionalCriteriaKey: {
+  type: String,
+  default: ""
+},
 
     fileName: {
       type: String,

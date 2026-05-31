@@ -756,3 +756,43 @@ td button:nth-child(3):hover { background: #b45309; }
   font-size: 13px;
   color: var(--gray-600);
 }
+
+.central-student-info {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--blue-light, #e8f0fe);
+  border: 1px solid rgba(11, 61, 145, 0.10);
+  margin-bottom: 18px;
+}
+
+.central-student-info p {
+  margin: 6px 0;
+  color: var(--gray-800);
+}
+
+.central-check-item {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid var(--gray-200);
+  margin-bottom: 16px;
+}
+
+.central-check-item textarea {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--gray-800);
+  background: #ffffff;
+  resize: vertical;
+  outline: none;
+}
+
+.central-check-item textarea:focus {
+  border-color: var(--blue-mid, #1560c8);
+  box-shadow: 0 0 0 3px rgba(21, 96, 200, 0.12);
+}

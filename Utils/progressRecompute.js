@@ -110,16 +110,30 @@ async function recomputeTinhNguyenProgress(studentId) {
   });
 
   adminActivities.forEach((activity) => {
-    const participant = activity.participants.find((p) => {
-      return p.studentId === studentId;
-    });
-
-    const days =
-      Number(participant?.volunteerDays || 0) ||
-      Number(activity.volunteerDays || 0);
-
-    totalDays += days;
+  const participant = activity.participants.find((p) => {
+    return String(p.studentId) === String(studentId);
   });
+
+  const days =
+    Number(participant?.volunteerDays || 0) ||
+    Number(activity.volunteerDays || 0);
+
+  totalDays += days;
+
+  const title = String(activity.title || "").toLowerCase();
+
+  const activityIsVolunteerAward =
+    participant?.isVolunteerAward === true ||
+    activity.isVolunteerAward === true ||
+    title.includes("khen thưởng") ||
+    title.includes("giấy khen") ||
+    title.includes("giay khen") ||
+    title.includes("khen thuong");
+
+  if (activityIsVolunteerAward) {
+    hasVolunteerAward = true;
+  }
+});
 
   progress.volunteerDays = totalDays;
   progress.hasVolunteerAward = hasVolunteerAward;

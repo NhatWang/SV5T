@@ -130,6 +130,7 @@ async function loadHigherLevelDashboard() {
     }
 
     renderOverview(data);
+    renderCentralPrerequisiteCard(data);
     renderCriterionTabs(data);
     renderStorage(data.evidences || []);
   } catch (error) {
@@ -192,6 +193,60 @@ function renderOverview(data) {
   });
 }
 
+
+function renderCentralPrerequisiteCard(data) {
+  const card = document.getElementById("centralPrerequisiteCard");
+  const content = document.getElementById("centralPrerequisiteContent");
+
+  if (!card || !content) return;
+
+  if (currentAwardLevel !== "thanh") {
+    card.classList.add("hidden");
+    return;
+  }
+
+  card.classList.remove("hidden");
+
+  const central = data.centralPrerequisites || {};
+
+  const hasProvincialAward =
+    central.hasProvincialAward?.isApproved === true;
+
+  const canProceedToCentral =
+    central.canProceedToCentral === true || hasProvincialAward;
+
+  content.innerHTML = `
+  <div class="activity-item">
+    ${hasProvincialAward ? "Đạt" : "Chưa đạt"}
+    <strong>Đã đạt danh hiệu Sinh viên 5 tốt cấp tỉnh/cấp Thành phố:</strong>
+    ${
+      hasProvincialAward
+        ? "Hệ thống tự động xác định vì bạn đã hoàn thành 5/5 tiêu chí cấp Thành phố."
+        : "Bạn chưa hoàn thành đủ 5/5 tiêu chí cấp Thành phố."
+    }
+  </div>
+
+  <p class="${
+    canProceedToCentral ? "status-text-success" : "status-text-warning"
+  }">
+    ${
+      canProceedToCentral
+        ? "Bạn đã đủ điều kiện đầu vào để tiếp tục chuẩn bị hồ sơ cấp Trung ương."
+        : "Bạn chưa đủ điều kiện đầu vào để chuyển sang xét cấp Trung ương."
+    }
+  </p>
+
+  ${
+    canProceedToCentral
+      ? `
+        <button class="primary-btn" onclick="goToCentralLevelPage()">
+          Xét SV5T cấp Trung ương
+        </button>
+      `
+      : ""
+  }
+`;
+}
 /**
  * Dữ liệu Đạo đức/GPA cấp cao hơn được suy ra từ dữ liệu đã khai ở cấp Trường.
  * Backend nên trả:
@@ -907,4 +962,8 @@ function renderGroupedEvidenceSuggestions(minhChung = []) {
       : "";
 
   return groupedHtml + ungroupedHtml;
+}
+
+function goToCentralLevelPage() {
+  window.location.href = "/student-central-level.html";
 }

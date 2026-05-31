@@ -57,6 +57,11 @@ const participantSchema = new mongoose.Schema(
       default: "",
       trim: true
     },
+
+    isVolunteerAward: {
+  type: Boolean,
+  default: false
+}
   },
   { _id: false }
 );

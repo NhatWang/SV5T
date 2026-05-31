@@ -916,7 +916,6 @@ const officialCriteriaByLevel = {
           evidenceTypes: [
             "Đạt chứng chỉ tiếng Anh trình độ B1 theo khung tham chiếu châu Âu hoặc tương đương B1, hoặc chứng chỉ ngoại ngữ khác ở trình độ tương đương trở lên, không xét thời hạn của chứng chỉ.",
             "Tổng điểm các học phần ngoại ngữ, trừ môn ngoại ngữ chuyên ngành, tích lũy từ năm nhất tới thời điểm xét đạt từ 3.2/4.0 trở lên đối với các trường đào tạo theo học chế tín chỉ hoặc từ 8.0/10 trở lên đối với các trường đào tạo theo niên chế.",
-            "Đối tượng sinh viên chuyên ngành Ngoại ngữ: chứng chỉ Ngoại ngữ được áp dụng với môn Ngoại ngữ 2."
           ],
           notes: [
             "Áp dụng quy đổi giá trị tương đương chứng chỉ IELTS, TOEFL, TOEIC và một số chứng chỉ khác theo quy định được dẫn trong quy chế."

@@ -364,7 +364,49 @@ const studentSchema = new mongoose.Schema(
       default: "not_started"
     },
 
-    // 6. Gợi ý AI trên trang Tổng quan
+    // 6. Tiến độ cấp xét cao hơn: ĐHQG-HCM, Thành phố
+
+    higherLevelStatus: {
+  dhqg: {
+    completedCount: {
+      type: Number,
+      default: 0
+    },
+    progressPercent: {
+      type: Number,
+      default: 0
+    },
+    isCompleted: {
+      type: Boolean,
+      default: false
+    },
+    updatedAt: {
+      type: Date,
+      default: null
+    }
+  },
+
+  thanh: {
+    completedCount: {
+      type: Number,
+      default: 0
+    },
+    progressPercent: {
+      type: Number,
+      default: 0
+    },
+    isCompleted: {
+      type: Boolean,
+      default: false
+    },
+    updatedAt: {
+      type: Date,
+      default: null
+    }
+  }
+},
+
+    // 7. Gợi ý AI trên trang Tổng quan
     aiSuggestions: {
       type: [aiSuggestionSchema],
       default: []
@@ -374,8 +416,9 @@ const studentSchema = new mongoose.Schema(
     adminNotes: {
       type: String,
       default: ""
-    }
+    },
   },
+
   {
     timestamps: true
   }

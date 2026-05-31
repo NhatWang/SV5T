@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Xét Sinh viên 5 tốt cấp Trung ương</title>
+
+  <link rel="stylesheet" href="./css/student-central-level-style.css" />
+</head>
+
+<body class="central-award-theme">
+  <div class="dashboard-layout">
+
+    <aside class="sidebar">
+      <h2>SV5T+</h2>
+
+      <button class="tab-btn active" onclick="showTab('overview', this)">
+        Tổng quan
+      </button>
+
+      <button class="tab-btn" onclick="showTab('daoDucTot', this)">
+        Đạo đức tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('hocTapTot', this)">
+        Học tập tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('theLucTot', this)">
+        Thể lực tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('tinhNguyenTot', this)">
+        Tình nguyện tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('hoiNhapTot', this)">
+        Hội nhập tốt
+      </button>
+
+      <button class="tab-btn" onclick="showTab('storage', this)">
+        Kho minh chứng
+      </button>
+
+      <button onclick="window.location.href='/student-higher-level.html?level=thanh'">
+        Quay lại cấp Thành phố
+      </button>
+
+      <button onclick="window.location.href='/student-dashboard.html'">
+        Quay lại dashboard
+      </button>
+
+      <button onclick="logoutStudent()">
+        Đăng xuất
+      </button>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- TAB TỔNG QUAN -->
+      <section id="overview" class="tab-content active">
+        <h1>Xét danh hiệu Sinh viên 5 tốt cấp Trung ương</h1>
+
+        <div class="profile-card higher-hero-card">
+          <span class="level-badge">Cấp Trung ương</span>
+
+          <h2 id="centralStudentName">Đang tải...</h2>
+
+          <p>
+            MSSV: <span id="centralStudentId">...</span>
+          </p>
+
+          <p>
+            Lớp: <span id="centralClassName">...</span>
+          </p>
+
+          <div class="school-data-note">
+            Trang này dùng để theo dõi hồ sơ cấp Trung ương. Dữ liệu từ cấp Trường, cấp ĐHQG-HCM và cấp Thành phố được dùng làm nền tham khảo,
+            nhưng sinh viên vẫn có thể nộp thêm minh chứng bổ sung cho cấp Trung ương. Tất cả tiêu chuẩn và tiêu chí đạt thêm
+            sẽ được admin kiểm tra và xác nhận thủ công.
+          </div>
+        </div>
+
+        <div class="higher-summary-grid">
+          <div class="higher-summary-card">
+            <h3>Điều kiện đầu vào</h3>
+
+            <div id="centralAccessStatus">
+              Đang kiểm tra điều kiện cấp Thành phố...
+            </div>
+          </div>
+
+          <div class="higher-summary-card">
+            <h3>Tổng quan điều kiện cấp Trung ương</h3>
+
+            <div class="central-progress-box">
+              <p class="progress-label">Tiêu chuẩn bắt buộc</p>
+
+              <div class="progress-bar">
+                <div id="centralMandatoryProgressFill"></div>
+              </div>
+
+              <p id="centralMandatoryProgressText">
+                Đang tải tiến độ tiêu chuẩn bắt buộc...
+              </p>
+            </div>
+
+            <div class="central-progress-box">
+              <p class="progress-label">Tiêu chí đạt thêm</p>
+
+              <div class="progress-bar additional-progress-bar">
+                <div id="centralAdditionalProgressFill"></div>
+              </div>
+
+              <p id="centralAdditionalProgressText">
+                Đang tải tiến độ tiêu chí đạt thêm...
+              </p>
+            </div>
+
+            <div id="centralSummary">
+              Đang tải dữ liệu...
+            </div>
+          </div>
+        </div>
+
+        <div class="ai-card">
+          <h3>Gợi ý hoàn thiện hồ sơ</h3>
+
+          <ul id="centralAiSuggestions">
+            <li>Đang tải gợi ý...</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TAB ĐẠO ĐỨC TỐT -->
+      <section id="daoDucTot" class="tab-content">
+        <h1>Đạo đức tốt</h1>
+
+        <div class="school-data-note">
+          Yêu cầu bắt buộc cấp Trung ương: điểm rèn luyện đạt từ 95/100 trở lên và có xác nhận không vi phạm pháp luật,
+          quy chế, nội quy của nhà trường, địa phương và cộng đồng.
+        </div>
+
+        <div id="centralDaoDucTotContent">
+          Đang tải dữ liệu...
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí bắt buộc</h3>
+
+          <p class="school-data-note">
+            Dùng khi dữ liệu tham chiếu từ cấp dưới chưa đủ để hệ thống xác nhận tiêu chuẩn Đạo đức tốt.
+          </p>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'daoDucTot', 'mandatory')">
+            <label for="daoDucMandatoryTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="daoDucMandatoryTitle"
+              placeholder="Ví dụ: Xác nhận điểm rèn luyện 95/100"
+            />
+
+            <label for="daoDucMandatoryFile">File minh chứng</label>
+            <input
+              type="file"
+              id="daoDucMandatoryFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng bắt buộc
+            </button>
+
+            <p id="daoDucMandatoryMessage"></p>
+          </form>
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí đạt thêm</h3>
+
+          <p class="school-data-note">
+            Chọn đúng tiêu chí đạt thêm mà minh chứng của bạn phù hợp.
+          </p>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'daoDucTot', 'additional')">
+            <label for="daoDucAdditionalKey">Tiêu chí đạt thêm</label>
+            <select id="daoDucAdditionalKey">
+              <option value="">-- Chọn tiêu chí đạt thêm --</option>
+              <option value="daoDuc_1">Gương tiêu biểu, người tốt việc tốt, sinh viên sống đẹp</option>
+              <option value="daoDuc_2">Đảng viên hoàn thành xuất sắc nhiệm vụ</option>
+            </select>
+
+            <label for="daoDucAdditionalTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="daoDucAdditionalTitle"
+              placeholder="Ví dụ: Giấy khen gương sinh viên sống đẹp"
+            />
+
+            <label for="daoDucAdditionalFile">File minh chứng</label>
+            <input
+              type="file"
+              id="daoDucAdditionalFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng đạt thêm
+            </button>
+
+            <p id="daoDucAdditionalMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB HỌC TẬP TỐT -->
+      <section id="hocTapTot" class="tab-content">
+        <h1>Học tập tốt</h1>
+
+        <div class="school-data-note">
+          Yêu cầu bắt buộc cấp Trung ương: điểm trung bình chung học tập cả năm đạt từ 3.4/4 trở lên hoặc từ 8.5/10 trở lên.
+        </div>
+
+        <div id="centralHocTapTotContent">
+          Đang tải dữ liệu...
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí bắt buộc</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'hocTapTot', 'mandatory')">
+            <label for="hocTapMandatoryTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="hocTapMandatoryTitle"
+              placeholder="Ví dụ: Bảng điểm năm học"
+            />
+
+            <label for="hocTapMandatoryFile">File minh chứng</label>
+            <input
+              type="file"
+              id="hocTapMandatoryFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng bắt buộc
+            </button>
+
+            <p id="hocTapMandatoryMessage"></p>
+          </form>
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí đạt thêm</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'hocTapTot', 'additional')">
+            <label for="hocTapAdditionalKey">Tiêu chí đạt thêm</label>
+            <select id="hocTapAdditionalKey">
+              <option value="">-- Chọn tiêu chí đạt thêm --</option>
+              <option value="hocTap_1">Nghiên cứu khoa học đạt giải từ cấp tỉnh/thành phố trở lên</option>
+              <option value="hocTap_2">Bài báo WoS/Scopus Q1, Q2</option>
+              <option value="hocTap_3">Tác giả chính bài báo WoS/Scopus Q3, Q4</option>
+              <option value="hocTap_4">Sản phẩm sáng tạo, bằng sáng chế, giấy phép xuất bản hoặc giải thưởng từ cấp tỉnh trở lên</option>
+              <option value="hocTap_5">Giải Ba trở lên cuộc thi học thuật, khoa học kỹ thuật, ý tưởng sáng tạo khởi nghiệp cấp quốc gia/quốc tế</option>
+            </select>
+
+            <label for="hocTapAdditionalTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="hocTapAdditionalTitle"
+              placeholder="Ví dụ: Giấy chứng nhận giải Ba cuộc thi học thuật cấp quốc gia"
+            />
+
+            <label for="hocTapAdditionalFile">File minh chứng</label>
+            <input
+              type="file"
+              id="hocTapAdditionalFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng đạt thêm
+            </button>
+
+            <p id="hocTapAdditionalMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB THỂ LỰC TỐT -->
+      <section id="theLucTot" class="tab-content">
+        <h1>Thể lực tốt</h1>
+
+        <div class="school-data-note">
+          Yêu cầu bắt buộc cấp Trung ương: tham gia và đạt giải hoạt động thể thao cấp Trường trở lên hoặc tham gia hoạt động
+          thể thao cấp Trung ương.
+        </div>
+
+        <div id="centralTheLucTotContent">
+          Đang tải dữ liệu...
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí bắt buộc</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'theLucTot', 'mandatory')">
+            <label for="theLucMandatoryTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="theLucMandatoryTitle"
+              placeholder="Ví dụ: Giấy chứng nhận giải thể thao cấp Trường"
+            />
+
+            <label for="theLucMandatoryFile">File minh chứng</label>
+            <input
+              type="file"
+              id="theLucMandatoryFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng bắt buộc
+            </button>
+
+            <p id="theLucMandatoryMessage"></p>
+          </form>
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí đạt thêm</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'theLucTot', 'additional')">
+            <label for="theLucAdditionalKey">Tiêu chí đạt thêm</label>
+            <select id="theLucAdditionalKey">
+              <option value="">-- Chọn tiêu chí đạt thêm --</option>
+              <option value="theLuc_1">Giải Ba trở lên trong hoạt động thể thao từ cấp tỉnh trở lên</option>
+            </select>
+
+            <label for="theLucAdditionalTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="theLucAdditionalTitle"
+              placeholder="Ví dụ: Giấy chứng nhận giải thể thao cấp tỉnh"
+            />
+
+            <label for="theLucAdditionalFile">File minh chứng</label>
+            <input
+              type="file"
+              id="theLucAdditionalFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng đạt thêm
+            </button>
+
+            <p id="theLucAdditionalMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB TÌNH NGUYỆN TỐT -->
+      <section id="tinhNguyenTot" class="tab-content">
+        <h1>Tình nguyện tốt</h1>
+
+        <div class="school-data-note">
+          Yêu cầu bắt buộc cấp Trung ương: tham gia ít nhất 05 ngày tình nguyện trong năm, được tính theo số ngày thực tế tham gia
+          và có thể cộng dồn.
+        </div>
+
+        <div id="centralTinhNguyenTotContent">
+          Đang tải dữ liệu...
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí bắt buộc</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'tinhNguyenTot', 'mandatory')">
+            <label for="tinhNguyenMandatoryTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="tinhNguyenMandatoryTitle"
+              placeholder="Ví dụ: Xác nhận 05 ngày tình nguyện"
+            />
+
+            <label for="tinhNguyenMandatoryFile">File minh chứng</label>
+            <input
+              type="file"
+              id="tinhNguyenMandatoryFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng bắt buộc
+            </button>
+
+            <p id="tinhNguyenMandatoryMessage"></p>
+          </form>
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí đạt thêm</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'tinhNguyenTot', 'additional')">
+            <label for="tinhNguyenAdditionalKey">Tiêu chí đạt thêm</label>
+            <select id="tinhNguyenAdditionalKey">
+              <option value="">-- Chọn tiêu chí đạt thêm --</option>
+              <option value="tinhNguyen_1">Sáng lập hoặc đồng sáng lập dự án tình nguyện</option>
+              <option value="tinhNguyen_2">Được khen thưởng từ cấp tỉnh trở lên về hoạt động tình nguyện</option>
+            </select>
+
+            <label for="tinhNguyenAdditionalTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="tinhNguyenAdditionalTitle"
+              placeholder="Ví dụ: Giấy khen hoạt động tình nguyện cấp tỉnh"
+            />
+
+            <label for="tinhNguyenAdditionalFile">File minh chứng</label>
+            <input
+              type="file"
+              id="tinhNguyenAdditionalFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng đạt thêm
+            </button>
+
+            <p id="tinhNguyenAdditionalMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB HỘI NHẬP TỐT -->
+      <section id="hoiNhapTot" class="tab-content">
+        <h1>Hội nhập tốt</h1>
+
+        <div class="school-data-note">
+          Yêu cầu bắt buộc cấp Trung ương: đạt ngoại ngữ B2 hoặc tương đương B2, hoặc điểm học phần ngoại ngữ tích lũy từ 3.4/4
+          hoặc 8.5/10 trở lên; đồng thời tham gia ít nhất 01 hoạt động giao lưu quốc tế.
+        </div>
+
+        <div id="centralHoiNhapTotContent">
+          Đang tải dữ liệu...
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí bắt buộc</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'hoiNhapTot', 'mandatory')">
+            <label for="hoiNhapMandatoryTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="hoiNhapMandatoryTitle"
+              placeholder="Ví dụ: Chứng chỉ B2, giấy xác nhận hoạt động giao lưu quốc tế"
+            />
+
+            <label for="hoiNhapMandatoryFile">File minh chứng</label>
+            <input
+              type="file"
+              id="hoiNhapMandatoryFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng bắt buộc
+            </button>
+
+            <p id="hoiNhapMandatoryMessage"></p>
+          </form>
+        </div>
+
+        <div class="higher-summary-card">
+          <h3>Nộp minh chứng tiêu chí đạt thêm</h3>
+
+          <form class="central-evidence-form" onsubmit="submitCentralEvidence(event, 'hoiNhapTot', 'additional')">
+            <label for="hoiNhapAdditionalKey">Tiêu chí đạt thêm</label>
+            <select id="hoiNhapAdditionalKey">
+              <option value="">-- Chọn tiêu chí đạt thêm --</option>
+              <option value="hoiNhap_1">Ban chủ nhiệm câu lạc bộ, đội, nhóm ngoại ngữ</option>
+              <option value="hoiNhap_2">Giải Ba trở lên cuộc thi hội nhập hoặc học thuật bằng ngoại ngữ từ cấp tỉnh trở lên</option>
+              <option value="hoiNhap_3">Có ít nhất 02 ngoại ngữ, trong đó tiếng Anh đạt B2 trở lên</option>
+            </select>
+
+            <label for="hoiNhapAdditionalTitle">Tên minh chứng</label>
+            <input
+              type="text"
+              id="hoiNhapAdditionalTitle"
+              placeholder="Ví dụ: Chứng chỉ ngoại ngữ hoặc giấy chứng nhận cuộc thi hội nhập"
+            />
+
+            <label for="hoiNhapAdditionalFile">File minh chứng</label>
+            <input
+              type="file"
+              id="hoiNhapAdditionalFile"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            />
+
+            <button type="submit">
+              Nộp minh chứng đạt thêm
+            </button>
+
+            <p id="hoiNhapAdditionalMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- KHO MINH CHỨNG -->
+      <section id="storage" class="tab-content">
+        <h1>Kho minh chứng cấp Trung ương</h1>
+
+        <div class="school-data-note">
+          Khu vực này chỉ hiển thị minh chứng bổ sung cho cấp Trung ương.
+          Minh chứng cấp Trường, cấp ĐHQG-HCM và cấp Thành phố vẫn được dùng làm dữ liệu nền, nhưng minh chứng bổ sung ở cấp Trung ương cần
+          được upload và duyệt riêng.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tên file</th>
+              <th>Tiêu chí</th>
+              <th>Loại minh chứng</th>
+              <th>Trạng thái</th>
+              <th>Ngày upload</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+
+          <tbody id="centralStorageTable">
+            <tr>
+              <td colspan="6">Đang tải minh chứng...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="site-footer dashboard-footer">
+    <p>
+      © 2026 SV5T Khoa Hóa học. Liên Chi Hội Khoa Hóa học.
+    </p>
+    <p>
+      Phát triển nhằm hỗ trợ quá trình theo dõi và xét thưởng Sinh viên 5 tốt.
+    </p>
+  </footer>
+
+  <script src="./js/student-central-level.js"></script>
+</body>
+</html>

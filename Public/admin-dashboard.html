@@ -49,6 +49,10 @@
         Duyệt minh chứng
       </button>
 
+      <button id="centralEvidencesTabBtn" class="tab-btn" onclick="showAdminTab('centralEvidenceTab', this)">
+        Duyệt minh chứng Trung ương
+      </button>
+
       <button id="classSummaryTabBtn" class="tab-btn" onclick="showAdminTab('classSummary', this)">
         Tổng quan các lớp
       </button>
@@ -536,6 +540,37 @@
         </table>
       </section>
 
+      <section id="centralEvidenceTab" class="tab-content">
+  <h1>Minh chứng cấp Trung ương</h1>
+
+  <div class="admin-card">
+    <p>
+      Danh sách minh chứng cấp Trung ương do sinh viên nộp. Admin kiểm tra thủ công và chọn duyệt hoặc không duyệt.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Sinh viên</th>
+          <th>MSSV</th>
+          <th>Tiêu chí</th>
+          <th>Loại</th>
+          <th>Tiêu chí đạt thêm</th>
+          <th>File</th>
+          <th>Trạng thái</th>
+          <th>Ngày nộp</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+
+      <tbody id="centralEvidenceTable">
+        <tr>
+          <td colspan="9">Đang tải dữ liệu...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
     </main>
   </div>
 

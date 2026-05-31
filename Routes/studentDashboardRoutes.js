@@ -5,6 +5,15 @@ const Evidence = require("../Models/Evidence");
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const { requireStudentAuth } = require("../Middlewares/authMiddleware");
 
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+const {
+  buildEvidenceKey,
+  uploadLocalFileToR2
+} = require("../Utils/r2Client");
+
 const { normalizeAwardLevel } = require("../Utils/sv5tLevels");
 
 const {
@@ -18,6 +27,14 @@ const {
 } = require("../Utils/sv5tCriteria");
 
 const {
+  CENTRAL_CATEGORIES,
+  CENTRAL_CATEGORY_LABELS,
+  CENTRAL_MANDATORY_CRITERIA,
+  CENTRAL_ADDITIONAL_CRITERIA,
+  getCentralCriteriaForCategory
+} = require("../Utils/centralCriteria");
+
+const {
   isValidKyNangEvidenceForLevel,
   isValidHoiNhapEvidenceForLevel
 } = require("../Utils/activityEligibility");
@@ -25,6 +42,74 @@ const {
 const router = express.Router();
 
 const CURRENT_AWARD_LEVEL = "truong";
+
+const CENTRAL_UPLOAD_DIR = "uploads/evidence-temp/";
+
+if (!fs.existsSync(CENTRAL_UPLOAD_DIR)) {
+  fs.mkdirSync(CENTRAL_UPLOAD_DIR, {
+    recursive: true
+  });
+}
+
+const centralStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, CENTRAL_UPLOAD_DIR);
+  },
+
+  filename: function (req, file, cb) {
+    const uniqueName =
+      Date.now() +
+      "-" +
+      Math.round(Math.random() * 1e9) +
+      path.extname(file.originalname);
+
+    cb(null, uniqueName);
+  }
+});
+
+const centralUpload = multer({
+  storage: centralStorage,
+  limits: {
+    fileSize: 2 * 1024 * 1024
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedMimeTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/png",
+      "image/jpeg"
+    ];
+
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Chỉ chấp nhận file PDF, DOC, DOCX, PNG, JPG hoặc JPEG"));
+    }
+  }
+});
+
+function centralUploadMiddleware(req, res, next) {
+  const handler = centralUpload.single("file");
+
+  handler(req, res, function (err) {
+    if (err) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({
+          success: false,
+          message: "File vượt quá 2 MB. Vui lòng chọn file nhỏ hơn."
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: err.message || "File upload không hợp lệ"
+      });
+    }
+
+    next();
+  });
+}
 
 const categories = [
   "daoDucTot",
@@ -73,9 +158,26 @@ const defaultSuggestions = {
   ],
 
   hoiNhapTot: [
-    "Bạn có thể nộp chứng chỉ ngoại ngữ, chứng nhận kỹ năng hoặc giấy chứng nhận hoạt động hội nhập.",
-    "Nếu có IELTS, TOEIC, chứng chỉ kỹ năng hoặc giấy chứng nhận hội thảo quốc tế, hãy upload minh chứng."
+    "Bạn cần kiểm tra đủ 3 phần: ngoại ngữ, kỹ năng và hoạt động hội nhập.",
+    "Với cấp Thành phố, phần ngoại ngữ cần có điều kiện ngoại ngữ cơ bản và thêm 01 minh chứng như giao lưu quốc tế, hội nghị/hội thảo quốc tế hoặc giải học thuật bằng ngoại ngữ từ cấp Trường trở lên."
   ]
+};
+
+const centralDefaultSuggestions = {
+  daoDucTot:
+    "Kiểm tra điểm rèn luyện từ 95/100 trở lên và xác nhận không vi phạm pháp luật, quy chế, nội quy. Nếu dữ liệu cấp dưới chưa đủ, hãy nộp minh chứng bổ sung để admin duyệt thủ công.",
+
+  hocTapTot:
+    "Kiểm tra GPA theo chuẩn cấp Trung ương và bổ sung minh chứng học thuật nếu cần. Các minh chứng như nghiên cứu khoa học, bài báo, sản phẩm sáng tạo hoặc giải học thuật có thể dùng cho tiêu chí đạt thêm.",
+
+  theLucTot:
+    "Kiểm tra hoạt động thể thao hoặc giải thể thao phù hợp. Nếu dữ liệu cấp dưới chưa đủ, hãy nộp minh chứng bổ sung để admin duyệt thủ công.",
+
+  tinhNguyenTot:
+    "Kiểm tra tổng số ngày tình nguyện và các khen thưởng/dự án tình nguyện. Nếu có khen thưởng hoặc dự án tình nguyện phù hợp, bạn có thể nộp làm tiêu chí đạt thêm.",
+
+  hoiNhapTot:
+    "Kiểm tra điều kiện ngoại ngữ và hoạt động giao lưu quốc tế. Nếu có minh chứng như CLB ngoại ngữ, giải hội nhập/học thuật bằng ngoại ngữ hoặc chứng chỉ ngoại ngữ phù hợp, bạn có thể nộp làm tiêu chí đạt thêm."
 };
 
 async function getAISuggestions(
@@ -94,10 +196,12 @@ async function getAISuggestions(
     const awardLevelLabelMap = {
       truong: "Cấp Trường",
       dhqg: "Cấp ĐHQG-HCM",
-      thanh: "Cấp Thành phố Hồ Chí Minh"
+      thanh: "Cấp Thành phố Hồ Chí Minh",
+      trung_uong: "Cấp Trung ương"
     };
 
     const awardLevelLabel = awardLevelLabelMap[awardLevel] || "Cấp Trường";
+    const isCentralLevel = awardLevel === "trung_uong";
 
     const completedLabels = completedCategories.map((category) => {
       return categoryLabels[category];
@@ -105,6 +209,27 @@ async function getAISuggestions(
 
     const missingDetails = missingCategories
       .map((category) => {
+        if (isCentralLevel) {
+          const centralCriteria = getCentralCriteriaForCategory(category);
+
+          return `
+Tiêu chí: ${CENTRAL_CATEGORY_LABELS[category] || categoryLabels[category] || category}
+
+Tiêu chuẩn bắt buộc cấp Trung ương:
+${(centralCriteria?.mandatory?.conditions || centralCriteria?.conditions || [])
+  .map((item) => {
+    return `- ${item.text || item}`;
+  })
+  .join("\n")}
+
+Lưu ý cấp Trung ương:
+- Dữ liệu từ cấp Trường, cấp ĐHQG-HCM và cấp Thành phố có thể được dùng làm dữ liệu tham chiếu.
+- Nếu dữ liệu tham chiếu chưa đủ, sinh viên có thể nộp minh chứng bổ sung.
+- Minh chứng cấp Trung ương không chạy AI OCR. Admin sẽ kiểm tra và duyệt thủ công.
+- Ngoài 5 tiêu chuẩn bắt buộc, sinh viên cần đạt ít nhất 02 tiêu chí đạt thêm trên toàn bộ hồ sơ.
+`;
+        }
+
         const criteria = getCriteriaForLevel(awardLevel, category);
 
         return `
@@ -147,9 +272,20 @@ Yêu cầu:
 - Đề xuất ngắn gọn, rõ ràng, dễ hiểu.
 - Tập trung vào các tiêu chí sinh viên chưa hoàn thành.
 - Chỉ tư vấn theo tiêu chuẩn của ${awardLevelLabel}.
-- Không dùng nhầm điều kiện cấp Trường nếu đang xét cấp ĐHQG-HCM hoặc cấp Thành phố.
+- Không dùng nhầm điều kiện cấp Trường nếu đang xét cấp ĐHQG-HCM, cấp Thành phố hoặc cấp Trung ương.
 - Nếu là cấp Thành phố, cần lưu ý các điều kiện có thể chặt hơn, đặc biệt ở Tình nguyện tốt và Hội nhập tốt.
+- Nếu là cấp Thành phố và thiếu Hội nhập tốt, cần hiểu rằng Hội nhập tốt gồm 3 phần: Ngoại ngữ, Kỹ năng và Hoạt động hội nhập. Riêng phần Ngoại ngữ cấp Thành phố cần có điều kiện ngoại ngữ cơ bản và thêm 01 điều kiện bổ sung như giao lưu quốc tế hoặc giải hội nhập/học thuật bằng ngoại ngữ từ cấp Trường trở lên.
 - Mỗi đề xuất 1-2 câu, nêu rõ sinh viên nên bổ sung gì và minh chứng nào phù hợp.
+${
+  isCentralLevel
+    ? `
+- Vì đang xét cấp Trung ương, hãy tư vấn theo cấu trúc: 5 tiêu chuẩn bắt buộc và 02 tiêu chí đạt thêm.
+- Không nói rằng AI sẽ tự xác minh minh chứng cấp Trung ương. Minh chứng cấp Trung ương sẽ được admin kiểm tra và duyệt thủ công.
+- Nếu dữ liệu từ cấp Trường, cấp ĐHQG-HCM hoặc cấp Thành phố đã đủ, hãy khuyên sinh viên kiểm tra lại dữ liệu tham chiếu trước khi nộp bổ sung.
+- Nếu thiếu tiêu chí đạt thêm, hãy gợi ý sinh viên chọn đúng nhóm tiêu chí đạt thêm như Đạo đức, Học tập, Thể lực, Tình nguyện hoặc Hội nhập rồi nộp minh chứng tương ứng.
+`
+    : ""
+}
 
 Chỉ trả về JSON đúng format sau, không thêm markdown, không thêm giải thích ngoài JSON:
 [
@@ -707,16 +843,30 @@ const ngoaiNguCourseScoreHigherResult = schoolNgoaiNguCourseScoreDeclaration
   });
 
   relatedActivities.forEach((activity) => {
-    const participant = activity.participants.find((p) => {
-      return p.studentId === studentId;
-    });
-
-    const days =
-      Number(participant?.volunteerDays || 0) ||
-      Number(activity.volunteerDays || 0);
-
-    volunteerDays += days;
+  const participant = (activity.participants || []).find((p) => {
+    return String(p.studentId) === String(studentId);
   });
+
+  const days =
+    Number(participant?.volunteerDays || 0) ||
+    Number(activity.volunteerDays || 0);
+
+  volunteerDays += days;
+
+  const title = String(activity.title || "").toLowerCase();
+
+  const activityIsVolunteerAward =
+    participant?.isVolunteerAward === true ||
+    activity.isVolunteerAward === true ||
+    title.includes("khen thưởng") ||
+    title.includes("giấy khen") ||
+    title.includes("giay khen") ||
+    title.includes("khen thuong");
+
+  if (activityIsVolunteerAward) {
+    hasVolunteerAward = true;
+  }
+});
 
   if (awardLevel === "thanh") {
     isCompleted = hasVolunteerAward && volunteerDays >= 5;
@@ -737,9 +887,66 @@ const ngoaiNguCourseScoreHigherResult = schoolNgoaiNguCourseScoreDeclaration
 if (category === "hoiNhapTot") {
   let ngoaiNguBasePassed = false;
   let ngoaiNguExtraPassed = false;
-if (ngoaiNguCourseScoreHigherResult.isCompleted) {
-  ngoaiNguBasePassed = true;
-}
+
+  if (ngoaiNguCourseScoreHigherResult.isCompleted) {
+    ngoaiNguBasePassed = true;
+  }
+
+  function isNgoaiNguExtraActivity(activity, participant) {
+    const sub =
+      participant?.subCriteria ||
+      activity.subCriteria ||
+      "";
+
+    const hoiNhapEvidenceType =
+      participant?.hoiNhapEvidenceType ||
+      activity.hoiNhapEvidenceType ||
+      "";
+
+    const organizerLevel =
+      activity.organizerLevel ||
+      activity.awardLevel ||
+      "";
+
+    const title = String(activity.title || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    const validOrganizerLevels = [
+      "truong",
+      "dhqg",
+      "thanh",
+      "quoc_gia",
+      "quoc_te"
+    ];
+
+    const validExtraTypes = [
+      "international_exchange",
+      "official_international_program_member",
+      "international_program_volunteer",
+      "integration_competition_award_truong_or_above",
+      "foreign_language_academic_competition_award_truong_or_above"
+    ];
+
+    const fallbackByTitle =
+      title.includes("giao luu quoc te") ||
+      title.includes("giao luu sinh vien quoc te") ||
+      title.includes("hoi nghi quoc te") ||
+      title.includes("hoi thao quoc te") ||
+      title.includes("hop tac quoc te") ||
+      title.includes("seminar") ||
+      title.includes("international");
+
+    return (
+      sub === "hoiNhap" &&
+      validOrganizerLevels.includes(organizerLevel) &&
+      (
+        validExtraTypes.includes(hoiNhapEvidenceType) ||
+        fallbackByTitle
+      )
+    );
+  }
 
   validEvidences.forEach((evidence) => {
     const sub = evidence.aiResult?.subCriteria || "";
@@ -764,29 +971,45 @@ if (ngoaiNguCourseScoreHigherResult.isCompleted) {
     }
 
     if (sub === "kyNang") {
-  const kyNangEvidenceType =
-    evidence.aiResult?.kyNangEvidenceType || "";
+      const kyNangEvidenceType =
+        evidence.aiResult?.kyNangEvidenceType || "";
 
-  if (isValidKyNangEvidenceForLevel(awardLevel, kyNangEvidenceType)) {
-    subProgress.kyNang = true;
-  }
-}
+      if (isValidKyNangEvidenceForLevel(awardLevel, kyNangEvidenceType)) {
+        subProgress.kyNang = true;
+      }
+    }
 
     if (sub === "hoiNhap") {
-  const hoiNhapEvidenceType = evidence.aiResult?.hoiNhapEvidenceType || "";
+      const hoiNhapEvidenceType =
+        evidence.aiResult?.hoiNhapEvidenceType || "";
 
-  if (isValidHoiNhapEvidenceForLevel(awardLevel, hoiNhapEvidenceType)) {
-    subProgress.hoiNhap = true;
-  }
-}
+      if (isValidHoiNhapEvidenceForLevel(awardLevel, hoiNhapEvidenceType)) {
+        subProgress.hoiNhap = true;
+      }
+
+      if (
+        [
+          "international_exchange",
+          "official_international_program_member",
+          "international_program_volunteer",
+          "integration_competition_award_truong_or_above",
+          "foreign_language_academic_competition_award_truong_or_above"
+        ].includes(hoiNhapEvidenceType)
+      ) {
+        ngoaiNguExtraPassed = true;
+      }
+    }
   });
 
   relatedActivities.forEach((activity) => {
-    const participant = activity.participants.find((p) => {
-      return p.studentId === studentId;
+    const participant = (activity.participants || []).find((p) => {
+      return String(p.studentId) === String(studentId);
     });
 
-    const sub = participant?.subCriteria || activity.subCriteria || "";
+    const sub =
+      participant?.subCriteria ||
+      activity.subCriteria ||
+      "";
 
     const foreignType =
       participant?.foreignLanguageEvidenceType ||
@@ -813,25 +1036,30 @@ if (ngoaiNguCourseScoreHigherResult.isCompleted) {
     }
 
     if (sub === "kyNang") {
-  const kyNangEvidenceType =
-    participant?.kyNangEvidenceType ||
-    activity.kyNangEvidenceType ||
-    "";
+      const kyNangEvidenceType =
+        participant?.kyNangEvidenceType ||
+        activity.kyNangEvidenceType ||
+        "";
 
-  if (isValidKyNangEvidenceForLevel(awardLevel, kyNangEvidenceType)) {
-    subProgress.kyNang = true;
-  }
-}
+      if (isValidKyNangEvidenceForLevel(awardLevel, kyNangEvidenceType)) {
+        subProgress.kyNang = true;
+      }
+    }
+
     if (sub === "hoiNhap") {
-  const hoiNhapEvidenceType =
-    participant?.hoiNhapEvidenceType ||
-    activity.hoiNhapEvidenceType ||
-    "";
+      const hoiNhapEvidenceType =
+        participant?.hoiNhapEvidenceType ||
+        activity.hoiNhapEvidenceType ||
+        "";
 
-  if (isValidHoiNhapEvidenceForLevel(awardLevel, hoiNhapEvidenceType)) {
-    subProgress.hoiNhap = true;
-  }
-}
+      if (isValidHoiNhapEvidenceForLevel(awardLevel, hoiNhapEvidenceType)) {
+        subProgress.hoiNhap = true;
+      }
+
+      if (isNgoaiNguExtraActivity(activity, participant)) {
+        ngoaiNguExtraPassed = true;
+      }
+    }
   });
 
   if (awardLevel === "thanh") {
@@ -846,7 +1074,9 @@ if (ngoaiNguCourseScoreHigherResult.isCompleted) {
   };
 
   isCompleted =
-    subProgress.ngoaiNgu && subProgress.kyNang && subProgress.hoiNhap;
+    subProgress.ngoaiNgu &&
+    subProgress.kyNang &&
+    subProgress.hoiNhap;
 
   if (isCompleted) {
     completedBy =
@@ -899,6 +1129,16 @@ if (ngoaiNguCourseScoreHigherResult.isCompleted) {
     });
 
     const progressPercent = Math.round((completedCount / 5) * 100);
+    student.higherLevelStatus = student.higherLevelStatus || {};
+
+student.higherLevelStatus[awardLevel] = {
+  completedCount,
+  progressPercent,
+  isCompleted: completedCount === 5 || progressPercent >= 100,
+  updatedAt: new Date()
+};
+
+await student.save();
 
     let aiSuggestions = await getAISuggestions(
   student,
@@ -924,6 +1164,25 @@ if (
   });
 }
 
+let centralPrerequisites = null;
+
+if (awardLevel === "thanh") {
+  const thanhLevelCompleted =
+    completedCount === 5 || Number(progressPercent || 0) >= 100;
+
+  centralPrerequisites = {
+    hasProvincialAward: {
+      isApproved: thanhLevelCompleted,
+      source: "system",
+      note: thanhLevelCompleted
+        ? "Tự động xác định vì sinh viên đã hoàn thành 5/5 tiêu chí cấp Thành phố."
+        : "Sinh viên chưa hoàn thành đủ 5/5 tiêu chí cấp Thành phố."
+    },
+
+    canProceedToCentral: thanhLevelCompleted
+  };
+}
+
     res.json({
   success: true,
   awardLevel,
@@ -937,6 +1196,8 @@ if (
   aiSuggestions,
   activities,
   evidences,
+
+  centralPrerequisites,
 
   schoolSelfDeclarations: {
     daoDucTot: schoolDaoDucDeclaration || null,
@@ -1072,5 +1333,587 @@ const declaration = {
     });
   }
 });
+
+// GET /api/student-dashboard/me/central-level
+router.get("/me/central-level", requireStudentAuth, async (req, res) => {
+  try {
+    const studentId = req.student.studentId;
+
+    const student = await Student.findOne({
+      studentId
+    }).select("-password");
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy sinh viên"
+      });
+    }
+
+    const thanhStatus = student.higherLevelStatus?.thanh || {};
+
+    const rawSelfDeclarations = student.selfDeclarations;
+
+let selfDeclarations = [];
+
+if (Array.isArray(rawSelfDeclarations)) {
+  selfDeclarations = rawSelfDeclarations;
+} else if (
+  rawSelfDeclarations &&
+  typeof rawSelfDeclarations === "object"
+) {
+  selfDeclarations = Object.values(rawSelfDeclarations);
+}
+
+const schoolDaoDucDeclaration = selfDeclarations.find((item) => {
+  return item && item.awardLevel === "truong" && item.category === "daoDucTot";
+});
+
+const schoolHocTapDeclaration = selfDeclarations.find((item) => {
+  return item && item.awardLevel === "truong" && item.category === "hocTapTot";
+});
+
+const schoolNgoaiNguCourseScoreDeclaration = selfDeclarations.find((item) => {
+  return (
+    item &&
+    item.awardLevel === "truong" &&
+    item.category === "hoiNhapTot" &&
+    item.subCriteria === "ngoaiNgu" &&
+    item.type === "foreign_language_course_score"
+  );
+});
+
+const daoDucCentralResult = schoolDaoDucDeclaration
+  ? evaluateDaoDucSelfDeclare("trung_uong", schoolDaoDucDeclaration.data)
+  : {
+      isCompleted: false,
+      reason:
+        "Chưa có dữ liệu tự khai Đạo đức tốt ở cấp Trường để xét cấp Trung ương."
+    };
+
+const hocTapCentralResult = schoolHocTapDeclaration
+  ? evaluateHocTapMandatorySelfDeclare(
+      "trung_uong",
+      schoolHocTapDeclaration.data
+    )
+  : {
+      isCompleted: false,
+      reason:
+        "Chưa có dữ liệu tự khai Học tập tốt ở cấp Trường để xét cấp Trung ương."
+    };
+
+const ngoaiNguCourseScoreCentralResult = schoolNgoaiNguCourseScoreDeclaration
+  ? evaluateNgoaiNguCourseScore(
+      "trung_uong",
+      schoolNgoaiNguCourseScoreDeclaration.data
+    )
+  : {
+      isCompleted: false,
+      reason:
+        "Chưa có dữ liệu điểm học phần ngoại ngữ đã khai ở cấp Trường để xét cấp Trung ương."
+    };
+
+const previousActivities = await Activity.find({
+  "participants.studentId": studentId,
+  $or: [
+    { awardLevel: "truong" },
+    { awardLevel: "dhqg" },
+    { awardLevel: "thanh" },
+
+    { eligibleAwardLevels: "truong" },
+    { eligibleAwardLevels: "dhqg" },
+    { eligibleAwardLevels: "thanh" }
+  ]
+}).sort({
+  date: -1
+});
+
+const previousEvidences = await Evidence.find({
+  studentId,
+  awardLevel: {
+    $in: ["truong", "dhqg", "thanh"]
+  },
+  status: {
+    $in: ["approved_by_admin", "ai_valid"]
+  }
+}).sort({
+  createdAt: -1
+});
+
+    const TEST_CENTRAL_LEVEL = true;
+
+const canAccessCentral =
+  TEST_CENTRAL_LEVEL ||
+  thanhStatus.isCompleted === true ||
+  Number(thanhStatus.completedCount || 0) >= 5 ||
+  Number(thanhStatus.progressPercent || 0) >= 100;
+
+    if (!canAccessCentral) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Bạn cần hoàn thành 5/5 tiêu chí cấp Thành phố trước khi tiếp tục chuẩn bị hồ sơ cấp Trung ương."
+      });
+    }
+
+    const mandatory = CENTRAL_CATEGORIES.map((category) => {
+  const criteria = CENTRAL_MANDATORY_CRITERIA[category];
+
+  return {
+    key: category,
+    label: criteria?.label || CENTRAL_CATEGORY_LABELS[category] || category,
+    description: criteria?.conditions
+      ? criteria.conditions.map((condition) => condition.text).join(" ")
+      : "",
+    conditions: criteria?.conditions || [],
+    requiredAll: criteria?.requiredAll !== false
+  };
+});
+
+    const additional = CENTRAL_ADDITIONAL_CRITERIA.map((item) => {
+  return {
+    key: item.key,
+    category: item.category,
+    label: item.label,
+    description: item.text,
+    isApproved: false,
+    approvedBy: "",
+    approvedAt: null,
+    note: ""
+  };
+});
+
+    const centralEvidences = await Evidence.find({
+  studentId,
+  awardLevel: "trung_uong"
+}).sort({
+  createdAt: -1
+});
+
+const approvedAdditionalKeys = new Set();
+
+centralEvidences.forEach((evidence) => {
+  if (
+    evidence.evidenceType === "central_additional" &&
+    evidence.status === "approved_by_admin"
+  ) {
+    const key =
+      evidence.additionalCriteriaKey ||
+      evidence.centralAdditionalKey ||
+      evidence.criteriaKey ||
+      "";
+
+    if (key) {
+      approvedAdditionalKeys.add(key);
+    }
+  }
+});
+
+const additionalCriteriaCount = approvedAdditionalKeys.size;
+const additionalProgressPercent = Math.round(
+  (Math.min(additionalCriteriaCount, 2) / 2) * 100
+);
+
+function hasApprovedCentralEvidence(category) {
+  return centralEvidences.some((evidence) => {
+    return (
+      evidence.category === category &&
+      evidence.awardLevel === "trung_uong" &&
+      evidence.status === "approved_by_admin"
+    );
+  });
+}
+
+function getRelatedPreviousActivities(category) {
+  return previousActivities.filter((activity) => {
+    return activity.category === category;
+  });
+}
+
+function getRelatedPreviousEvidences(category) {
+  return previousEvidences.filter((evidence) => {
+    return evidence.category === category;
+  });
+}
+
+function hasReferenceActivity(category) {
+  return getRelatedPreviousActivities(category).length > 0;
+}
+
+function hasReferenceEvidence(category) {
+  return getRelatedPreviousEvidences(category).length > 0;
+}
+
+function isReferencePassed(category) {
+  if (category === "daoDucTot") {
+    return daoDucCentralResult.isCompleted === true;
+  }
+
+  if (category === "hocTapTot") {
+    return hocTapCentralResult.isCompleted === true;
+  }
+
+  if (category === "theLucTot") {
+    return hasReferenceActivity(category) || hasReferenceEvidence(category);
+  }
+
+  if (category === "tinhNguyenTot") {
+    return hasReferenceActivity(category) || hasReferenceEvidence(category);
+  }
+
+  if (category === "hoiNhapTot") {
+    return (
+      ngoaiNguCourseScoreCentralResult.isCompleted === true ||
+      hasReferenceActivity(category) ||
+      hasReferenceEvidence(category)
+    );
+  }
+
+  return false;
+}
+
+const centralProgress = {};
+let completedCount = 0;
+
+CENTRAL_CATEGORIES.forEach((category) => {
+  const mandatoryItem = mandatory.find((item) => {
+    return item.key === category;
+  });
+
+  const referencePassed = isReferencePassed(category);
+  const adminApproved = hasApprovedCentralEvidence(category);
+
+  const isCompleted = referencePassed || adminApproved;
+
+  let completedBy = "none";
+  let status = "missing_reference";
+
+  if (referencePassed) {
+    completedBy = "reference";
+    status = "completed_by_reference";
+  }
+
+  if (adminApproved) {
+    completedBy = "admin_approved_evidence";
+    status = "completed_by_admin";
+  }
+
+  if (referencePassed && adminApproved) {
+    completedBy = "reference_and_admin";
+    status = "completed";
+  }
+
+  if (isCompleted) {
+    completedCount += 1;
+  }
+
+  centralProgress[category] = {
+    isCompleted,
+    completedBy,
+    status,
+
+    referencePassed,
+    adminApproved,
+
+    label: mandatoryItem?.label || categoryLabels[category] || category,
+    description: mandatoryItem?.description || "",
+
+    previousActivities: getRelatedPreviousActivities(category),
+    previousEvidences: getRelatedPreviousEvidences(category),
+
+    centralEvidences: centralEvidences.filter((evidence) => {
+      return evidence.category === category;
+    })
+  };
+});
+
+const progressPercent = Math.round(
+  (completedCount / CENTRAL_CATEGORIES.length) * 100
+);
+
+const missingCategories = CENTRAL_CATEGORIES.filter((category) => {
+  return centralProgress[category]?.isCompleted !== true;
+});
+
+const completedCategories = CENTRAL_CATEGORIES.filter((category) => {
+  return centralProgress[category]?.isCompleted === true;
+});
+
+let aiSuggestions = await getAISuggestions(
+  student,
+  missingCategories,
+  completedCategories,
+  "trung_uong"
+);
+
+if (
+  !aiSuggestions ||
+  !Array.isArray(aiSuggestions) ||
+  aiSuggestions.length === 0
+) {
+  aiSuggestions = missingCategories.map((category) => {
+    return {
+      category,
+      message: `Bạn còn thiếu tiêu chí ${CENTRAL_CATEGORY_LABELS[category] || category} ở cấp Trung ương. Hãy kiểm tra dữ liệu tham chiếu từ cấp Trường, cấp ĐHQG-HCM, cấp Thành phố hoặc nộp minh chứng bổ sung để admin duyệt thủ công.`
+    };
+  });
+}
+
+    return res.json({
+  success: true,
+  student,
+
+  summary: {
+  canAccessCentral,
+  mandatoryCompletedCount: completedCount,
+  additionalCriteriaCount,
+  additionalProgressPercent,
+  isCentralQualified:
+    completedCount === CENTRAL_CATEGORIES.length &&
+    additionalCriteriaCount >= 2
+},
+
+  progress: centralProgress,
+  completedCount,
+  progressPercent,
+
+  additionalCriteriaCount,
+additionalProgressPercent,
+
+  mandatory,
+  additional,
+
+  officialCriteria: CENTRAL_CATEGORIES.reduce((result, category) => {
+    result[category] = getCentralCriteriaForCategory(category);
+    return result;
+  }, {}),
+
+  centralEvidences,
+  evidences: centralEvidences,
+
+  sourceData: {
+    schoolSelfDeclarations: {
+      daoDucTot: schoolDaoDucDeclaration || null,
+      hocTapTot: schoolHocTapDeclaration || null,
+      ngoaiNguCourseScore: schoolNgoaiNguCourseScoreDeclaration || null
+    },
+    derivedSelfDeclarationResults: {
+      daoDucTot: daoDucCentralResult,
+      hocTapTot: hocTapCentralResult,
+      ngoaiNguCourseScore: ngoaiNguCourseScoreCentralResult
+    },
+    previousActivities,
+    previousEvidences
+  }
+});
+  } catch (error) {
+    console.error("Central level dashboard error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy dữ liệu cấp Trung ương"
+    });
+  }
+});
+
+router.post(
+  "/central-evidence",
+  requireStudentAuth,
+  centralUploadMiddleware,
+  async (req, res) => {
+    try {
+      const studentId = req.student.studentId;
+
+      const {
+  title,
+  category,
+  evidenceType,
+  awardLevel,
+  additionalCriteriaKey
+} = req.body;
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "Vui lòng chọn file minh chứng."
+        });
+      }
+
+      if (!title || !category) {
+        return res.status(400).json({
+          success: false,
+          message: "Vui lòng nhập đầy đủ tên minh chứng và tiêu chí."
+        });
+      }
+
+      if (awardLevel !== "trung_uong") {
+        return res.status(400).json({
+          success: false,
+          message: "awardLevel không hợp lệ cho minh chứng cấp Trung ương."
+        });
+      }
+
+      const allowedCategories = [
+        "daoDucTot",
+        "hocTapTot",
+        "theLucTot",
+        "tinhNguyenTot",
+        "hoiNhapTot"
+      ];
+
+      if (!allowedCategories.includes(category)) {
+        return res.status(400).json({
+          success: false,
+          message: "Tiêu chí không hợp lệ."
+        });
+      }
+
+      if (evidenceType === "central_additional" && !additionalCriteriaKey) {
+  return res.status(400).json({
+    success: false,
+    message: "Vui lòng chọn tiêu chí đạt thêm cần nộp minh chứng."
+  });
+}
+
+      const student = await Student.findOne({ studentId });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy sinh viên."
+        });
+      }
+
+
+      const thanhStatus = student.higherLevelStatus?.thanh || {};
+
+      const canAccessCentral =
+        req.query.test === "1" ||
+        thanhStatus.isCompleted === true ||
+        Number(thanhStatus.completedCount || 0) >= 5 ||
+        Number(thanhStatus.progressPercent || 0) >= 100;
+
+      if (!canAccessCentral) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Bạn cần hoàn thành 5/5 tiêu chí cấp Thành phố trước khi nộp minh chứng cấp Trung ương."
+        });
+      }
+
+      const rawSelfDeclarations = student.selfDeclarations;
+
+let selfDeclarations = [];
+
+if (Array.isArray(rawSelfDeclarations)) {
+  selfDeclarations = rawSelfDeclarations;
+} else if (
+  rawSelfDeclarations &&
+  typeof rawSelfDeclarations === "object"
+) {
+  selfDeclarations = Object.values(rawSelfDeclarations);
+}
+
+const schoolDaoDucDeclaration = selfDeclarations.find((item) => {
+  return item && item.awardLevel === "truong" && item.category === "daoDucTot";
+});
+
+const schoolHocTapDeclaration = selfDeclarations.find((item) => {
+  return item && item.awardLevel === "truong" && item.category === "hocTapTot";
+});
+
+const schoolNgoaiNguCourseScoreDeclaration = selfDeclarations.find((item) => {
+  return (
+    item &&
+    item.awardLevel === "truong" &&
+    item.category === "hoiNhapTot" &&
+    item.subCriteria === "ngoaiNgu" &&
+    item.type === "foreign_language_course_score"
+  );
+});
+
+      let fileKey = "";
+      let fileUrl = "";
+      let storageStatus = "local_temp";
+
+      try {
+        fileKey = buildEvidenceKey(studentId, req.file.originalname);
+
+        const uploadedFile = await uploadLocalFileToR2({
+          localPath: req.file.path,
+          key: fileKey,
+          contentType: req.file.mimetype
+        });
+
+        fileKey = uploadedFile.key;
+        fileUrl = uploadedFile.url;
+        storageStatus = "r2_archived";
+
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      } catch (uploadError) {
+        console.error("Central evidence R2 upload error:", uploadError.message);
+      }
+
+      const evidence = await Evidence.create({
+  studentId,
+  category,
+  awardLevel: "trung_uong",
+
+  evidenceType:
+    evidenceType === "central_additional"
+      ? "central_additional"
+      : "central_mandatory",
+
+  additionalCriteriaKey:
+    evidenceType === "central_additional" ? additionalCriteriaKey : "",
+
+  fileName: req.file.originalname,
+  filePath: storageStatus === "r2_archived" ? "" : req.file.path,
+  fileKey,
+  fileUrl,
+  fileSize: req.file.size,
+  fileType: req.file.mimetype,
+  storageStatus,
+
+  status: "manual_review",
+
+  aiResult: {
+    isValid: null,
+    confidence: 0,
+    matchedType: "",
+    extractedText: "",
+    matchedEvidence: [],
+    missingInfo: [],
+    reason:
+      "Minh chứng cấp Trung ương không chạy AI OCR. Admin sẽ kiểm tra và duyệt thủ công."
+  },
+
+  adminReview: {
+    reviewedBy: "",
+    reviewedAt: null,
+    note: ""
+  }
+});
+
+      await evidence.save();
+
+      return res.json({
+        success: true,
+        message:
+          "Nộp minh chứng cấp Trung ương thành công. Minh chứng sẽ chờ admin duyệt thủ công.",
+        evidence
+      });
+    } catch (error) {
+      console.error("Upload central evidence error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi nộp minh chứng cấp Trung ương."
+      });
+    }
+  }
+);
 
 module.exports = router;

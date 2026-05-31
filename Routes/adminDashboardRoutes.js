@@ -114,6 +114,14 @@ function parseExcelDate(value) {
   return null;
 }
 
+function parseBooleanCell(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  return ["true", "1", "yes", "y", "có", "co", "x"].includes(normalized);
+}
+
 function getCellValue(row, key) {
   return row[key] ? String(row[key]).trim() : "";
 }
@@ -937,6 +945,12 @@ router.post(
           row["Loại hoạt động hội nhập"] ||
           row["Loai hoat dong hoi nhap"]
         );
+        const isVolunteerAward = parseBooleanCell(
+          row.isVolunteerAward ||
+          row["isVolunteerAward"] ||
+          row["Khen thưởng tình nguyện"] ||
+          row["Khen thuong tinh nguyen"]
+        );
 
        if (!title || !category || !studentId) {
   errors.push({
@@ -1064,6 +1078,7 @@ if (
             hoiNhapEvidenceType,
             date,
             volunteerDays,
+            isVolunteerAward,
             participants: []
           };
         }
@@ -1076,7 +1091,8 @@ if (
           academicEvidenceType,
           kyNangEvidenceType,
           hoiNhapEvidenceType,
-          volunteerDays
+          volunteerDays,
+          isVolunteerAward
         });
       }
 
@@ -1096,6 +1112,7 @@ if (
           date: item.date,
           participants: item.participants,
           volunteerDays: item.volunteerDays,
+          isVolunteerAward: item.isVolunteerAward,
           kyNangEvidenceType: item.kyNangEvidenceType,
           hoiNhapEvidenceType: item.hoiNhapEvidenceType,
           uploadedBy: req.admin.username || "admin"
@@ -1855,5 +1872,269 @@ router.post(
     }
   }
 );
+
+router.get(
+  "/central-prerequisites/:studentId",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const studentId = String(req.params.studentId || "").trim();
+
+      const student = await Student.findOne({ studentId }).select(
+        "studentId fullName className centralPrerequisites"
+      );
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy sinh viên"
+        });
+      }
+
+      if (
+        req.admin.role === "admin" &&
+        student.className !== req.admin.className
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Admin lớp chỉ được xem sinh viên thuộc lớp mình"
+        });
+      }
+
+      return res.json({
+        success: true,
+        student: {
+          studentId: student.studentId,
+          fullName: student.fullName,
+          className: student.className
+        },
+        centralPrerequisites: student.centralPrerequisites || {
+          hasProvincialAward: {
+            isApproved: false,
+            approvedBy: "",
+            approvedAt: null,
+            note: ""
+          },
+          hasProvincialRecommendation: {
+            isApproved: false,
+            approvedBy: "",
+            approvedAt: null,
+            note: ""
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Get central prerequisites error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy điều kiện cấp Trung ương"
+      });
+    }
+  }
+);
+
+router.put(
+  "/central-prerequisites/:studentId",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const studentId = String(req.params.studentId || "").trim();
+
+      const {
+        hasProvincialRecommendation
+      } = req.body;
+
+      const student = await Student.findOne({ studentId });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy sinh viên"
+        });
+      }
+
+      if (
+        req.admin.role === "admin" &&
+        student.className !== req.admin.className
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Admin lớp chỉ được cập nhật sinh viên thuộc lớp mình"
+        });
+      }
+
+      const adminName =
+        req.admin.username ||
+        req.admin.email ||
+        req.admin.fullName ||
+        "admin";
+
+      if (!student.centralPrerequisites) {
+        student.centralPrerequisites = {};
+      }
+
+      if (hasProvincialRecommendation) {
+        student.centralPrerequisites.hasProvincialRecommendation = {
+          isApproved: hasProvincialRecommendation.isApproved === true,
+          approvedBy:
+            hasProvincialRecommendation.isApproved === true ? adminName : "",
+          approvedAt:
+            hasProvincialRecommendation.isApproved === true ? new Date() : null,
+          note: String(hasProvincialRecommendation.note || "").trim()
+        };
+      }
+
+      await student.save();
+
+      const updatedPrerequisites = student.centralPrerequisites;
+
+      const canProceedToCentral =
+        updatedPrerequisites?.hasProvincialAward?.isApproved === true &&
+        updatedPrerequisites?.hasProvincialRecommendation?.isApproved === true;
+
+      const plainPrerequisites =
+        typeof updatedPrerequisites?.toObject === "function"
+          ? updatedPrerequisites.toObject()
+          : updatedPrerequisites;
+
+      return res.json({
+        success: true,
+        message: "Cập nhật điều kiện đầu vào cấp Trung ương thành công",
+        centralPrerequisites: {
+          ...plainPrerequisites,
+          canProceedToCentral
+        }
+      });
+    } catch (error) {
+      console.error("Update central prerequisites error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi cập nhật điều kiện cấp Trung ương"
+      });
+    }
+  }
+);
+
+// PATCH /api/admin/central-evidence/:evidenceId/review
+router.patch(
+  "/central-evidence/:evidenceId/review",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { evidenceId } = req.params;
+      const { action, note } = req.body;
+
+      if (!["approve", "reject"].includes(action)) {
+        return res.status(400).json({
+          success: false,
+          message: "Hành động không hợp lệ."
+        });
+      }
+
+      const evidence = await Evidence.findById(evidenceId);
+
+      if (!evidence) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy minh chứng."
+        });
+      }
+
+      if (evidence.awardLevel !== "trung_uong") {
+        return res.status(400).json({
+          success: false,
+          message: "Minh chứng này không thuộc cấp Trung ương."
+        });
+      }
+
+      evidence.status =
+        action === "approve" ? "approved_by_admin" : "rejected";
+
+      evidence.adminReview = {
+        reviewedBy: req.admin?.username || req.admin?.email || "admin",
+        reviewedAt: new Date(),
+        note: note || ""
+      };
+
+      await evidence.save();
+
+      return res.json({
+        success: true,
+        message:
+          action === "approve"
+            ? "Đã duyệt minh chứng cấp Trung ương."
+            : "Đã từ chối minh chứng cấp Trung ương.",
+        evidence
+      });
+    } catch (error) {
+      console.error("Review central evidence error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi duyệt minh chứng cấp Trung ương."
+      });
+    }
+  }
+);
+
+// GET /api/admin/central-evidences
+router.get("/central-evidences", requireAdminAuth, async (req, res) => {
+  try {
+    const evidences = await Evidence.find({
+      awardLevel: "trung_uong"
+    })
+      .sort({
+        createdAt: -1
+      })
+      .lean();
+
+    const studentIds = evidences.map((evidence) => {
+      return evidence.studentId;
+    });
+
+    const students = await Student.find({
+      studentId: {
+        $in: studentIds
+      }
+    })
+      .select("studentId fullName className")
+      .lean();
+
+    const studentMap = {};
+
+    students.forEach((student) => {
+      studentMap[student.studentId] = student;
+    });
+
+    const evidencesWithStudents = evidences.map((evidence) => {
+      const student = studentMap[evidence.studentId] || {};
+
+      return {
+        ...evidence,
+        student: {
+          studentId: student.studentId || evidence.studentId || "",
+          fullName: student.fullName || "Chưa cập nhật",
+          className: student.className || "Chưa cập nhật"
+        },
+        studentName: student.fullName || "Chưa cập nhật",
+        fullName: student.fullName || "Chưa cập nhật"
+      };
+    });
+
+    return res.json({
+      success: true,
+      evidences: evidencesWithStudents
+    });
+  } catch (error) {
+    console.error("Get central evidences error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách minh chứng cấp Trung ương."
+    });
+  }
+});
 
 module.exports = router;

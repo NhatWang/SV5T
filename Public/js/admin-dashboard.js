@@ -1,6 +1,7 @@
 let adminUsername = "";
 let adminRole = "";
 let adminClassName = "";
+let currentCentralStudentId = "";
 
 const categoryLabels = {
   daoDucTot: "Đạo đức tốt",
@@ -82,6 +83,7 @@ function formatEvidenceStatus(status) {
   if (status === "manual_review") return "Cần admin kiểm tra";
   if (status === "approved_by_admin") return "Đã duyệt";
   if (status === "rejected_by_admin") return "Từ chối";
+  if (status === "rejected") return "Từ chối";
   if (status === "need_more_info") return "Cần bổ sung";
   return status || "Chưa cập nhật";
 }
@@ -113,6 +115,10 @@ function showAdminTab(tabId, button) {
 
   if (button) {
     button.classList.add("active");
+  }
+
+  if (tabId === "centralEvidenceTab") {
+    loadCentralEvidences();
   }
 }
 
@@ -634,39 +640,33 @@ function formatKyNangEvidenceType(value) {
 
 function renderEvidenceActions(evidence) {
   if (evidence.status === "approved_by_admin") {
-    return `
-      <span class="status-note success">Đã duyệt</span>
-    `;
+    return `<span class="status-note success">Đã duyệt</span>`;
   }
 
   if (evidence.status === "rejected_by_admin") {
-    return `
-      <span class="status-note danger">Đã từ chối</span>
-    `;
+    return `<span class="status-note danger">Đã từ chối</span>`;
   }
 
   if (evidence.status === "pending") {
-    return `
-      <span class="status-note warning">AI đang kiểm tra</span>
-    `;
+    return `<span class="status-note warning">AI đang kiểm tra</span>`;
   }
 
   return `
-    <button onclick="reviewEvidence('${evidence._id}', 'approved_by_admin')">
+    <button onclick="reviewEvidence('${evidence._id}', 'approved_by_admin', this)">
       Duyệt
     </button>
 
-    <button onclick="reviewEvidence('${evidence._id}', 'rejected_by_admin')">
+    <button onclick="reviewEvidence('${evidence._id}', 'rejected_by_admin', this)">
       Từ chối
     </button>
 
-    <button onclick="reviewEvidence('${evidence._id}', 'need_more_info')">
+    <button onclick="reviewEvidence('${evidence._id}', 'need_more_info', this)">
       Bổ sung
     </button>
   `;
 }
 
-async function reviewEvidence(evidenceId, status) {
+async function reviewEvidence(evidenceId, status, buttonElement) {
   const note = prompt("Nhập ghi chú duyệt minh chứng:", "");
 
   try {
@@ -688,24 +688,54 @@ async function reviewEvidence(evidenceId, status) {
 
     const data = await res.json();
 
-    alert(data.message || "Đã xử lý minh chứng.");
+    if (!data.success) {
+      alert(data.message || "Không thể xử lý minh chứng.");
+      return;
+    }
 
-    if (!data.success) return;
-
-    await loadAllEvidences();
+    updateEvidenceRowAfterReview(buttonElement, status);
 
     if (adminRole === "admin" && adminClassName) {
-      await loadClassStudents(adminClassName);
-      await loadCollectiveProgress(adminClassName);
+      loadClassStudents(adminClassName);
+      loadCollectiveProgress(adminClassName);
     }
 
     if (adminRole === "super_admin") {
-      await loadClassSummary();
-      await loadAllCollectiveProgress();
+      loadClassSummary();
+      loadAllCollectiveProgress();
     }
   } catch (error) {
     console.error("Review evidence error:", error);
     alert("Không thể duyệt minh chứng");
+  }
+}
+
+function updateEvidenceRowAfterReview(buttonElement, status) {
+  if (!buttonElement) return;
+
+  const row = buttonElement.closest("tr");
+
+  if (!row) return;
+
+  const statusCell = row.children[7];
+  const actionCell = row.children[8];
+
+  if (!statusCell || !actionCell) return;
+
+  statusCell.textContent = formatEvidenceStatus(status);
+
+  if (status === "approved_by_admin") {
+    actionCell.innerHTML = `<span class="status-note success">Đã duyệt</span>`;
+    return;
+  }
+
+  if (status === "rejected_by_admin") {
+    actionCell.innerHTML = `<span class="status-note danger">Đã từ chối</span>`;
+    return;
+  }
+
+  if (status === "need_more_info") {
+    actionCell.innerHTML = `<span class="status-note warning">Cần bổ sung</span>`;
   }
 }
 
@@ -1214,6 +1244,198 @@ async function uploadClassSupportExcel() {
     message.textContent = "Không thể kết nối server.";
     message.className = "status-text-warning";
   }
+}
+
+async function loadCentralEvidences() {
+  try {
+    const res = await fetch("/api/admin-dashboard/central-evidences", {
+  credentials: "include"
+});
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || "Không thể tải minh chứng Trung ương.");
+      return;
+    }
+
+    renderCentralEvidenceTable(data.evidences || []);
+  } catch (error) {
+    console.error("Load central evidences error:", error);
+    alert("Không thể kết nối server.");
+  }
+}
+
+function renderCentralEvidenceTable(evidences) {
+  const table = document.getElementById("centralEvidenceTable");
+
+  if (!table) return;
+
+  if (!Array.isArray(evidences) || evidences.length === 0) {
+    table.innerHTML = `
+      <tr>
+        <td colspan="9">Chưa có minh chứng cấp Trung ương.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  table.innerHTML = evidences
+    .map((evidence) => {
+      const fileUrl = evidence.fileUrl || evidence.url || "#";
+
+      return `
+        <tr>
+          <td>${escapeHtml(evidence.fullName || evidence.studentName || evidence.student?.fullName || "Chưa cập nhật")}</td>
+          <td>${escapeHtml(evidence.studentId || evidence.student?.studentId || "")}</td>
+          <td>${escapeHtml(formatCategoryLabel(evidence.category))}</td>
+          <td>${escapeHtml(formatCentralEvidenceType(evidence.evidenceType))}</td>
+          <td>${escapeHtml(formatAdditionalCriteriaKey(evidence.additionalCriteriaKey))}</td>
+          <td>
+            ${
+              fileUrl && fileUrl !== "#"
+                ? `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer">Xem file</a>`
+                : "Không có file"
+            }
+          </td>
+          <td>${escapeHtml(formatEvidenceStatus(evidence.status))}</td>
+          <td>${formatDate(evidence.createdAt)}</td>
+          <td>
+            ${
+              evidence.status === "manual_review"
+                ? `
+                  <button onclick="reviewCentralEvidence('${evidence._id}', 'approve', this)">
+                    Duyệt
+                  </button>
+                  <button onclick="reviewCentralEvidence('${evidence._id}', 'reject', this)">
+                    Không duyệt
+                  </button>
+                `
+                : "Đã xử lý"
+            }
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function reviewCentralEvidence(evidenceId, action, buttonElement) {
+  const note =
+    action === "reject"
+      ? prompt("Nhập lý do không duyệt minh chứng:")
+      : prompt("Ghi chú duyệt minh chứng, có thể bỏ trống:");
+
+  if (action === "reject" && !note) {
+    alert("Vui lòng nhập lý do không duyệt.");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `/api/admin-dashboard/central-evidence/${evidenceId}/review`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action,
+          note: note || ""
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || "Không thể xử lý minh chứng.");
+      return;
+    }
+
+    updateCentralEvidenceRowAfterReview(buttonElement, action);
+  } catch (error) {
+    console.error("Review central evidence error:", error);
+    alert("Không thể kết nối server.");
+  }
+}
+
+function updateCentralEvidenceRowAfterReview(buttonElement, action) {
+  if (!buttonElement) return;
+
+  const row = buttonElement.closest("tr");
+
+  if (!row) return;
+
+  const statusCell = row.children[6];
+  const actionCell = row.children[8];
+
+  if (!statusCell || !actionCell) return;
+
+  if (action === "approve") {
+    statusCell.textContent = "Đã duyệt";
+    actionCell.innerHTML = `<span class="status-note success">Đã xử lý</span>`;
+    return;
+  }
+
+  if (action === "reject") {
+    statusCell.textContent = "Từ chối";
+    actionCell.innerHTML = `<span class="status-note danger">Đã xử lý</span>`;
+  }
+}
+
+window.reviewCentralEvidence = reviewCentralEvidence;
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function formatCategoryLabel(category) {
+  return categoryLabels[category] || category || "Chưa cập nhật";
+}
+
+function formatCentralEvidenceType(type) {
+  const map = {
+    central_mandatory: "Tiêu chuẩn bắt buộc",
+    central_additional: "Tiêu chí đạt thêm",
+    default: "Minh chứng"
+  };
+
+  return map[type] || type || "Minh chứng";
+}
+
+function formatAdditionalCriteriaKey(key) {
+  const map = {
+    daoDuc_1: "Đạo đức - Gương tiêu biểu",
+    daoDuc_2: "Đạo đức - Đảng viên xuất sắc",
+
+    hocTap_1: "Học tập - Nghiên cứu khoa học",
+    hocTap_2: "Học tập - Bài báo WoS/Scopus Q1, Q2",
+    hocTap_3: "Học tập - Bài báo WoS/Scopus Q3, Q4",
+    hocTap_4: "Học tập - Sản phẩm sáng tạo",
+    hocTap_5: "Học tập - Giải học thuật quốc gia/quốc tế",
+
+    theLuc_1: "Thể lực - Giải thể thao từ cấp tỉnh",
+
+    tinhNguyen_1: "Tình nguyện - Dự án tình nguyện",
+    tinhNguyen_2: "Tình nguyện - Khen thưởng tình nguyện",
+
+    hoiNhap_1: "Hội nhập - Ban chủ nhiệm CLB ngoại ngữ",
+    hoiNhap_2: "Hội nhập - Giải hội nhập/học thuật bằng ngoại ngữ",
+    hoiNhap_3: "Hội nhập - Hai ngoại ngữ"
+  };
+
+  return map[key] || key || "-";
+}
+
+function formatDate(value) {
+  return formatDateSafe(value);
 }
 
 async function logoutAdmin() {

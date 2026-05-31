@@ -553,20 +553,32 @@ Tiêu chí "Hội nhập tốt" gồm 3 nhóm. Sinh viên cần đạt đủ c�
 5.3. Hoạt động hội nhập
 
 NHÓM 1 - NGOẠI NGỮ, subCriteria = "ngoaiNgu":
-- Chứng chỉ ngoại ngữ tương đương B1 trở lên hoặc mức cao hơn theo quy chế cấp xét hiện tại.
-- Điểm học phần ngoại ngữ đạt ngưỡng theo quy chế cấp xét hiện tại.
-- Cuộc thi kiến thức ngoại ngữ từ cấp Khoa/cấp Trường trở lên tùy cấp xét.
+- Dùng cho minh chứng ngoại ngữ cơ bản.
+- Chấp nhận chứng chỉ ngoại ngữ tương đương B1 trở lên hoặc mức cao hơn theo quy chế cấp xét hiện tại.
+- Chấp nhận điểm học phần ngoại ngữ đạt ngưỡng theo quy chế cấp xét hiện tại.
+- Chấp nhận cuộc thi kiến thức ngoại ngữ từ cấp Khoa/cấp Trường trở lên tùy cấp xét.
 - Chứng chỉ phải còn hiệu lực nếu tài liệu có ghi thời hạn.
+
 ${
   isDhqgLevel
     ? `- QUY TẮC RIÊNG CẤP ĐHQG-HCM: Không chấp nhận chứng nhận trong các đợt thi thử. Nếu tài liệu có dấu hiệu là thi thử, mock test, practice test, placement test thử, kiểm tra thử, chứng nhận thử, kết quả thi thử hoặc giấy chứng nhận từ một đợt thi thử thì phải đánh giá là không hợp lệ cho nhóm Ngoại ngữ cấp ĐHQG-HCM.`
     : ""
 }
+
 ${
   isThanhLevel
-    ? `- QUY TẮC RIÊNG CẤP THÀNH PHỐ: Ngoài điều kiện ngoại ngữ cơ bản, sinh viên phải đạt thêm 01 trong 02 tiêu chí sau: 
-  (1) Có giấy chứng nhận tham gia ít nhất 01 hoạt động giao lưu quốc tế, hội nghị/hội thảo quốc tế, chương trình gặp gỡ/giao lưu/hợp tác với thanh niên, sinh viên quốc tế trong và ngoài nước.
-  (2) Đạt giải Ba trở lên tại cuộc thi về kiến thức hội nhập hoặc cuộc thi học thuật bằng ngoại ngữ từ cấp Trường trở lên.`
+    ? `- QUY TẮC RIÊNG CẤP THÀNH PHỐ:
+  Đối với cấp Thành phố, phần Ngoại ngữ gồm 02 lớp điều kiện:
+  (A) Điều kiện ngoại ngữ cơ bản: chứng chỉ ngoại ngữ B1 trở lên hoặc điểm học phần ngoại ngữ đạt ngưỡng theo quy chế.
+  (B) Điều kiện bổ sung ngoại ngữ: sinh viên phải đạt thêm 01 trong 02 tiêu chí sau:
+      (1) Có giấy chứng nhận tham gia ít nhất 01 hoạt động giao lưu quốc tế, hội nghị/hội thảo quốc tế, chương trình gặp gỡ/giao lưu/hợp tác với thanh niên, sinh viên quốc tế trong và ngoài nước.
+      (2) Đạt giải Ba trở lên tại cuộc thi về kiến thức hội nhập hoặc cuộc thi học thuật bằng ngoại ngữ từ cấp Trường trở lên.
+
+  LƯU Ý QUAN TRỌNG:
+  - Nếu minh chứng là chứng chỉ ngoại ngữ hoặc điểm học phần ngoại ngữ, hãy phân loại là subCriteria = "ngoaiNgu".
+  - Nếu minh chứng là hoạt động giao lưu quốc tế, hội nghị quốc tế, hội thảo quốc tế, chương trình hợp tác/giao lưu với sinh viên quốc tế, hãy phân loại là subCriteria = "hoiNhap" và hoiNhapEvidenceType = "international_exchange".
+  - Nếu minh chứng là giải Ba trở lên tại cuộc thi kiến thức hội nhập hoặc cuộc thi học thuật bằng ngoại ngữ từ cấp Trường trở lên, hãy phân loại là subCriteria = "hoiNhap" và hoiNhapEvidenceType = "foreign_language_academic_competition_award_truong_or_above".
+  - Tuy các minh chứng này được dùng để hoàn thành điều kiện bổ sung của phần Ngoại ngữ cấp Thành phố, nhưng không được ép chúng thành subCriteria = "ngoaiNgu" nếu bản chất là hoạt động hội nhập hoặc cuộc thi hội nhập.`
     : ""
 }
 

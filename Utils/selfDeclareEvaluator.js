@@ -82,6 +82,27 @@ function evaluateDaoDucSelfDeclare(awardLevel, data = {}) {
     };
   }
 
+  if (awardLevel === "trung_uong") {
+  const isCompleted =
+    trainingScore >= 95 &&
+    noLawViolation &&
+    noRuleViolation;
+
+  return {
+    isCompleted,
+    trainingScore,
+    trainingScorePassed: trainingScore >= 95,
+    requiredTrainingScore: 95,
+    noLawViolation,
+    noRuleViolation,
+    excellentUnionMember,
+    reason: isCompleted
+      ? `Đạt điều kiện Đạo đức tốt cấp Trung ương. Điểm rèn luyện ${trainingScore}/100 đạt yêu cầu tối thiểu 95/100 và không vi phạm pháp luật/quy chế.`
+      : `Chưa đạt Đạo đức tốt cấp Trung ương: cần điểm rèn luyện từ 95 trở lên và xác nhận không vi phạm pháp luật, quy chế, nội quy của nhà trường, địa phương và cộng đồng.`
+  };
+}
+
+
   return {
     isCompleted: false,
     trainingScore,
@@ -138,6 +159,20 @@ function getRequiredGpaForHocTap(awardLevel, data = {}) {
           note: "Cấp Thành phố - hệ Đại học/Học viện"
         };
   }
+
+  if (awardLevel === "trung_uong") {
+  return gpaScale === "10"
+    ? {
+        requiredValue: 8.5,
+        requiredText: "8.5/10",
+        note: "Cấp Trung ương - hệ Đại học/Trường Đại học/Học viện"
+      }
+    : {
+        requiredValue: 3.4,
+        requiredText: "3.4/4.0",
+        note: "Cấp Trung ương - hệ Đại học/Trường Đại học/Học viện"
+      };
+}
 
   return {
     requiredValue: null,
@@ -228,15 +263,19 @@ function evaluateNgoaiNguCourseScore(awardLevel, data = {}) {
   let requiredValue = null;
   let requiredText = "";
 
-  if (awardLevel === "truong" || awardLevel === "dhqg") {
-    if (scoreScale === "10") {
-      requiredValue = 8.5;
-      requiredText = "8.5/10";
-    } else {
-      requiredValue = 3.4;
-      requiredText = "3.4/4.0";
-    }
+  if (
+  awardLevel === "truong" ||
+  awardLevel === "dhqg" ||
+  awardLevel === "trung_uong"
+) {
+  if (scoreScale === "10") {
+    requiredValue = 8.5;
+    requiredText = "8.5/10";
+  } else {
+    requiredValue = 3.4;
+    requiredText = "3.4/4.0";
   }
+}
 
   if (awardLevel === "thanh") {
     if (scoreScale === "10") {
