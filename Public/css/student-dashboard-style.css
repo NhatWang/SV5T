@@ -895,3 +895,38 @@ tr:hover td { background: var(--gray-50); }
     border-radius: 14px;
   }
 }
+
+.upload-file-note {
+  margin: 12px 0 16px;
+  padding: 13px 15px;
+
+  border: 1px solid rgba(11, 61, 145, 0.14);
+  border-left: 4px solid var(--blue-deep, #163d8f);
+  border-radius: 12px;
+
+  background: rgba(232, 240, 254, 0.65);
+  color: #1f2937;
+
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.upload-file-note strong {
+  color: var(--blue-deep, #163d8f);
+  font-weight: 900;
+}
+
+.upload-file-note code {
+  display: inline-block;
+  margin: 2px 3px;
+  padding: 2px 6px;
+
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(11, 61, 145, 0.12);
+
+  color: #0f172a;
+  font-family: inherit;
+  font-weight: 800;
+}

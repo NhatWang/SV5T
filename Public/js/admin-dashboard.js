@@ -2,6 +2,8 @@ let adminUsername = "";
 let adminRole = "";
 let adminClassName = "";
 let currentCentralStudentId = "";
+let currentStudentDetailData = null;
+let currentStudentDetailLevel = "truong";
 
 const categoryLabels = {
   daoDucTot: "Đạo đức tốt",
@@ -107,6 +109,10 @@ function showAdminTab(tabId, button) {
     btn.classList.remove("active");
   });
 
+  document.querySelectorAll(".sidebar-submenu button").forEach((btn) => {
+    btn.classList.remove("active");
+  });
+
   const tab = document.getElementById(tabId);
 
   if (tab) {
@@ -117,17 +123,124 @@ function showAdminTab(tabId, button) {
     button.classList.add("active");
   }
 
+  const uploadTabs = [
+    "uploadStudents",
+    "uploadClassAdmins",
+    "uploadActivities"
+  ];
+
+  const uploadMenu = document.getElementById("uploadDataMenu");
+  const uploadArrow = document.getElementById("uploadMenuArrow");
+
+  if (uploadTabs.includes(tabId)) {
+    if (uploadMenu) {
+      uploadMenu.classList.add("open");
+    }
+
+    if (uploadArrow) {
+      uploadArrow.textContent = "▴";
+    }
+
+    if (button) {
+      button.classList.add("active");
+    }
+  }
+
   if (tabId === "centralEvidenceTab") {
     loadCentralEvidences();
   }
 }
+
+async function loadClassSelectorForSuperAdmin() {
+  if (adminRole !== "super_admin") return;
+
+  const picker = document.getElementById("superAdminClassPicker");
+  const select = document.getElementById("superAdminClassSelect");
+  const table = document.getElementById("studentsTable");
+
+  if (picker) {
+    picker.classList.remove("hidden");
+  }
+
+  if (!select) return;
+
+  select.innerHTML = `<option value="">Chọn lớp cần xem</option>`;
+
+  try {
+    const res = await fetch("/api/admin-dashboard/classes/summary", {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      if (table) {
+        table.innerHTML = `
+          <tr>
+            <td colspan="5">Không thể tải danh sách lớp.</td>
+          </tr>
+        `;
+      }
+      return;
+    }
+
+    const summaries = data.summaries || [];
+
+    summaries.forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item.className;
+      option.textContent = item.className;
+      select.appendChild(option);
+    });
+
+    if (table) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="5">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
+        </tr>
+      `;
+    }
+  } catch (error) {
+    console.error("Load class selector error:", error);
+
+    if (table) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="5">Không thể kết nối server khi tải danh sách lớp.</td>
+        </tr>
+      `;
+    }
+  }
+}
+
+function handleSuperAdminClassChange() {
+  const select = document.getElementById("superAdminClassSelect");
+
+  if (!select || !select.value) {
+    const table = document.getElementById("studentsTable");
+
+    if (table) {
+      table.innerHTML = `
+        <tr>
+          <td colspan="5">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
+        </tr>
+      `;
+    }
+
+    return;
+  }
+
+  loadClassStudents(select.value);
+}
+
+window.handleSuperAdminClassChange = handleSuperAdminClassChange;
 
 function setupSuperAdminView() {
   const studentsTabBtn = document.getElementById("studentsTabBtn");
   const studentsTab = document.getElementById("students");
 
   if (studentsTabBtn) {
-    studentsTabBtn.style.display = "none";
+    studentsTabBtn.style.display = "block";
     studentsTabBtn.classList.remove("active");
   }
 
@@ -137,6 +250,8 @@ function setupSuperAdminView() {
 
   const overviewBtn = document.getElementById("overviewTabBtn");
   showAdminTab("overview", overviewBtn);
+
+  loadClassSelectorForSuperAdmin();
 }
 
 function initAdminDashboard() {
@@ -222,7 +337,6 @@ function initAdminDashboard() {
 
     setupSuperAdminView();
 
-    loadClassSummary();
     loadAllEvidences();
     loadAllCollectiveProgress();
     loadUploadedActivities();
@@ -256,12 +370,19 @@ async function loadClassStudents(className) {
       const row = document.createElement("tr");
 
       row.innerHTML = `
-        <td>${student.studentId}</td>
-        <td>${student.fullName}</td>
-        <td>${student.className}</td>
-        <td>${student.totalCompletedCriteria}/5 (${student.progressPercent}%)</td>
-        <td>${formatSv5tStatus(student.sv5tStatus)}</td>
-      `;
+  <td>${escapeHtml(student.studentId)}</td>
+  <td>
+    <button
+      class="student-detail-link"
+      onclick="openStudentDetail('${escapeHtml(student.studentId)}')"
+    >
+      ${escapeHtml(student.fullName)}
+    </button>
+  </td>
+  <td>${escapeHtml(student.className)}</td>
+  <td>${student.totalCompletedCriteria}/5 (${student.progressPercent}%)</td>
+  <td>${formatSv5tStatus(student.sv5tStatus)}</td>
+`;
 
       table.appendChild(row);
     });
@@ -458,48 +579,6 @@ async function loadAllCollectiveProgress() {
   }
 }
 
-async function loadClassSummary() {
-  try {
-    const res = await fetch("/api/admin-dashboard/classes/summary", {
-      credentials: "include"
-    });
-
-    const data = await res.json();
-    const table = document.getElementById("classSummaryTable");
-
-    if (!table) return;
-
-    table.innerHTML = "";
-
-    if (!data.success || data.summaries.length === 0) {
-      table.innerHTML = `<tr><td colspan="5">Chưa có dữ liệu lớp.</td></tr>`;
-      return;
-    }
-
-    data.summaries.forEach((item) => {
-      const row = document.createElement("tr");
-
-      row.innerHTML = `
-        <td>${item.className}</td>
-        <td>${item.totalStudents}</td>
-        <td>${item.completedStudents}</td>
-        <td>${item.completedPercent}%</td>
-        <td>
-          ${
-            item.collectiveProgress?.isCollectiveAchieved
-              ? `<span class="status-note success">Đạt</span>`
-              : `<span class="status-note warning">Chưa đạt</span>`
-          }
-        </td>
-      `;
-
-      table.appendChild(row);
-    });
-  } catch (error) {
-    console.error("Load class summary error:", error);
-  }
-}
-
 async function loadAllEvidences() {
   try {
     const awardLevel =
@@ -638,6 +717,117 @@ function formatKyNangEvidenceType(value) {
   return "Không áp dụng";
 }
 
+function shouldShowManualEvidenceFields(evidence) {
+  const confidence = Number(evidence.aiResult?.confidence || 0);
+  const isValid = evidence.aiResult?.isValid;
+
+  const matchedType = String(evidence.aiResult?.matchedType || "")
+    .trim()
+    .toLowerCase();
+
+  const unknownMatchedType =
+    !matchedType ||
+    matchedType.includes("không xác định") ||
+    matchedType.includes("khong xac dinh") ||
+    matchedType.includes("unknown");
+
+  return isValid !== true || confidence < 70 || unknownMatchedType;
+}
+
+function renderManualEvidenceFields(evidence) {
+  if (!shouldShowManualEvidenceFields(evidence)) {
+    return "";
+  }
+
+  if (evidence.category === "hoiNhapTot") {
+    return `
+      <div class="manual-evidence-fields">
+        <label>Admin chọn nhóm Hội nhập</label>
+        <select class="manual-subcriteria-select">
+          <option value="">Chọn nhóm</option>
+          <option value="ngoaiNgu">Ngoại ngữ</option>
+          <option value="kyNang">Kỹ năng</option>
+          <option value="hoiNhap">Hoạt động hội nhập</option>
+        </select>
+
+        <label>Loại minh chứng ngoại ngữ nếu chọn Ngoại ngữ</label>
+<select class="manual-foreign-language-select">
+  <option value="">Không áp dụng</option>
+  <option value="course_score">Điểm học phần ngoại ngữ</option>
+  <option value="language_certificate">Chứng chỉ ngoại ngữ</option>
+  <option value="international_exchange">Giao lưu quốc tế / hội nghị / hội thảo quốc tế</option>
+  <option value="integration_competition_award">Giải cuộc thi kiến thức hội nhập</option>
+  <option value="foreign_language_academic_competition_award">Giải cuộc thi học thuật bằng ngoại ngữ</option>
+</select>
+
+        <label>Loại kỹ năng nếu chọn Kỹ năng</label>
+        <select class="manual-ky-nang-select">
+          <option value="">Không áp dụng</option>
+          <option value="skill_course">Khóa kỹ năng thực hành xã hội</option>
+          <option value="skill_competition_award_khoa_or_above">Giải cuộc thi kỹ năng từ cấp Khoa trở lên</option>
+          <option value="skill_competition_award_truong_or_above">Giải cuộc thi kỹ năng từ cấp Trường trở lên</option>
+          <option value="skill_reporter_khoa_or_above">Báo cáo viên lớp kỹ năng từ cấp Khoa trở lên</option>
+          <option value="skill_reporter_truong_or_above">Báo cáo viên lớp kỹ năng từ cấp Trường trở lên</option>
+          <option value="union_association_award_truong_or_above">Khen thưởng Đoàn/Hội từ cấp Trường trở lên</option>
+          <option value="student_leader_competition_finalist_truong_or_above">Chung kết thủ lĩnh sinh viên cấp Trường trở lên</option>
+        </select>
+
+        <label>Loại hoạt động hội nhập nếu chọn Hoạt động hội nhập</label>
+        <select class="manual-hoi-nhap-select">
+          <option value="">Không áp dụng</option>
+          <option value="international_exchange">Giao lưu quốc tế / hội nghị / hội thảo quốc tế</option>
+          <option value="integration_competition_khoa_or_above">Cuộc thi tìm hiểu văn hóa/hội nhập từ cấp Khoa trở lên</option>
+          <option value="integration_competition_award_truong_or_above">Giải Ba trở lên cuộc thi kiến thức hội nhập từ cấp Trường trở lên</option>
+          <option value="foreign_language_academic_competition_award_truong_or_above">Giải Ba trở lên cuộc thi học thuật bằng ngoại ngữ</option>
+          <option value="official_international_program_member">Thành viên chính thức chương trình quốc tế</option>
+          <option value="international_program_volunteer">Tình nguyện viên chương trình quốc tế</option>
+          <option value="integration_activity_truong_or_above">Hoạt động hội nhập từ cấp Trường trở lên</option>
+        </select>
+      </div>
+    `;
+  }
+
+  if (evidence.category === "hocTapTot") {
+    return `
+      <div class="manual-evidence-fields">
+        <label>Admin chọn loại minh chứng học tập</label>
+        <select class="manual-academic-type-select">
+          <option value="">Chọn loại học tập</option>
+          <option value="hocThuat_3_activities">Hoạt động học thuật 1/3</option>
+          <option value="nghienCuu">Nghiên cứu khoa học / khóa luận</option>
+          <option value="sangTao">Ý tưởng sáng tạo / nghiên cứu</option>
+          <option value="troGiang">Trợ giảng</option>
+          <option value="baiBao">Bài báo / tham luận</option>
+          <option value="doiTuyen">Đội tuyển học thuật</option>
+          <option value="khac_direct">Minh chứng học thuật đạt trực tiếp</option>
+        </select>
+      </div>
+    `;
+  }
+
+  if (evidence.category === "tinhNguyenTot") {
+    return `
+      <div class="manual-evidence-fields">
+        <label>Số ngày tình nguyện admin xác nhận</label>
+        <input
+          class="manual-volunteer-days-input"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="Ví dụ: 5"
+        />
+
+        <label>
+          <input class="manual-volunteer-award-checkbox" type="checkbox" />
+          Có khen thưởng / xác nhận tình nguyện
+        </label>
+      </div>
+    `;
+  }
+
+  return "";
+}
+
 function renderEvidenceActions(evidence) {
   if (evidence.status === "approved_by_admin") {
     return `<span class="status-note success">Đã duyệt</span>`;
@@ -652,6 +842,8 @@ function renderEvidenceActions(evidence) {
   }
 
   return `
+    ${renderManualEvidenceFields(evidence)}
+
     <button onclick="reviewEvidence('${evidence._id}', 'approved_by_admin', this)">
       Duyệt
     </button>
@@ -670,6 +862,29 @@ async function reviewEvidence(evidenceId, status, buttonElement) {
   const note = prompt("Nhập ghi chú duyệt minh chứng:", "");
 
   try {
+
+    const row = buttonElement?.closest("tr");
+
+const manualSubCriteria =
+  row?.querySelector(".manual-subcriteria-select")?.value || "";
+
+const manualForeignLanguageEvidenceType =
+  row?.querySelector(".manual-foreign-language-select")?.value || "";
+
+const manualKyNangEvidenceType =
+  row?.querySelector(".manual-ky-nang-select")?.value || "";
+
+const manualHoiNhapEvidenceType =
+  row?.querySelector(".manual-hoi-nhap-select")?.value || "";
+
+const manualAcademicEvidenceType =
+  row?.querySelector(".manual-academic-type-select")?.value || "";
+
+const manualVolunteerDays =
+  row?.querySelector(".manual-volunteer-days-input")?.value || "";
+
+const manualHasVolunteerAward =
+  row?.querySelector(".manual-volunteer-award-checkbox")?.checked || false;
     const res = await fetch(
       `/api/admin-dashboard/evidences/${evidenceId}/review`,
       {
@@ -679,10 +894,20 @@ async function reviewEvidence(evidenceId, status, buttonElement) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          status,
-          note: note || "",
-          reviewedBy: adminUsername
-        })
+  status,
+  note: note || "",
+  reviewedBy: adminUsername,
+
+manualReview: {
+  subCriteria: manualSubCriteria,
+  foreignLanguageEvidenceType: manualForeignLanguageEvidenceType,
+  kyNangEvidenceType: manualKyNangEvidenceType,
+  hoiNhapEvidenceType: manualHoiNhapEvidenceType,
+  academicEvidenceType: manualAcademicEvidenceType,
+  volunteerDays: manualVolunteerDays,
+  hasVolunteerAward: manualHasVolunteerAward
+}
+})
       }
     );
 
@@ -701,7 +926,6 @@ async function reviewEvidence(evidenceId, status, buttonElement) {
     }
 
     if (adminRole === "super_admin") {
-      loadClassSummary();
       loadAllCollectiveProgress();
     }
   } catch (error) {
@@ -774,7 +998,6 @@ async function uploadStudentsExcel() {
       }
 
       if (adminRole === "super_admin") {
-        loadClassSummary();
         loadAllCollectiveProgress();
       }
     }
@@ -830,7 +1053,6 @@ async function uploadActivitiesExcel() {
     }
 
     if (adminRole === "super_admin") {
-      await loadClassSummary();
       await loadAllCollectiveProgress();
     }
   } catch (error) {
@@ -895,7 +1117,6 @@ async function updateCollectiveEvaluation() {
     message.className = "msg-success";
 
     if (adminRole === "super_admin") {
-      await loadClassSummary();
       await loadAllCollectiveProgress();
     }
 
@@ -1074,7 +1295,6 @@ async function deleteUploadedActivity(activityId) {
       }
 
       if (adminRole === "super_admin") {
-        await loadClassSummary();
         await loadAllCollectiveProgress();
       }
     }
@@ -1437,6 +1657,531 @@ function formatAdditionalCriteriaKey(key) {
 function formatDate(value) {
   return formatDateSafe(value);
 }
+
+function toggleUploadMenu() {
+  const menu = document.getElementById("uploadDataMenu");
+  const arrow = document.getElementById("uploadMenuArrow");
+
+  if (!menu) return;
+
+  menu.classList.toggle("open");
+
+  if (arrow) {
+    arrow.textContent = menu.classList.contains("open") ? "▴" : "▾";
+  }
+}
+
+window.toggleUploadMenu = toggleUploadMenu;
+window.showAdminTab = showAdminTab;
+
+async function openStudentDetail(studentId) {
+  const modal = document.getElementById("studentDetailModal");
+  const title = document.getElementById("studentDetailTitle");
+  const subtitle = document.getElementById("studentDetailSubtitle");
+  const body = document.getElementById("studentDetailBody");
+
+  if (!modal || !body) return;
+
+  modal.classList.remove("hidden");
+  currentStudentDetailLevel = "truong";
+
+  title.textContent = "Chi tiết sinh viên";
+  subtitle.textContent = `MSSV: ${studentId}`;
+  body.innerHTML = "Đang tải dữ liệu...";
+
+  try {
+    const res = await fetch(
+      `/api/admin-dashboard/students/${encodeURIComponent(studentId)}/sv5t-detail`,
+      {
+        credentials: "include"
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+      body.innerHTML = `
+        <p class="msg-error">${escapeHtml(data.message || "Không thể tải chi tiết sinh viên.")}</p>
+      `;
+      return;
+    }
+
+    renderStudentDetailModal(data);
+  } catch (error) {
+    console.error("Open student detail error:", error);
+
+    body.innerHTML = `
+      <p class="msg-error">Không thể kết nối server.</p>
+    `;
+  }
+}
+
+function closeStudentDetailModal() {
+  const modal = document.getElementById("studentDetailModal");
+
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+function renderStudentDetailModal(data) {
+  currentStudentDetailData = data;
+
+  const title = document.getElementById("studentDetailTitle");
+  const subtitle = document.getElementById("studentDetailSubtitle");
+  const body = document.getElementById("studentDetailBody");
+
+  const student = data.student || {};
+  const details = data.details || {};
+
+  if (title) {
+    title.textContent = student.fullName || "Chi tiết sinh viên";
+  }
+
+  if (subtitle) {
+    subtitle.textContent =
+      `MSSV: ${student.studentId || ""} • Lớp: ${student.className || "Chưa cập nhật"} • Tiến độ cấp Trường: ${data.completedCount || 0}/5 (${data.progressPercent || 0}%)`;
+  }
+
+  if (!body) return;
+
+  body.innerHTML = `
+    ${renderStudentLevelTabs()}
+
+    <div class="student-detail-grid">
+      ${Object.keys(categoryLabels)
+        .map((category) => {
+          return renderStudentCategoryDetail(
+            category,
+            details[category] || {},
+            currentStudentDetailLevel
+          );
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderStudentLevelTabs() {
+  const levelList = [
+    {
+      key: "truong",
+      label: "Cấp Trường"
+    },
+    {
+      key: "dhqg",
+      label: "Cấp ĐHQG-HCM"
+    },
+    {
+      key: "thanh",
+      label: "Cấp Thành phố"
+    },
+    {
+      key: "trung_uong",
+      label: "Cấp Trung ương"
+    }
+  ];
+
+  return `
+    <div class="student-level-tabs">
+      ${levelList
+        .map((level) => {
+          const active = currentStudentDetailLevel === level.key;
+
+          return `
+            <button
+              type="button"
+              class="student-level-tab ${active ? "active" : ""}"
+              onclick="setStudentDetailLevel('${level.key}')"
+            >
+              ${escapeHtml(level.label)}
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function setStudentDetailLevel(level) {
+  currentStudentDetailLevel = level;
+
+  if (currentStudentDetailData) {
+    renderStudentDetailModal(currentStudentDetailData);
+  }
+}
+
+window.setStudentDetailLevel = setStudentDetailLevel;
+
+function renderLevelProgress(levels = {}) {
+  const levelList = [
+    {
+      key: "truong",
+      label: "Cấp Trường"
+    },
+    {
+      key: "dhqg",
+      label: "Cấp ĐHQG-HCM"
+    },
+    {
+      key: "thanh",
+      label: "Cấp Thành phố"
+    },
+    {
+      key: "trung_uong",
+      label: "Cấp Trung ương"
+    }
+  ];
+
+  return `
+    <div class="student-level-progress">
+      ${levelList
+        .map((level) => {
+          const item = levels[level.key] || {};
+          const completed = item.isCompleted === true;
+
+          return `
+            <div class="student-level-chip ${completed ? "completed" : "missing"}">
+              <span class="student-level-name">${escapeHtml(level.label)}</span>
+              <span class="student-level-status">
+                ${completed ? "Đạt" : "Chưa đạt"}
+              </span>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderStudentCategoryDetail(category, detail, selectedLevel = "truong") {
+  const levelData = detail.levels?.[selectedLevel] || {};
+  const isCompleted = levelData.isCompleted === true;
+
+  return `
+    <div class="student-category-card ${isCompleted ? "completed" : "missing"}">
+      <div class="student-category-header">
+        <div>
+          <h3>${escapeHtml(categoryLabels[category] || category)}</h3>
+          <p class="student-category-level-label">
+            ${escapeHtml(levelData.label || formatModalAwardLevel(selectedLevel))}
+          </p>
+        </div>
+
+        <span class="status-pill ${isCompleted ? "success" : "warning"}">
+          ${isCompleted ? "Đạt" : "Chưa đạt"}
+        </span>
+      </div>
+
+      ${renderSingleLevelDetailBlock(levelData, category)}
+    </div>
+  `;
+}
+
+function renderSingleLevelDetailBlock(item = {}, category = "") {
+  return `
+    <div class="student-level-detail-card single-level-card ${item.isCompleted ? "completed" : "missing"}">
+      <div class="student-level-detail-header">
+        <div>
+          <h5>${escapeHtml(item.label || "Cấp xét")}</h5>
+          <p>${renderCompletedByText(item.completedBy)}</p>
+        </div>
+
+        <span class="student-level-status-pill ${item.isCompleted ? "success" : "warning"}">
+          ${item.isCompleted ? "Đạt" : "Chưa đạt"}
+        </span>
+      </div>
+
+      <div class="student-level-detail-content">
+      ${category === "tinhNguyenTot" ? renderVolunteerSummary(item) : ""}
+        <div class="student-level-section">
+          <h6>Dữ liệu sinh viên tự khai ở cấp này</h6>
+          ${renderDeclarationBlock(item.declaration)}
+        </div>
+
+        <div class="student-level-section">
+          <h6>Hoạt động được tính ở cấp này</h6>
+          ${renderActivityList(item.activities || [])}
+        </div>
+
+        <div class="student-level-section">
+          <h6>Minh chứng đã được duyệt ở cấp này</h6>
+          ${renderEvidenceList(item.approvedEvidences || [])}
+        </div>
+
+        <div class="student-level-section">
+          <h6>Minh chứng khác ở cấp này</h6>
+          ${renderEvidenceList(item.otherEvidences || [])}
+        </div>
+
+        <div class="student-level-section">
+          <h6>Còn thiếu ở cấp này</h6>
+          ${renderMissingList(item.missingItems || [])}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderVolunteerSummary(item = {}) {
+  const progress = item.progress || {};
+
+  const volunteerDays =
+    Number(progress.volunteerDays || item.volunteerDays || 0);
+
+  const hasVolunteerAward =
+    progress.hasVolunteerAward === true || item.hasVolunteerAward === true;
+
+  return `
+    <div class="student-level-section">
+      <h6>Tổng quan tình nguyện</h6>
+
+      <div class="volunteer-summary-grid">
+        <div class="volunteer-summary-card">
+          <span>Số ngày tình nguyện ghi nhận</span>
+          <strong>${volunteerDays}</strong>
+        </div>
+
+        <div class="volunteer-summary-card">
+          <span>Khen thưởng / xác nhận tình nguyện</span>
+          <strong>${hasVolunteerAward ? "Có" : "Chưa có"}</strong>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function formatModalAwardLevel(level) {
+  if (level === "truong") return "Cấp Trường";
+  if (level === "dhqg") return "Cấp ĐHQG-HCM";
+  if (level === "thanh") return "Cấp Thành phố";
+  if (level === "trung_uong") return "Cấp Trung ương";
+  return "Cấp xét";
+}
+
+function renderCompletedByText(value) {
+  const map = {
+    system: "Hoàn thành từ dữ liệu hệ thống",
+    activity: "Hoàn thành từ hoạt động admin upload",
+    evidence: "Hoàn thành từ minh chứng",
+    activity_and_evidence: "Hoàn thành từ hoạt động và minh chứng",
+    reference_school: "Tham chiếu từ cấp Trường",
+    reference_lower_level: "Tham chiếu từ cấp trước",
+    admin_approved_evidence: "Admin đã duyệt minh chứng",
+    admin_approved_mandatory_evidence: "Admin đã duyệt minh chứng bắt buộc",
+    reference_and_evidence: "Tham chiếu và minh chứng",
+    reference_and_activity_or_evidence: "Tham chiếu và hoạt động/minh chứng",
+    none: "Chưa có nguồn hoàn thành"
+  };
+
+  return escapeHtml(map[value] || "Chưa có nguồn hoàn thành");
+}
+
+function renderActivityList(activities) {
+  if (!activities || activities.length === 0) {
+    return `<p class="empty-note">Chưa có hoạt động được ghi nhận.</p>`;
+  }
+
+  return `
+    <div class="student-detail-list">
+      ${activities
+        .map((activity) => {
+          return `
+            <div class="student-detail-item">
+              <strong>${escapeHtml(activity.title || "Hoạt động")}</strong>
+              <br>
+              <small>
+                Cấp tổ chức: ${escapeHtml(formatOrganizerLevel(activity.organizerLevel))}
+                • Ngày: ${formatDateSafe(activity.date)}
+              </small>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderEvidenceList(evidences) {
+  if (!evidences || evidences.length === 0) {
+    return `<p class="empty-note">Chưa có minh chứng.</p>`;
+  }
+
+  return `
+    <div class="student-detail-list">
+      ${evidences
+        .map((evidence) => {
+          const fileUrl = evidence.fileUrl
+            ? evidence.fileUrl
+            : evidence.filePath
+            ? `/${String(evidence.filePath).replace(/\\/g, "/")}`
+            : "";
+
+          return `
+            <div class="student-detail-item">
+              <strong>${escapeHtml(evidence.fileName || "Minh chứng")}</strong>
+              <br>
+              <small>
+                Trạng thái: ${escapeHtml(formatEvidenceStatus(evidence.status))}
+                • Ngày nộp: ${formatDateSafe(evidence.createdAt)}
+              </small>
+              ${
+                fileUrl
+                  ? `<br><a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer">Xem file</a>`
+                  : ""
+              }
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderMissingList(items) {
+  if (!items || items.length === 0) {
+    return `<p class="empty-note">Không còn thiếu mục nào trong tiêu chí này.</p>`;
+  }
+
+  return `
+    <ul class="missing-list">
+      ${items
+        .map((item) => {
+          return `<li>${escapeHtml(item)}</li>`;
+        })
+        .join("")}
+    </ul>
+  `;
+}
+
+function renderDeclarationBlock(declaration) {
+  if (
+    !declaration ||
+    !Array.isArray(declaration.groups) ||
+    declaration.groups.length === 0
+  ) {
+    return `<p class="empty-note">Chưa có dữ liệu tự khai.</p>`;
+  }
+
+  return `
+    <div class="student-declaration-card">
+      <div class="student-declaration-title">
+        ${escapeHtml(declaration.title || "Dữ liệu tự khai")}
+      </div>
+
+      <div class="student-declaration-groups">
+        ${declaration.groups
+          .map((group) => {
+            return `
+              <div class="student-declaration-group">
+                <div class="student-declaration-group-header">
+                  <div>
+                    <strong>${escapeHtml(formatDeclarationType(group.title))}</strong>
+                    <small>
+                      ${group.declaredAt ? `Ngày khai: ${formatDateSafe(group.declaredAt)}` : "Chưa cập nhật ngày khai"}
+                    </small>
+                  </div>
+
+                  <span class="student-level-status-pill ${group.isCompleted ? "success" : "warning"}">
+                    ${group.isCompleted ? "Đạt" : "Chưa đạt"}
+                  </span>
+                </div>
+
+                ${
+                  group.reason
+                    ? `<p class="student-declaration-reason">${escapeHtml(group.reason)}</p>`
+                    : ""
+                }
+
+                ${
+                  Array.isArray(group.items) && group.items.length > 0
+                    ? `
+                      <div class="student-declaration-grid">
+                        ${group.items
+                          .map((item) => {
+                            return `
+                              <div class="student-declaration-item">
+                                <span>${escapeHtml(formatDeclarationLabel(item.label))}</span>
+                                <strong>${escapeHtml(formatDeclarationDisplayValue(item.value))}</strong>
+                              </div>
+                            `;
+                          })
+                          .join("")}
+                      </div>
+                    `
+                    : `<p class="empty-note">Không có dữ liệu chi tiết.</p>`
+                }
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function formatDeclarationType(type) {
+  const map = {
+    mandatory: "Điều kiện bắt buộc",
+    extra: "Điều kiện bổ sung",
+
+    dao_duc_mandatory: "Đạo đức tốt - Điều kiện bắt buộc",
+    hoc_tap_mandatory: "Học tập tốt - Điều kiện bắt buộc",
+
+    foreign_language_course_score: "Điểm học phần tiếng Anh",
+    foreign_language_certificate: "Chứng chỉ ngoại ngữ",
+    foreign_language_basic: "Ngoại ngữ cơ bản",
+    foreign_language_extra: "Điều kiện bổ sung ngoại ngữ",
+
+    ky_nang: "Kỹ năng",
+    hoi_nhap: "Hoạt động hội nhập",
+
+    volunteer_days: "Số ngày tình nguyện",
+    volunteer_award: "Khen thưởng tình nguyện"
+  };
+
+  return map[type] || type || "Tự khai";
+}
+
+function formatDeclarationLabel(label) {
+  const map = {
+    trainingScore: "Điểm rèn luyện",
+    noLawViolation: "Không vi phạm pháp luật",
+    noRuleViolation: "Không vi phạm quy chế/nội quy",
+    excellentUnionMember: "Đoàn viên/Hội viên xuất sắc",
+
+    gpa: "GPA",
+    gpaScale: "Thang điểm GPA",
+    gpaValue: "Điểm GPA",
+    studentType: "Loại sinh viên",
+    properLearningAttitude: "Thái độ học tập đúng đắn",
+    noFailedSubjects: "Không nợ môn",
+    noAcademicViolation: "Không vi phạm học thuật",
+
+    scoreScale: "Thang điểm ngoại ngữ",
+    scoreValue: "Điểm ngoại ngữ",
+    confirmed: "Đã xác nhận",
+
+    foreignLanguageScore: "Điểm học phần ngoại ngữ",
+    foreignLanguageCertificate: "Chứng chỉ ngoại ngữ",
+
+    volunteerDays: "Số ngày tình nguyện",
+    hasVolunteerAward: "Có khen thưởng/xác nhận tình nguyện"
+  };
+
+  return map[label] || label || "Tự khai";
+}
+
+function formatDeclarationDisplayValue(value) {
+  if (value === true) return "Có";
+  if (value === false) return "Không";
+  if (value === null || value === undefined || value === "") return "Chưa khai";
+
+  return String(value);
+}
+
+window.openStudentDetail = openStudentDetail;
+window.closeStudentDetailModal = closeStudentDetailModal;
 
 async function logoutAdmin() {
   try {

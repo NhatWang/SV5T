@@ -269,6 +269,498 @@ async function recomputeSchoolProgressAfterEvidence(evidence) {
   }
 }
 
+async function recomputeHigherLevelProgressAfterEvidence(evidence) {
+  if (!evidence || !["dhqg", "thanh"].includes(evidence.awardLevel)) {
+    return;
+  }
+
+  const student = await Student.findOne({
+    studentId: evidence.studentId
+  });
+
+  if (!student) return;
+
+  const level = evidence.awardLevel;
+
+  const activities = await Activity.find({
+    "participants.studentId": evidence.studentId,
+    $or: [
+      {
+        eligibleAwardLevels: level
+      },
+      {
+        eligibleAwardLevels: {
+          $exists: false
+        },
+        awardLevel: level
+      }
+    ]
+  }).lean();
+
+  const evidences = await Evidence.find({
+    studentId: evidence.studentId,
+    $or: [
+      {
+        awardLevel: level
+      },
+      {
+        awardLevel: "truong",
+        category: {
+          $in: ["hocTapTot", "theLucTot", "tinhNguyenTot", "hoiNhapTot"]
+        },
+        status: "approved_by_admin"
+      }
+    ]
+  }).lean();
+
+  const validEvidences = evidences.filter((item) => {
+    return item.status === "approved_by_admin";
+  });
+
+  const storedProgress = {};
+
+  categories.forEach((category) => {
+    const relatedActivities = activities.filter((activity) => {
+      return activity.category === category;
+    });
+
+    const relatedEvidences = validEvidences.filter((item) => {
+      return item.category === category;
+    });
+
+    const hasActivity = relatedActivities.length > 0;
+    const hasApprovedEvidence = relatedEvidences.length > 0;
+
+    let isCompleted = false;
+    let completedBy = "none";
+
+    if (category === "daoDucTot") {
+      isCompleted = student.sv5tProgress?.daoDucTot?.isCompleted === true;
+      completedBy = isCompleted ? "reference_school" : "none";
+    }
+
+    if (category === "hocTapTot") {
+      isCompleted =
+        student.sv5tProgress?.hocTapTot?.isCompleted === true &&
+        (hasActivity || hasApprovedEvidence);
+
+      completedBy = isCompleted ? "reference_and_evidence" : "none";
+    }
+
+    if (category === "theLucTot") {
+      isCompleted = hasActivity || hasApprovedEvidence;
+      completedBy = hasActivity ? "activity" : hasApprovedEvidence ? "evidence" : "none";
+    }
+
+    if (category === "tinhNguyenTot") {
+      let volunteerDays = 0;
+      let hasVolunteerAward = false;
+
+      relatedEvidences.forEach((item) => {
+        volunteerDays += Number(item.aiResult?.volunteerDays || 0);
+
+        const matchedType = String(item.aiResult?.matchedType || "").toLowerCase();
+
+        if (
+          item.aiResult?.hasVolunteerAward === true ||
+          matchedType.includes("giấy khen") ||
+          matchedType.includes("khen thưởng")
+        ) {
+          hasVolunteerAward = true;
+        }
+      });
+
+      relatedActivities.forEach((activity) => {
+        const participant = (activity.participants || []).find((p) => {
+          return String(p.studentId) === String(evidence.studentId);
+        });
+
+        volunteerDays +=
+          Number(participant?.volunteerDays || 0) ||
+          Number(activity.volunteerDays || 0);
+
+        const title = String(activity.title || "").toLowerCase();
+
+        if (
+          participant?.isVolunteerAward === true ||
+          activity.isVolunteerAward === true ||
+          title.includes("khen thưởng") ||
+          title.includes("giấy khen") ||
+          title.includes("giay khen") ||
+          title.includes("khen thuong")
+        ) {
+          hasVolunteerAward = true;
+        }
+      });
+
+      if (level === "thanh") {
+        isCompleted = hasVolunteerAward && volunteerDays >= 5;
+      } else {
+        isCompleted = hasVolunteerAward || volunteerDays >= 5;
+      }
+
+      completedBy = isCompleted
+        ? hasActivity && hasApprovedEvidence
+          ? "activity_and_evidence"
+          : hasActivity
+          ? "activity"
+          : "evidence"
+        : "none";
+
+      storedProgress[category] = {
+        isCompleted,
+        completedBy,
+        completedAt: isCompleted ? new Date() : null,
+        volunteerDays,
+        hasVolunteerAward
+      };
+
+      return;
+    }
+
+    if (category === "hoiNhapTot") {
+      const schoolHoiNhap = student.sv5tProgress?.hoiNhapTot || {};
+      isCompleted = schoolHoiNhap.isCompleted === true || hasActivity || hasApprovedEvidence;
+
+      completedBy = isCompleted
+        ? hasActivity && hasApprovedEvidence
+          ? "activity_and_evidence"
+          : hasActivity
+          ? "activity"
+          : hasApprovedEvidence
+          ? "evidence"
+          : "reference_school"
+        : "none";
+    }
+
+    storedProgress[category] = {
+      isCompleted,
+      completedBy,
+      completedAt: isCompleted ? new Date() : null
+    };
+  });
+
+  const completedCount = categories.filter((category) => {
+    return storedProgress[category]?.isCompleted === true;
+  }).length;
+
+  const progressPercent = Math.round((completedCount / 5) * 100);
+
+  if (level === "dhqg") {
+    student.dhqgProgress = storedProgress;
+    student.markModified("dhqgProgress");
+  }
+
+  if (level === "thanh") {
+    student.thanhProgress = storedProgress;
+    student.markModified("thanhProgress");
+  }
+
+  student.higherLevelStatus = student.higherLevelStatus || {};
+
+  student.higherLevelStatus[level] = {
+    completedCount,
+    progressPercent,
+    isCompleted: completedCount === 5,
+    updatedAt: new Date()
+  };
+
+  student.markModified("higherLevelStatus");
+
+  await student.save();
+}
+
+async function recomputeCentralProgressAfterEvidence(evidence) {
+  if (!evidence || evidence.awardLevel !== "trung_uong") {
+    return;
+  }
+
+  const student = await Student.findOne({
+    studentId: evidence.studentId
+  });
+
+  if (!student) return;
+
+  const centralEvidences = await Evidence.find({
+    studentId: evidence.studentId,
+    awardLevel: "trung_uong"
+  }).lean();
+
+  const centralProgress = {};
+
+  categories.forEach((category) => {
+    const previousProgress = student.centralProgress?.[category] || {};
+
+    const hasApprovedMandatoryEvidence = centralEvidences.some((item) => {
+      return (
+        item.category === category &&
+        item.status === "approved_by_admin" &&
+        (
+          item.evidenceType === "central_mandatory" ||
+          item.evidenceType === "default" ||
+          !item.evidenceType
+        )
+      );
+    });
+
+    const referencePassed = previousProgress.referencePassed === true;
+
+    const isCompleted = referencePassed || hasApprovedMandatoryEvidence;
+
+    centralProgress[category] = {
+      isCompleted,
+      completedBy: isCompleted
+        ? referencePassed
+          ? "reference_lower_level"
+          : "admin_approved_mandatory_evidence"
+        : "none",
+      completedAt: isCompleted ? new Date() : null,
+
+      adminApproved: hasApprovedMandatoryEvidence,
+      referencePassed,
+
+      status: isCompleted
+        ? referencePassed
+          ? "completed_by_reference"
+          : "completed_by_admin"
+        : "missing_reference"
+    };
+  });
+
+  const approvedAdditionalKeys = new Set();
+
+  centralEvidences.forEach((item) => {
+    if (
+      item.evidenceType === "central_additional" &&
+      item.status === "approved_by_admin"
+    ) {
+      const key =
+        item.additionalCriteriaKey ||
+        item.centralAdditionalKey ||
+        item.criteriaKey ||
+        "";
+
+      if (key) {
+        approvedAdditionalKeys.add(key);
+      }
+    }
+  });
+
+  const completedCount = categories.filter((category) => {
+    return centralProgress[category]?.isCompleted === true;
+  }).length;
+
+  const progressPercent = Math.round((completedCount / 5) * 100);
+
+  const additionalCriteriaCount = approvedAdditionalKeys.size;
+
+  const additionalProgressPercent = Math.round(
+    (Math.min(additionalCriteriaCount, 2) / 2) * 100
+  );
+
+  student.centralProgress = centralProgress;
+
+  student.centralSummary = {
+    mandatoryCompletedCount: completedCount,
+    mandatoryProgressPercent: progressPercent,
+    additionalCriteriaCount,
+    additionalProgressPercent,
+    isCentralQualified:
+      completedCount === 5 && additionalCriteriaCount >= 2,
+    updatedAt: new Date()
+  };
+
+  student.markModified("centralProgress");
+  student.markModified("centralSummary");
+
+  await student.save();
+}
+
+async function recomputeHigherLevelProgressForStudent(studentId, level) {
+  if (!studentId || !["dhqg", "thanh"].includes(level)) {
+    return;
+  }
+
+  const student = await Student.findOne({
+    studentId
+  });
+
+  if (!student) return;
+
+  const activities = await Activity.find({
+    "participants.studentId": studentId,
+    eligibleAwardLevels: level
+  }).lean();
+
+  const evidences = await Evidence.find({
+    studentId,
+    awardLevel: level,
+    status: "approved_by_admin"
+  }).lean();
+
+  const storedProgress = {};
+
+  categories.forEach((category) => {
+    const relatedActivities = activities.filter((activity) => {
+      return activity.category === category;
+    });
+
+    const relatedEvidences = evidences.filter((item) => {
+      return item.category === category;
+    });
+
+    const hasActivity = relatedActivities.length > 0;
+    const hasApprovedEvidence = relatedEvidences.length > 0;
+
+    let isCompleted = false;
+    let completedBy = "none";
+
+    if (category === "daoDucTot") {
+      isCompleted = student.sv5tProgress?.daoDucTot?.isCompleted === true;
+      completedBy = isCompleted ? "reference_school" : "none";
+    }
+
+    if (category === "hocTapTot") {
+      isCompleted =
+        student.sv5tProgress?.hocTapTot?.isCompleted === true &&
+        (hasActivity || hasApprovedEvidence);
+
+      completedBy = isCompleted ? "reference_and_activity_or_evidence" : "none";
+    }
+
+    if (category === "theLucTot") {
+      isCompleted = hasActivity || hasApprovedEvidence;
+      completedBy = hasActivity
+        ? "activity"
+        : hasApprovedEvidence
+        ? "evidence"
+        : "none";
+    }
+
+    if (category === "tinhNguyenTot") {
+      let volunteerDays = 0;
+      let hasVolunteerAward = false;
+
+      relatedEvidences.forEach((item) => {
+        volunteerDays += Number(item.aiResult?.volunteerDays || 0);
+
+        const matchedType = String(item.aiResult?.matchedType || "").toLowerCase();
+
+        if (
+          item.aiResult?.hasVolunteerAward === true ||
+          matchedType.includes("giấy khen") ||
+          matchedType.includes("khen thưởng") ||
+          matchedType.includes("giay khen") ||
+          matchedType.includes("khen thuong")
+        ) {
+          hasVolunteerAward = true;
+        }
+      });
+
+      relatedActivities.forEach((activity) => {
+        const participant = (activity.participants || []).find((p) => {
+          return String(p.studentId) === String(studentId);
+        });
+
+        volunteerDays +=
+          Number(participant?.volunteerDays || 0) ||
+          Number(activity.volunteerDays || 0);
+
+        const title = String(activity.title || "").toLowerCase();
+
+        if (
+          participant?.isVolunteerAward === true ||
+          activity.isVolunteerAward === true ||
+          title.includes("khen thưởng") ||
+          title.includes("giấy khen") ||
+          title.includes("giay khen") ||
+          title.includes("khen thuong")
+        ) {
+          hasVolunteerAward = true;
+        }
+      });
+
+      if (level === "thanh") {
+        isCompleted = hasVolunteerAward && volunteerDays >= 5;
+      } else {
+        isCompleted = hasVolunteerAward || volunteerDays >= 5;
+      }
+
+      completedBy = isCompleted
+        ? hasActivity && hasApprovedEvidence
+          ? "activity_and_evidence"
+          : hasActivity
+          ? "activity"
+          : "evidence"
+        : "none";
+
+      storedProgress[category] = {
+        isCompleted,
+        completedBy,
+        completedAt: isCompleted ? new Date() : null,
+        volunteerDays,
+        hasVolunteerAward
+      };
+
+      return;
+    }
+
+    if (category === "hoiNhapTot") {
+      const schoolHoiNhap = student.sv5tProgress?.hoiNhapTot || {};
+
+      isCompleted =
+        schoolHoiNhap.isCompleted === true ||
+        hasActivity ||
+        hasApprovedEvidence;
+
+      completedBy = isCompleted
+        ? hasActivity && hasApprovedEvidence
+          ? "activity_and_evidence"
+          : hasActivity
+          ? "activity"
+          : hasApprovedEvidence
+          ? "evidence"
+          : "reference_school"
+        : "none";
+    }
+
+    storedProgress[category] = {
+      isCompleted,
+      completedBy,
+      completedAt: isCompleted ? new Date() : null
+    };
+  });
+
+  const completedCount = categories.filter((category) => {
+    return storedProgress[category]?.isCompleted === true;
+  }).length;
+
+  const progressPercent = Math.round((completedCount / 5) * 100);
+
+  if (level === "dhqg") {
+    student.dhqgProgress = storedProgress;
+    student.markModified("dhqgProgress");
+  }
+
+  if (level === "thanh") {
+    student.thanhProgress = storedProgress;
+    student.markModified("thanhProgress");
+  }
+
+  student.higherLevelStatus = student.higherLevelStatus || {};
+
+  student.higherLevelStatus[level] = {
+    completedCount,
+    progressPercent,
+    isCompleted: completedCount === 5,
+    updatedAt: new Date()
+  };
+
+  student.markModified("higherLevelStatus");
+
+  await student.save();
+}
+
 async function evaluateCollectiveTitle(
   className,
   totalStudents,
@@ -494,10 +986,15 @@ function normalizeHoiNhapEvidenceType(value) {
 router.get(
   "/class/:className/students",
   requireAdminAuth,
-  requireClassPermission,
   async (req, res) => {
     try {
       const { className } = req.params;
+      if (req.admin.role === "admin" && req.admin.className !== className) {
+  return res.status(403).json({
+    success: false,
+    message: "Bạn chỉ được xem danh sách sinh viên của lớp mình."
+  });
+}
 
       const students = await Student.find({ className }).select("-password");
 
@@ -634,6 +1131,402 @@ router.get(
     }
   }
 );
+
+router.get(
+  "/students/:studentId/sv5t-detail",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const studentId = req.params.studentId;
+
+      const student = await Student.findOne({
+        studentId
+      }).select("-password");
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy sinh viên."
+        });
+      }
+
+      if (
+        req.admin.role === "admin" &&
+        student.className !== req.admin.className
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Bạn không có quyền xem sinh viên ngoài lớp mình."
+        });
+      }
+
+      const activities = await Activity.find({
+        "participants.studentId": studentId
+      })
+        .sort({ date: -1 })
+        .lean();
+
+      const evidences = await Evidence.find({
+        studentId
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const categoryKeys = [
+        "daoDucTot",
+        "hocTapTot",
+        "theLucTot",
+        "tinhNguyenTot",
+        "hoiNhapTot"
+      ];
+
+      const missingMap = {
+        daoDucTot: [
+          "Cần hoàn tất điều kiện điểm rèn luyện và xác nhận không vi phạm.",
+          "Nếu thiếu dữ liệu hệ thống, sinh viên cần tự khai hoặc nộp minh chứng phù hợp."
+        ],
+
+        hocTapTot: [
+          "Cần đạt điều kiện học tập bắt buộc.",
+          "Cần có minh chứng học thuật hoặc hoạt động học thuật phù hợp."
+        ],
+
+        theLucTot: [
+          "Cần có hoạt động thể thao, giải thể thao hoặc minh chứng thể lực phù hợp."
+        ],
+
+        tinhNguyenTot: [
+          "Cần đủ ngày tình nguyện hoặc minh chứng/khen thưởng tình nguyện phù hợp."
+        ],
+
+        hoiNhapTot: [
+          "Cần đủ 3 phần: ngoại ngữ, kỹ năng và hoạt động hội nhập."
+        ]
+      };
+
+      const levelKeys = ["truong", "dhqg", "thanh", "trung_uong"];
+
+      const levelLabels = {
+        truong: "Cấp Trường",
+        dhqg: "Cấp ĐHQG-HCM",
+        thanh: "Cấp Thành phố",
+        trung_uong: "Cấp Trung ương"
+      };
+
+      function getStudentProgressByLevel(student, level, category) {
+        if (level === "truong") {
+          return student.sv5tProgress?.[category] || {};
+        }
+
+        if (level === "dhqg") {
+          return student.dhqgProgress?.[category] || {};
+        }
+
+        if (level === "thanh") {
+          return student.thanhProgress?.[category] || {};
+        }
+
+        if (level === "trung_uong") {
+          return student.centralProgress?.[category] || {};
+        }
+
+        return {};
+      }
+
+      function getEvidenceForLevel(evidence, level) {
+        if (level === "truong") {
+          return evidence.awardLevel === "truong";
+        }
+
+        if (level === "dhqg") {
+          return evidence.awardLevel === "dhqg";
+        }
+
+        if (level === "thanh") {
+          return evidence.awardLevel === "thanh";
+        }
+
+        if (level === "trung_uong") {
+          return evidence.awardLevel === "trung_uong";
+        }
+
+        return false;
+      }
+
+      function getActivityForLevel(activity, level) {
+        const eligibleAwardLevels = Array.isArray(activity.eligibleAwardLevels)
+          ? activity.eligibleAwardLevels
+          : [];
+
+        if (eligibleAwardLevels.includes(level)) {
+          return true;
+        }
+
+        if (
+          eligibleAwardLevels.length === 0 &&
+          activity.awardLevel === level
+        ) {
+          return true;
+        }
+
+        return false;
+      }
+
+      function buildLevelMissingItems(category, level, levelProgress) {
+        const isCompleted = levelProgress?.isCompleted === true;
+
+        if (isCompleted) {
+          return [];
+        }
+
+        if (level === "truong") {
+          return missingMap[category] || [];
+        }
+
+        if (level === "dhqg") {
+          const dhqgMissingMap = {
+            daoDucTot: [
+              "Cần đạt Đạo đức tốt cấp Trường và đủ điều kiện tham chiếu lên cấp ĐHQG-HCM."
+            ],
+            hocTapTot: [
+              "Cần đạt Học tập tốt cấp Trường và có hoạt động/minh chứng học tập đủ điều kiện cấp ĐHQG-HCM."
+            ],
+            theLucTot: [
+              "Cần có hoạt động hoặc minh chứng thể lực đủ điều kiện cấp ĐHQG-HCM."
+            ],
+            tinhNguyenTot: [
+              "Cần có đủ ngày tình nguyện hoặc khen thưởng tình nguyện phù hợp cấp ĐHQG-HCM."
+            ],
+            hoiNhapTot: [
+              "Cần đạt đủ điều kiện Hội nhập tốt theo quy định cấp ĐHQG-HCM."
+            ]
+          };
+
+          return dhqgMissingMap[category] || [];
+        }
+
+        if (level === "thanh") {
+          const thanhMissingMap = {
+            daoDucTot: [
+              "Cần đạt Đạo đức tốt cấp Trường và đủ điều kiện tham chiếu lên cấp Thành phố."
+            ],
+            hocTapTot: [
+              "Cần đạt Học tập tốt cấp Trường và có hoạt động/minh chứng học tập đủ điều kiện cấp Thành phố."
+            ],
+            theLucTot: [
+              "Cần có hoạt động hoặc minh chứng thể lực đủ điều kiện cấp Thành phố."
+            ],
+            tinhNguyenTot: [
+              "Cấp Thành phố yêu cầu vừa đủ ít nhất 05 ngày tình nguyện, vừa có khen thưởng/xác nhận tình nguyện phù hợp."
+            ],
+            hoiNhapTot: [
+              "Cần đạt đủ 3 phần Hội nhập tốt: Ngoại ngữ, Kỹ năng và Hoạt động hội nhập theo quy định cấp Thành phố."
+            ]
+          };
+
+          return thanhMissingMap[category] || [];
+        }
+
+        if (level === "trung_uong") {
+          const centralMissingMap = {
+            daoDucTot: [
+              "Cần đạt tiêu chuẩn bắt buộc Đạo đức tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
+            ],
+            hocTapTot: [
+              "Cần đạt tiêu chuẩn bắt buộc Học tập tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
+            ],
+            theLucTot: [
+              "Cần đạt tiêu chuẩn bắt buộc Thể lực tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
+            ],
+            tinhNguyenTot: [
+              "Cần đạt tiêu chuẩn bắt buộc Tình nguyện tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
+            ],
+            hoiNhapTot: [
+              "Cần đạt tiêu chuẩn bắt buộc Hội nhập tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
+            ]
+          };
+
+          return centralMissingMap[category] || [];
+        }
+
+        return [];
+      }
+
+function formatDeclarationValue(value) {
+  if (value === true) return "Có";
+  if (value === false) return "Không";
+  if (value === null || value === undefined || value === "") return "Chưa khai";
+
+  return value;
+}
+
+function getSelfDeclarationsByCategoryAndLevel(student, category, level) {
+  return (student.selfDeclarations || []).filter((item) => {
+    return item.category === category && item.awardLevel === level;
+  });
+}
+
+function formatDeclarationValue(value) {
+  if (value === true) return "Có";
+  if (value === false) return "Không";
+  if (value === null || value === undefined || value === "") return "Chưa khai";
+
+  return String(value);
+}
+
+function buildDeclarationForLevel(student, category, level) {
+  const declarations = getSelfDeclarationsByCategoryAndLevel(
+    student,
+    category,
+    level
+  );
+
+  if (!declarations.length) {
+    return {
+      title: "Dữ liệu sinh viên tự khai",
+      groups: []
+    };
+  }
+
+  const groups = declarations.map((declaration) => {
+    const data = declaration.data || {};
+
+    const items = Object.keys(data).map((key) => {
+      return {
+        label: key,
+        value: formatDeclarationValue(data[key])
+      };
+    });
+
+    return {
+      title:
+        declaration.type ||
+        declaration.subCriteria ||
+        "Tự khai",
+      awardLevel: declaration.awardLevel || level,
+      category: declaration.category || category,
+      subCriteria: declaration.subCriteria || "",
+      type: declaration.type || "",
+      isCompleted: declaration.isCompleted === true,
+      reason: declaration.reason || "",
+      declaredAt: declaration.declaredAt || null,
+      items
+    };
+  });
+
+  return {
+    title: "Dữ liệu sinh viên tự khai",
+    groups
+  };
+}
+
+      const details = {};
+
+      categoryKeys.forEach((category) => {
+        const progress = student.sv5tProgress?.[category] || {};
+        const isCompleted = progress.isCompleted === true;
+
+        const categoryActivities = activities.filter((activity) => {
+          return activity.category === category;
+        });
+
+        const categoryEvidences = evidences.filter((evidence) => {
+          return evidence.category === category;
+        });
+
+        const levels = {};
+
+        levelKeys.forEach((level) => {
+          const levelProgress = getStudentProgressByLevel(
+            student,
+            level,
+            category
+          );
+
+          const levelActivities = categoryActivities.filter((activity) => {
+            return getActivityForLevel(activity, level);
+          });
+
+          const levelEvidences = categoryEvidences.filter((evidence) => {
+            return getEvidenceForLevel(evidence, level);
+          });
+
+          const approvedEvidences = levelEvidences.filter((evidence) => {
+            return ["approved_by_admin", "ai_valid"].includes(evidence.status);
+          });
+
+          const otherEvidences = levelEvidences.filter((evidence) => {
+            return !["approved_by_admin", "ai_valid"].includes(evidence.status);
+          });
+
+          levels[level] = {
+  level,
+  label: levelLabels[level],
+  isCompleted: levelProgress.isCompleted === true,
+  completedBy: levelProgress.completedBy || "none",
+  completedAt: levelProgress.completedAt || null,
+  progress: levelProgress,
+
+  declaration: buildDeclarationForLevel(student, category, level),
+
+  activities: levelActivities,
+  approvedEvidences,
+  otherEvidences,
+
+  missingItems: buildLevelMissingItems(
+    category,
+    level,
+    levelProgress
+  )
+};
+        });
+
+        details[category] = {
+          isCompleted,
+          completedBy: progress.completedBy || "none",
+          completedAt: progress.completedAt || null,
+
+          progress,
+          levels,
+
+          activities: categoryActivities,
+
+          approvedEvidences: categoryEvidences.filter((evidence) => {
+            return ["approved_by_admin", "ai_valid"].includes(evidence.status);
+          }),
+          declaration: buildDeclarationForLevel(student, category, level),
+
+          otherEvidences: categoryEvidences.filter((evidence) => {
+            return !["approved_by_admin", "ai_valid"].includes(evidence.status);
+          }),
+
+          missingItems: isCompleted ? [] : missingMap[category]
+        };
+      });
+
+      return res.json({
+        success: true,
+        student: {
+          studentId: student.studentId,
+          fullName: student.fullName,
+          className: student.className,
+          sv5tStatus: student.sv5tStatus
+        },
+        completedCount: student.totalCompletedCriteria || 0,
+        progressPercent: student.progressPercent || 0,
+        details
+      });
+    } catch (error) {
+      console.error("Get student SV5T detail error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy chi tiết hồ sơ sinh viên."
+      });
+    }
+  }
+);
+
 
 // ===============================
 // 3. SUPER ADMIN: XEM TIẾN ĐỘ TẤT CẢ LỚP
@@ -937,102 +1830,110 @@ router.post(
         const studentId = getCellValue(row, "studentId");
         const fullName = getCellValue(row, "fullName");
         const className = getCellValue(row, "className");
-        const kyNangEvidenceType = normalizeKyNangEvidenceType(row.kyNangEvidenceType ||row["Loại minh chứng kỹ năng"] ||row["Loai minh chung ky nang"] ||row["Loại kỹ năng"] ||row["Loai ky nang"]);
+
+        const kyNangEvidenceType = normalizeKyNangEvidenceType(
+          row.kyNangEvidenceType ||
+            row["Loại minh chứng kỹ năng"] ||
+            row["Loai minh chung ky nang"] ||
+            row["Loại kỹ năng"] ||
+            row["Loai ky nang"]
+        );
+
         const hoiNhapEvidenceType = normalizeHoiNhapEvidenceType(
           row.hoiNhapEvidenceType ||
-          row["Loại minh chứng hội nhập"] ||
-          row["Loai minh chung hoi nhap"] ||
-          row["Loại hoạt động hội nhập"] ||
-          row["Loai hoat dong hoi nhap"]
+            row["Loại minh chứng hội nhập"] ||
+            row["Loai minh chung hoi nhap"] ||
+            row["Loại hoạt động hội nhập"] ||
+            row["Loai hoat dong hoi nhap"]
         );
+
         const isVolunteerAward = parseBooleanCell(
           row.isVolunteerAward ||
-          row["isVolunteerAward"] ||
-          row["Khen thưởng tình nguyện"] ||
-          row["Khen thuong tinh nguyen"]
+            row["isVolunteerAward"] ||
+            row["Khen thưởng tình nguyện"] ||
+            row["Khen thuong tinh nguyen"]
         );
 
-       if (!title || !category || !studentId) {
-  errors.push({
-    row,
-    reason: "Thiếu title, category hoặc studentId"
-  });
-  continue;
-}
+        if (!title || !category || !studentId) {
+          errors.push({
+            row,
+            reason: "Thiếu title, category hoặc studentId"
+          });
+          continue;
+        }
 
-if (!organizerLevelRaw) {
-  errors.push({
-    row,
-    reason:
-      "Thiếu organizerLevel. Vui lòng nhập cấp tổ chức: bo_mon, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
-  });
-  continue;
-}
+        if (!organizerLevelRaw) {
+          errors.push({
+            row,
+            reason:
+              "Thiếu organizerLevel. Vui lòng nhập cấp tổ chức: bo_mon, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
+          });
+          continue;
+        }
 
-if (organizerLevel === "khac") {
-  errors.push({
-    row,
-    reason:
-      "organizerLevel không hợp lệ. Chỉ được dùng: bo_mon, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
-  });
-  continue;
-}
+        if (organizerLevel === "khac") {
+          errors.push({
+            row,
+            reason:
+              "organizerLevel không hợp lệ. Chỉ được dùng: bo_mon, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
+          });
+          continue;
+        }
 
-if (!categories.includes(category)) {
-  errors.push({
-    row,
-    reason:
-      "category không hợp lệ. Chỉ được dùng: daoDucTot, hocTapTot, theLucTot, tinhNguyenTot, hoiNhapTot"
-  });
-  continue;
-}
+        if (!categories.includes(category)) {
+          errors.push({
+            row,
+            reason:
+              "category không hợp lệ. Chỉ được dùng: daoDucTot, hocTapTot, theLucTot, tinhNguyenTot, hoiNhapTot"
+          });
+          continue;
+        }
 
-if (req.admin.role === "admin" && className !== req.admin.className) {
-  errors.push({
-    row,
-    reason: `Admin lớp ${req.admin.className} không được upload hoạt động cho lớp ${className}`
-  });
-  continue;
-}
+        if (req.admin.role === "admin" && className !== req.admin.className) {
+          errors.push({
+            row,
+            reason: `Admin lớp ${req.admin.className} không được upload hoạt động cho lớp ${className}`
+          });
+          continue;
+        }
 
-if (
-  category === "hoiNhapTot" &&
-  !hoiNhapSubCriteria.includes(subCriteria)
-) {
-  errors.push({
-    row,
-    reason:
-      "Hoạt động Hội nhập tốt bắt buộc có subCriteria hợp lệ: ngoaiNgu, kyNang hoặc hoiNhap"
-  });
-  continue;
-}
+        if (
+          category === "hoiNhapTot" &&
+          !hoiNhapSubCriteria.includes(subCriteria)
+        ) {
+          errors.push({
+            row,
+            reason:
+              "Hoạt động Hội nhập tốt bắt buộc có subCriteria hợp lệ: ngoaiNgu, kyNang hoặc hoiNhap"
+          });
+          continue;
+        }
 
-if (
-  category === "hoiNhapTot" &&
-  subCriteria === "kyNang" &&
-  !kyNangEvidenceType
-) {
-  errors.push({
-    row,
-    reason:
-      "Hoạt động Hội nhập tốt - Kỹ năng bắt buộc có Loại minh chứng kỹ năng hợp lệ."
-  });
-  continue;
-}
+        if (
+          category === "hoiNhapTot" &&
+          subCriteria === "kyNang" &&
+          !kyNangEvidenceType
+        ) {
+          errors.push({
+            row,
+            reason:
+              "Hoạt động Hội nhập tốt - Kỹ năng bắt buộc có Loại minh chứng kỹ năng hợp lệ."
+          });
+          continue;
+        }
 
-if (
-  category === "hoiNhapTot" &&
-  subCriteria === "hoiNhap" &&
-  !hoiNhapEvidenceType
-) {
-  errors.push({
-    row,
-    reason:
-      "Hoạt động Hội nhập tốt - Hoạt động hội nhập bắt buộc có Loại minh chứng hội nhập hợp lệ."
-  });
-  continue;
-}
-
+        if (
+          category === "hoiNhapTot" &&
+          subCriteria === "hoiNhap" &&
+          !hoiNhapEvidenceType
+        ) {
+          errors.push({
+            row,
+            reason:
+              "Hoạt động Hội nhập tốt - Hoạt động hội nhập bắt buộc có Loại minh chứng hội nhập hợp lệ."
+          });
+          continue;
+        }
 
         const eligibleAwardLevels = inferEligibleAwardLevels({
           category,
@@ -1128,26 +2029,38 @@ if (
 
           if (!student) continue;
 
-          if (!item.eligibleAwardLevels.includes("truong")) {
-            continue;
+          if (item.eligibleAwardLevels.includes("truong")) {
+            if (item.category === "hocTapTot") {
+              await recomputeHocTapProgress(participant.studentId);
+            } else if (item.category === "tinhNguyenTot") {
+              await recomputeTinhNguyenProgress(participant.studentId);
+            } else if (item.category === "hoiNhapTot") {
+              await recomputeHoiNhapProgress(participant.studentId);
+            } else {
+              if (student.sv5tProgress?.[item.category]) {
+                student.sv5tProgress[item.category].isCompleted = true;
+                student.sv5tProgress[item.category].completedBy = "activity";
+                student.sv5tProgress[item.category].completedAt = new Date();
+
+                updateStudentProgressSummary(student);
+
+                await student.save();
+              }
+            }
           }
 
-          if (item.category === "hocTapTot") {
-            await recomputeHocTapProgress(participant.studentId);
-          } else if (item.category === "tinhNguyenTot") {
-            await recomputeTinhNguyenProgress(participant.studentId);
-          } else if (item.category === "hoiNhapTot") {
-            await recomputeHoiNhapProgress(participant.studentId);
-          } else {
-            if (!student.sv5tProgress?.[item.category]) continue;
+          if (item.eligibleAwardLevels.includes("dhqg")) {
+            await recomputeHigherLevelProgressForStudent(
+              participant.studentId,
+              "dhqg"
+            );
+          }
 
-            student.sv5tProgress[item.category].isCompleted = true;
-            student.sv5tProgress[item.category].completedBy = "activity";
-            student.sv5tProgress[item.category].completedAt = new Date();
-
-            updateStudentProgressSummary(student);
-
-            await student.save();
+          if (item.eligibleAwardLevels.includes("thanh")) {
+            await recomputeHigherLevelProgressForStudent(
+              participant.studentId,
+              "thanh"
+            );
           }
         }
       }
@@ -1260,7 +2173,7 @@ router.patch(
   async (req, res) => {
     try {
       const { evidenceId } = req.params;
-      const { status, note, reviewedBy } = req.body;
+      const { status, note, reviewedBy, manualReview = {} } = req.body;
 
       const validStatuses = [
         "approved_by_admin",
@@ -1313,6 +2226,37 @@ router.patch(
         note: note || ""
       };
 
+      if (status === "approved_by_admin") {
+  evidence.aiResult = evidence.aiResult || {};
+
+  if (manualReview.subCriteria) {
+    evidence.aiResult.subCriteria = manualReview.subCriteria;
+  }
+
+  if (manualReview.kyNangEvidenceType) {
+    evidence.aiResult.kyNangEvidenceType = manualReview.kyNangEvidenceType;
+  }
+
+  if (manualReview.hoiNhapEvidenceType) {
+    evidence.aiResult.hoiNhapEvidenceType = manualReview.hoiNhapEvidenceType;
+  }
+
+  if (manualReview.academicEvidenceType) {
+    evidence.aiResult.academicEvidenceType = manualReview.academicEvidenceType;
+  }
+
+  if (manualReview.volunteerDays !== "") {
+    evidence.aiResult.volunteerDays = Number(manualReview.volunteerDays || 0);
+  }
+
+  if (manualReview.hasVolunteerAward === true) {
+    evidence.aiResult.hasVolunteerAward = true;
+  }
+
+  evidence.aiResult.manualOverrideByAdmin = true;
+  evidence.markModified("aiResult");
+} 
+
       await evidence.save();
 
       if (status === "rejected_by_admin") {
@@ -1335,10 +2279,15 @@ router.patch(
       }
 
       if (status === "approved_by_admin") {
-        await archiveEvidenceToR2FromAdmin(evidence);
+        if (manualReview.foreignLanguageEvidenceType) {
+  evidence.aiResult.foreignLanguageEvidenceType =
+    manualReview.foreignLanguageEvidenceType;
+}
+  await archiveEvidenceToR2FromAdmin(evidence);
 
-        await recomputeSchoolProgressAfterEvidence(evidence);
-      }
+  await recomputeSchoolProgressAfterEvidence(evidence);
+  await recomputeHigherLevelProgressAfterEvidence(evidence);
+}
 
       res.json({
         success: true,
@@ -1462,74 +2411,95 @@ router.delete("/activities/:activityId", requireAdminAuth, async (req, res) => {
 
     const category = activity.category;
 
-const eligibleAwardLevels = Array.isArray(activity.eligibleAwardLevels)
-  ? activity.eligibleAwardLevels
-  : [];
+    const eligibleAwardLevels = Array.isArray(activity.eligibleAwardLevels)
+      ? activity.eligibleAwardLevels
+      : [];
 
-await Activity.findByIdAndDelete(activityId);
+    await Activity.findByIdAndDelete(activityId);
 
-for (const studentId of affectedStudentIds) {
-  if (!eligibleAwardLevels.includes("truong")) {
-    continue;
-  }
+    for (const studentId of affectedStudentIds) {
+      if (eligibleAwardLevels.includes("truong")) {
+        if (category === "hocTapTot") {
+          await recomputeHocTapProgress(studentId);
+        } else if (category === "tinhNguyenTot") {
+          await recomputeTinhNguyenProgress(studentId);
+        } else if (category === "hoiNhapTot") {
+          await recomputeHoiNhapProgress(studentId);
+        } else {
+          const student = await Student.findOne({ studentId });
 
-  if (category === "hocTapTot") {
-    await recomputeHocTapProgress(studentId);
-  } else if (category === "tinhNguyenTot") {
-    await recomputeTinhNguyenProgress(studentId);
-  } else if (category === "hoiNhapTot") {
-    await recomputeHoiNhapProgress(studentId);
-  } else {
-    const student = await Student.findOne({ studentId });
+          if (student && student.sv5tProgress?.[category]) {
+            const remainingActivity = await Activity.findOne({
+              category,
+              "participants.studentId": studentId,
+              $or: [
+                {
+                  eligibleAwardLevels: "truong"
+                },
+                {
+                  eligibleAwardLevels: {
+                    $exists: false
+                  },
+                  awardLevel: "truong"
+                }
+              ]
+            });
 
-    if (student && student.sv5tProgress?.[category]) {
-      const remainingActivity = await Activity.findOne({
-        category,
-        "participants.studentId": studentId,
-        $or: [
-          {
-            eligibleAwardLevels: "truong"
-          },
-          {
-            eligibleAwardLevels: {
-              $exists: false
-            },
-            awardLevel: "truong"
+            const remainingEvidence = await Evidence.findOne({
+              studentId,
+              category,
+              awardLevel: "truong",
+              status: {
+                $in: ["ai_valid", "approved_by_admin"]
+              }
+            });
+
+            if (!remainingActivity && !remainingEvidence) {
+              student.sv5tProgress[category].isCompleted = false;
+              student.sv5tProgress[category].completedBy = "none";
+              student.sv5tProgress[category].completedAt = null;
+            }
+
+            updateStudentProgressSummary(student);
+            await student.save();
           }
-        ]
-      });
-
-      const remainingEvidence = await Evidence.findOne({
-        studentId,
-        category,
-        awardLevel: "truong",
-        status: {
-          $in: ["ai_valid", "approved_by_admin"]
         }
-      });
-
-      if (!remainingActivity && !remainingEvidence) {
-        student.sv5tProgress[category].isCompleted = false;
-        student.sv5tProgress[category].completedBy = "none";
-        student.sv5tProgress[category].completedAt = null;
       }
 
-      updateStudentProgressSummary(student);
-      await student.save();
-    }
-  }
-}
+      if (eligibleAwardLevels.includes("dhqg")) {
+        await recomputeHigherLevelProgressForStudent(studentId, "dhqg");
+      }
 
-res.json({
-  success: true,
-  message: eligibleAwardLevels.includes("truong")
-    ? "Xóa hoạt động thành công và đã cập nhật lại tiến độ cấp Trường."
-    : "Xóa hoạt động thành công. Hoạt động này không được tính cho cấp Trường nên không cập nhật tiến độ cấp Trường."
-});
+      if (eligibleAwardLevels.includes("thanh")) {
+        await recomputeHigherLevelProgressForStudent(studentId, "thanh");
+      }
+    }
+
+    const updatedLevels = [];
+
+    if (eligibleAwardLevels.includes("truong")) {
+      updatedLevels.push("cấp Trường");
+    }
+
+    if (eligibleAwardLevels.includes("dhqg")) {
+      updatedLevels.push("cấp ĐHQG-HCM");
+    }
+
+    if (eligibleAwardLevels.includes("thanh")) {
+      updatedLevels.push("cấp Thành phố");
+    }
+
+    return res.json({
+      success: true,
+      message:
+        updatedLevels.length > 0
+          ? `Xóa hoạt động thành công và đã cập nhật lại tiến độ ${updatedLevels.join(", ")}.`
+          : "Xóa hoạt động thành công. Hoạt động này không được tính cho cấp xét nào nên không cập nhật tiến độ."
+    });
   } catch (error) {
     console.error("Delete uploaded activity error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Lỗi server khi xóa hoạt động"
     });
@@ -2050,8 +3020,7 @@ router.patch(
       }
 
       evidence.status =
-        action === "approve" ? "approved_by_admin" : "rejected";
-
+  action === "approve" ? "approved_by_admin" : "rejected_by_admin";
       evidence.adminReview = {
         reviewedBy: req.admin?.username || req.admin?.email || "admin",
         reviewedAt: new Date(),
@@ -2059,6 +3028,7 @@ router.patch(
       };
 
       await evidence.save();
+      await recomputeCentralProgressAfterEvidence(evidence);
 
       return res.json({
         success: true,

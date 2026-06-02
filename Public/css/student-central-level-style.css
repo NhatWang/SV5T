@@ -1227,3 +1227,77 @@ td a:hover {
   display: inline;
   margin-right: 6px;
 }
+
+.upload-file-note {
+  position: relative;
+
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  column-gap: 12px;
+
+  margin: 14px 0 20px;
+  padding: 16px 20px;
+
+  border: 1px solid rgba(255, 215, 0, 0.34);
+  border-left: 5px solid var(--vang-sao);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 244, 184, 0.74) 0%,
+      rgba(255, 252, 220, 0.54) 100%
+    );
+
+  color: #5a3400;
+
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.7;
+
+  box-shadow:
+    0 6px 18px rgba(107, 0, 17, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.upload-file-note::before {
+  content: "⚑";
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+  margin-top: 3px;
+
+  border-radius: 50%;
+  background: rgba(200, 16, 46, 0.08);
+  color: var(--do-soc);
+
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.upload-file-note strong {
+  color: var(--do-soc-dim);
+  font-weight: 900;
+}
+
+.upload-file-note code {
+  display: inline;
+  margin: 0 3px;
+  padding: 3px 7px;
+
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(212, 160, 23, 0.28);
+
+  color: var(--do-tham);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+
+  white-space: nowrap;
+}

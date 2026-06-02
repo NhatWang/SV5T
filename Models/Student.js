@@ -364,6 +364,26 @@ const studentSchema = new mongoose.Schema(
       default: "not_started"
     },
 
+    dhqgProgress: {
+  type: mongoose.Schema.Types.Mixed,
+  default: {}
+},
+
+thanhProgress: {
+  type: mongoose.Schema.Types.Mixed,
+  default: {}
+},
+
+centralProgress: {
+  type: mongoose.Schema.Types.Mixed,
+  default: {}
+},
+
+centralSummary: {
+  type: mongoose.Schema.Types.Mixed,
+  default: {}
+},
+
     // 6. Tiến độ cấp xét cao hơn: ĐHQG-HCM, Thành phố
 
     higherLevelStatus: {

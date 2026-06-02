@@ -1131,6 +1131,51 @@ if (category === "hoiNhapTot") {
     const progressPercent = Math.round((completedCount / 5) * 100);
     student.higherLevelStatus = student.higherLevelStatus || {};
 
+    const storedHigherLevelProgress = {};
+
+categories.forEach((category) => {
+  const item = progress[category] || {};
+
+  storedHigherLevelProgress[category] = {
+    isCompleted: item.isCompleted === true,
+    completedBy: item.completedBy || "none",
+    completedAt: item.completedAt || null,
+
+    volunteerDays: item.volunteerDays || 0,
+    hasVolunteerAward: item.hasVolunteerAward || false,
+
+    mandatoryPassed: item.mandatoryPassed || false,
+    mandatoryCompletedAt: item.mandatoryCompletedAt || null,
+
+    extraPassed: item.extraPassed || false,
+    extraCompletedAt: item.extraCompletedAt || null,
+
+    academicActivityCount: item.academicActivityCount || 0,
+    academicDirectPassed: item.academicDirectPassed || false,
+
+    subProgress: item.subProgress || {
+      ngoaiNgu: false,
+      kyNang: false,
+      hoiNhap: false
+    },
+
+    foreignLanguageProgress: item.foreignLanguageProgress || {
+      basePassed: false,
+      extraPassed: false
+    }
+  };
+});
+
+if (awardLevel === "dhqg") {
+  student.dhqgProgress = storedHigherLevelProgress;
+  student.markModified("dhqgProgress");
+}
+
+if (awardLevel === "thanh") {
+  student.thanhProgress = storedHigherLevelProgress;
+  student.markModified("thanhProgress");
+}
+
 student.higherLevelStatus[awardLevel] = {
   completedCount,
   progressPercent,
@@ -1138,6 +1183,7 @@ student.higherLevelStatus[awardLevel] = {
   updatedAt: new Date()
 };
 
+student.markModified("higherLevelStatus");
 await student.save();
 
     let aiSuggestions = await getAISuggestions(
@@ -1627,6 +1673,43 @@ CENTRAL_CATEGORIES.forEach((category) => {
 const progressPercent = Math.round(
   (completedCount / CENTRAL_CATEGORIES.length) * 100
 );
+
+const storedCentralProgress = {};
+
+CENTRAL_CATEGORIES.forEach((category) => {
+  const item = centralProgress[category] || {};
+
+  storedCentralProgress[category] = {
+    isCompleted: item.isCompleted === true,
+    completedBy: item.completedBy || "none",
+    completedAt: item.isCompleted ? new Date() : null,
+
+    status: item.status || "missing_reference",
+    referencePassed: item.referencePassed === true,
+    adminApproved: item.adminApproved === true,
+
+    label: item.label || CENTRAL_CATEGORY_LABELS[category] || category,
+    description: item.description || ""
+  };
+});
+
+student.centralProgress = storedCentralProgress;
+
+student.centralSummary = {
+  mandatoryCompletedCount: completedCount,
+  mandatoryProgressPercent: progressPercent,
+  additionalCriteriaCount,
+  additionalProgressPercent,
+  isCentralQualified:
+    completedCount === CENTRAL_CATEGORIES.length &&
+    additionalCriteriaCount >= 2,
+  updatedAt: new Date()
+};
+
+student.markModified("centralProgress");
+student.markModified("centralSummary");
+
+await student.save();
 
 const missingCategories = CENTRAL_CATEGORIES.filter((category) => {
   return centralProgress[category]?.isCompleted !== true;
