@@ -35,6 +35,10 @@
         Hội nhập tốt
       </button>
 
+      <button class="tab-btn" onclick="showTab('khac', this)">
+        Khác
+      </button>
+
       <button class="tab-btn" onclick="showTab('storage', this)">
         Kho lưu trữ
       </button>
@@ -144,10 +148,18 @@
             <small>Cần đạt Hoàn thành xuất sắc nhiệm vụ.</small>
           </div>
 
+          <<div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="khongViPhamPhapLuat" />
+              Tôi xác nhận không vi phạm pháp luật trong năm học
+              <span class="required">*</span>
+            </label>
+          </div>
+
           <div class="form-group">
             <label class="checkbox-label">
-              <input type="checkbox" id="khongViPham" />
-              Tôi xác nhận không vi phạm pháp luật, quy chế, nội quy của trường/lớp/địa phương trong năm học
+              <input type="checkbox" id="khongViPhamNoiQuy" />
+              Tôi xác nhận không vi phạm quy chế, nội quy của Nhà trường, lớp, địa phương và cộng đồng trong năm học
               <span class="required">*</span>
             </label>
           </div>
@@ -284,6 +296,21 @@
 </div>
         <div id="hoiNhapTotContent"></div>
       </section>
+
+      <section id="khac" class="tab-content">
+  <h1>Khác</h1>
+
+  <div class="upload-file-note">
+    <div>
+      <strong>Lưu ý:</strong>
+      Chỉ upload giấy chứng nhận hoặc bằng khen đạt danh hiệu Sinh viên 5 tốt các cấp ở những năm trước.
+      Ví dụ: Sinh viên 5 tốt cấp Trường 2 năm liền, Sinh viên 5 tốt cấp Khoa 3 năm liền,
+      hoặc Bằng khen của Giám đốc ĐHQG cho Sinh viên 5 tốt tiêu biểu.
+    </div>
+  </div>
+
+  <div id="khacContent"></div>
+</section>
 
       <!-- KHO LƯU TRỮ -->
       <section id="storage" class="tab-content">

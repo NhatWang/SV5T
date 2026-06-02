@@ -36,14 +36,16 @@ const categories = [
   "hocTapTot",
   "theLucTot",
   "tinhNguyenTot",
-  "hoiNhapTot"
+  "hoiNhapTot",
+  "khac"
 ];
 
 const uploadCategories = [
   "hocTapTot",
   "theLucTot",
   "tinhNguyenTot",
-  "hoiNhapTot"
+  "hoiNhapTot",
+  "khac"
 ];
 
 const categoryLabels = {
@@ -51,7 +53,8 @@ const categoryLabels = {
   hocTapTot: "Học tập tốt",
   theLucTot: "Thể lực tốt",
   tinhNguyenTot: "Tình nguyện tốt",
-  hoiNhapTot: "Hội nhập tốt"
+  hoiNhapTot: "Hội nhập tốt",
+  khac: "Khác"
 };
 
 function showTab(tabId, button) {
@@ -177,7 +180,15 @@ function renderSelfDeclarationInfo(data, category) {
 
         <ul>
           <li>Điểm rèn luyện: <strong>${trainingScore ?? "Chưa khai"}/100</strong></li>
-          <li>Không vi phạm pháp luật/quy chế: <strong>${declaration.data.noLawViolation && declaration.data.noRuleViolation ? "Có" : "Chưa xác nhận"}</strong></li>
+          <li>
+            Không vi phạm pháp luật:
+            <strong>${declaration.data.noLawViolation ? "Có" : "Chưa xác nhận"}</strong>
+          </li>
+
+          <li>
+            Không vi phạm quy chế/nội quy:
+            <strong>${declaration.data.noRuleViolation ? "Có" : "Chưa xác nhận"}</strong>
+          </li>
           <li>Đoàn viên/Hội viên hoàn thành xuất sắc: <strong>${declaration.data.excellentUnionMember ? "Có" : "Chưa đạt"}</strong></li>
           <li>Ngày khai: <strong>${declaredAt}</strong></li>
         </ul>
@@ -255,6 +266,11 @@ function renderCriterionTabs(data) {
     const container = document.getElementById(`${category}Content`);
 
     if (!container) return;
+
+    if (category === "khac") {
+  renderOtherEvidenceTab(container, data.evidences || []);
+  return;
+}
 
     const progressItem = data.progress[category];
 
@@ -617,10 +633,16 @@ function renderStorage(evidences) {
 // Form tự khai Đạo đức tốt
 // ===============================
 async function submitDaoDuc() {
-  const diemRenLuyen = document.getElementById("diemRenLuyen").value;
-  const danhGiaDoanVien = document.getElementById("danhGiaDoanVien").value;
-  const khongViPham = document.getElementById("khongViPham").checked;
-  const result = document.getElementById("daoDucResult");
+ const diemRenLuyen = document.getElementById("diemRenLuyen").value;
+const danhGiaDoanVien = document.getElementById("danhGiaDoanVien").value;
+
+const khongViPhamPhapLuat =
+  document.getElementById("khongViPhamPhapLuat")?.checked || false;
+
+const khongViPhamNoiQuy =
+  document.getElementById("khongViPhamNoiQuy")?.checked || false;
+
+const result = document.getElementById("daoDucResult");
 
   result.className = "declare-result";
   result.innerHTML = "Đang kiểm tra...";
@@ -631,7 +653,13 @@ async function submitDaoDuc() {
     result.innerHTML = "Vui lòng điền đầy đủ thông tin bắt buộc.";
     return;
   }
-
+  if (!khongViPhamPhapLuat || !khongViPhamNoiQuy) {
+  result.className = "declare-result result-error";
+  result.innerHTML =
+    "Vui lòng xác nhận đầy đủ điều kiện không vi phạm pháp luật và không vi phạm quy chế, nội quy.";
+  return;
+}
+  
   try {
     const res = await fetch("/api/student/declare/dao-duc", {
       method: "POST",
@@ -642,8 +670,10 @@ async function submitDaoDuc() {
       body: JSON.stringify({
         awardLevel: currentAwardLevel,
         trainingScore: Number(diemRenLuyen),
-        noLawViolation: khongViPham,
-        noRuleViolation: khongViPham,
+        noLawViolation: khongViPhamPhapLuat,
+        noRuleViolation: khongViPhamNoiQuy,
+        khongViPhamPhapLuat,
+        khongViPhamNoiQuy,
         excellentUnionMember: danhGiaDoanVien === "hoan_thanh_xuat_sac"
       })
     });
@@ -1218,4 +1248,148 @@ if (supportClassNameText) {
     classBox.innerHTML = `<p>Không thể kết nối server.</p>`;
     globalBox.innerHTML = "";
   }
+}
+
+function renderOtherEvidenceTab(container, evidences = []) {
+  const otherEvidences = evidences.filter((item) => {
+    return item.category === "khac";
+  });
+
+  container.innerHTML = `
+    <div class="criterion-card">
+      <div class="criterion-header">
+        <h2>Minh chứng khác về danh hiệu Sinh viên 5 tốt</h2>
+        <span class="status-missing">Không tính vào 5 tiêu chí chính</span>
+      </div>
+
+      <p>
+        Chỉ nộp giấy chứng nhận hoặc bằng khen thể hiện bạn đã đạt danh hiệu
+        Sinh viên 5 tốt các cấp ở những năm trước.
+      </p>
+
+      <div class="evidence-suggestion-groups">
+        <div class="evidence-group-card">
+          <h4>AI sẽ kiểm tra các nội dung như:</h4>
+          <ul>
+            <li>Sinh viên đạt SV5T cấp Khoa/Cấp Trường 2 năm liền.</li>
+            <li>Sinh viên đạt SV5T cấp Khoa/Cấp Trường 3 năm liền.</li>
+            <li>Bằng khen của Giám đốc ĐHQG cho Sinh viên 5 tốt tiêu biểu.</li>
+            <li>Danh hiệu SV5T cấp ĐHQG-HCM, cấp Thành phố hoặc cấp Trung ương ở năm trước.</li>
+          </ul>
+        </div>
+      </div>
+
+      <hr>
+
+      <h3>Nộp minh chứng khác</h3>
+
+      <div class="upload-file-note">
+        <div>
+          <strong>Lưu ý khi đặt tên file:</strong>
+          Vui lòng đặt tên file theo thành tích thể hiện trong chứng nhận.
+          Ví dụ: <code>SV5T_cap_Truong_2_nam_lien</code>,
+          <code>Bang_khen_Giam_doc_DHQG_SV5T_tieu_bieu_2025</code>.
+        </div>
+      </div>
+
+      <input
+        type="file"
+        id="file-khac"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+      />
+
+      <p id="upload-message-khac" class="upload-message"></p>
+
+      <hr>
+
+      <h3>Minh chứng đã nộp</h3>
+
+      ${
+        otherEvidences.length > 0
+          ? otherEvidences.map(renderOtherEvidenceItem).join("")
+          : `<p>Chưa có minh chứng khác.</p>`
+      }
+    </div>
+  `;
+}
+
+function renderOtherEvidenceItem(evidence) {
+  const ai = evidence.aiResult || {};
+
+  return `
+    <div class="evidence-item">
+      <strong>${escapeHtml(evidence.fileName || "Minh chứng")}</strong>
+      <br>
+
+      <small>
+        <strong>Trạng thái:</strong> ${formatEvidenceStatus(evidence.status)}
+        <br>
+
+        <strong>AI xác định:</strong>
+        ${escapeHtml(formatOtherAchievementType(ai.sv5tHistoryType || ai.matchedType))}
+        <br>
+
+        <strong>Cấp:</strong>
+        ${escapeHtml(formatOtherAchievementLevel(ai.sv5tHistoryLevel))}
+        <br>
+
+        <strong>Số năm liền:</strong>
+        ${Number(ai.consecutiveYears || 0) > 0 ? ai.consecutiveYears : "Không xác định"}
+        <br>
+
+        <strong>Năm:</strong>
+        ${
+          Array.isArray(ai.sv5tHistoryYears) && ai.sv5tHistoryYears.length > 0
+            ? ai.sv5tHistoryYears.map(escapeHtml).join(", ")
+            : "Không xác định"
+        }
+        <br>
+
+        <strong>Đơn vị cấp/khen thưởng:</strong>
+        ${escapeHtml(ai.issuer || "Không xác định")}
+        <br>
+
+        <strong>Lý do AI:</strong>
+        ${escapeHtml(ai.reason || "Chưa có")}
+      </small>
+
+      ${
+        evidence.fileUrl
+          ? `<br><a href="${escapeHtml(evidence.fileUrl)}" target="_blank">Xem file</a>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+function formatOtherAchievementType(type) {
+  const map = {
+    sv5t_khoa_2_nam_lien: "Đạt Sinh viên 5 tốt cấp Khoa 2 năm liền",
+    sv5t_khoa_3_nam_lien: "Đạt Sinh viên 5 tốt cấp Khoa 3 năm liền",
+    sv5t_khoa_4_nam_lien: "Đạt Sinh viên 5 tốt cấp Khoa 4 năm liền",
+    sv5t_truong_2_nam_lien: "Đạt Sinh viên 5 tốt cấp Trường 2 năm liền",
+    sv5t_truong_3_nam_lien: "Đạt Sinh viên 5 tốt cấp Trường 3 năm liền",
+    sv5t_truong_4_nam_lien: "Đạt Sinh viên 5 tốt cấp Trường 4 năm liền",
+    sv5t_dhqg: "Đạt Sinh viên 5 tốt cấp ĐHQG-HCM",
+    sv5t_thanh: "Đạt Sinh viên 5 tốt cấp Thành phố",
+    sv5t_trung_uong: "Đạt Sinh viên 5 tốt cấp Trung ương",
+    bang_khen_giam_doc_dhqg_sv5t_tieu_bieu:
+      "Bằng khen của Giám đốc ĐHQG cho Sinh viên 5 tốt tiêu biểu",
+    unknown: "Không xác định"
+  };
+
+  return map[type] || type || "Không xác định";
+}
+
+function formatOtherAchievementLevel(level) {
+  const map = {
+    khoa: "Cấp Khoa",
+    truong: "Cấp Trường",
+    dhqg: "Cấp ĐHQG-HCM",
+    thanh: "Cấp Thành phố",
+    trung_uong: "Cấp Trung ương",
+    unknown: "Không xác định"
+  };
+
+  return map[level] || level || "Không xác định";
 }

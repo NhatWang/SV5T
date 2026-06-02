@@ -1767,3 +1767,37 @@ td .student-detail-link::after {
   font-size: 13px;
   font-weight: 700;
 }
+
+.other-evidence-card {
+  border-style: dashed;
+  border-color: rgba(11, 61, 145, 0.18);
+  background: #ffffff;
+}
+
+.other-evidence-card .student-category-header {
+  background: linear-gradient(135deg, rgba(232, 240, 254, 0.65), #ffffff);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.status-pill.neutral {
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid rgba(55, 48, 163, 0.14);
+}
+
+.other-evidence-item {
+  line-height: 1.65;
+}
+
+.other-evidence-item a {
+  display: inline-block;
+  margin-top: 8px;
+  color: #163d8f;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.other-evidence-item a:hover {
+  text-decoration: underline;
+}

@@ -21,8 +21,6 @@ const globalSupport = require("../Utils/globalSupport");
 
 const router = express.Router();
 
-console.log("✅ StudentRoutes loaded");
-
 // ===============================
 // Helper: tạo JWT sinh viên
 // ===============================
@@ -394,14 +392,18 @@ router.post("/declare/dao-duc", requireStudentAuth, async (req, res) => {
         : req.body.diemRenLuyen;
 
     const noLawViolation =
-      req.body.noLawViolation !== undefined
-        ? normalizeBoolean(req.body.noLawViolation)
-        : normalizeBoolean(req.body.khongViPham);
+  req.body.noLawViolation !== undefined
+    ? normalizeBoolean(req.body.noLawViolation)
+    : normalizeBoolean(
+        req.body.khongViPhamPhapLuat ?? req.body.khongViPham
+      );
 
-    const noRuleViolation =
-      req.body.noRuleViolation !== undefined
-        ? normalizeBoolean(req.body.noRuleViolation)
-        : normalizeBoolean(req.body.khongViPham);
+const noRuleViolation =
+  req.body.noRuleViolation !== undefined
+    ? normalizeBoolean(req.body.noRuleViolation)
+    : normalizeBoolean(
+        req.body.khongViPhamNoiQuy ?? req.body.khongViPham
+      );
 
     const excellentUnionMember =
       req.body.excellentUnionMember !== undefined
@@ -642,16 +644,6 @@ router.post("/logout", (req, res) => {
     message: "Đăng xuất sinh viên thành công"
   });
 });
-
-console.log(
-  "StudentRoutes registered paths:",
-  router.stack
-    .filter((layer) => layer.route)
-    .map((layer) => ({
-      path: layer.route.path,
-      methods: Object.keys(layer.route.methods)
-    }))
-);
 
 // ===============================
 // 9. LẤY THÔNG TIN HỖ TRỢ LIÊN HỆ

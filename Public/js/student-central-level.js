@@ -848,7 +848,6 @@ function startCentralAutoRefresh() {
   }
 
   centralAutoRefreshTimer = setInterval(async () => {
-    console.log("Auto refresh central level dashboard...");
 
     await loadCentralLevelDashboard({
       silent: true

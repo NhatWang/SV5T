@@ -57,7 +57,8 @@ const categoryLabels = {
   hocTapTot: "Học tập tốt",
   theLucTot: "Thể lực tốt",
   tinhNguyenTot: "Tình nguyện tốt",
-  hoiNhapTot: "Hội nhập tốt"
+  hoiNhapTot: "Hội nhập tốt",
+  khac: "Khác"
 };
 
 const hoiNhapSubCriteria = ["ngoaiNgu", "kyNang", "hoiNhap"];
@@ -1177,7 +1178,8 @@ router.get(
         "hocTapTot",
         "theLucTot",
         "tinhNguyenTot",
-        "hoiNhapTot"
+        "hoiNhapTot",
+        "khac"
       ];
 
       const missingMap = {
@@ -1201,7 +1203,8 @@ router.get(
 
         hoiNhapTot: [
           "Cần đủ 3 phần: ngoại ngữ, kỹ năng và hoạt động hội nhập."
-        ]
+        ],
+        khac: []
       };
 
       const levelKeys = ["truong", "dhqg", "thanh", "trung_uong"];
@@ -1214,6 +1217,14 @@ router.get(
       };
 
       function getStudentProgressByLevel(student, level, category) {
+        if (category === "khac") {
+          return {
+            isCompleted: null,
+            completedBy: "supplementary",
+            completedAt: null
+          };
+        }
+
         if (level === "truong") {
           return student.sv5tProgress?.[category] || {};
         }
@@ -1273,6 +1284,10 @@ router.get(
       }
 
       function buildLevelMissingItems(category, level, levelProgress) {
+
+        if (category === "khac") {
+          return [];
+        }
         const isCompleted = levelProgress?.isCompleted === true;
 
         if (isCompleted) {

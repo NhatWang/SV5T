@@ -2,6 +2,11 @@ const express = require("express");
 const Activity = require("../Models/Activity");
 const Student = require("../Models/Student");
 
+const {
+  requireAdminAuth,
+  requireStudentAuth
+} = require("../Middlewares/authMiddleware");
+
 const router = express.Router();
 
 const validCategories = [
@@ -13,7 +18,7 @@ const validCategories = [
 ];
 
 // POST /api/activity/create
-router.post("/create", async (req, res) => {
+router.post("/create", requireAdminAuth, async (req, res) => {
   try {
     const { title, category, description, date, participants } = req.body;
 
@@ -89,7 +94,7 @@ router.post("/create", async (req, res) => {
 });
 
 // GET /api/activity/all
-router.get("/all", async (req, res) => {
+router.get("/all", requireAdminAuth, async (req, res) => {
   try {
     const activities = await Activity.find().sort({
       createdAt: -1
@@ -110,7 +115,7 @@ router.get("/all", async (req, res) => {
 });
 
 // GET /api/activity/student/:studentId
-router.get("/student/:studentId", async (req, res) => {
+router.get("/student/:studentId", requireStudentAuth, async (req, res) => {
   try {
     const { studentId } = req.params;
 

@@ -11,13 +11,14 @@ const evidenceSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: [
-        "daoDucTot",
-        "hocTapTot",
-        "theLucTot",
-        "tinhNguyenTot",
-        "hoiNhapTot"
-      ]
+     enum: [
+      "daoDucTot",
+      "hocTapTot",
+      "theLucTot",
+      "tinhNguyenTot",
+      "hoiNhapTot",
+      "khac"
+    ]
     },
 
     awardLevel: {
@@ -191,6 +192,35 @@ additionalCriteriaKey: {
         type: String,
         default: ""
       },
+      sv5tHistoryType: {
+  type: String,
+  default: ""
+},
+
+sv5tHistoryLevel: {
+  type: String,
+  default: ""
+},
+
+sv5tHistoryYears: {
+  type: [String],
+  default: []
+},
+
+consecutiveYears: {
+  type: Number,
+  default: 0
+},
+
+issuer: {
+  type: String,
+  default: ""
+},
+
+awardTitle: {
+  type: String,
+  default: ""
+},
     },
 
     adminReview: {

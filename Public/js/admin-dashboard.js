@@ -10,7 +10,8 @@ const categoryLabels = {
   hocTapTot: "Học tập tốt",
   theLucTot: "Thể lực tốt",
   tinhNguyenTot: "Tình nguyện tốt",
-  hoiNhapTot: "Hội nhập tốt"
+  hoiNhapTot: "Hội nhập tốt",
+  khac: "Khác"
 };
 
 async function checkAdminSession() {
@@ -1856,6 +1857,10 @@ function renderLevelProgress(levels = {}) {
 }
 
 function renderStudentCategoryDetail(category, detail, selectedLevel = "truong") {
+  if (category === "khac") {
+  return renderStudentOtherEvidenceDetail(detail, selectedLevel);
+}
+
   const levelData = detail.levels?.[selectedLevel] || {};
   const isCompleted = levelData.isCompleted === true;
 
@@ -1877,6 +1882,119 @@ function renderStudentCategoryDetail(category, detail, selectedLevel = "truong")
       ${renderSingleLevelDetailBlock(levelData, category)}
     </div>
   `;
+}
+
+function renderStudentOtherEvidenceDetail(detail, selectedLevel = "truong") {
+  const levelData = detail.levels?.[selectedLevel] || {};
+  const approvedEvidences = levelData.approvedEvidences || [];
+  const otherEvidences = levelData.otherEvidences || [];
+  const allEvidences = [...approvedEvidences, ...otherEvidences];
+
+  return `
+    <div class="student-category-card other-evidence-card">
+      <div class="student-category-header">
+        <div>
+          <h3>Khác</h3>
+          <p class="student-category-level-label">
+            Minh chứng SV5T các năm trước
+          </p>
+        </div>
+
+        <span class="status-pill neutral">
+          Hồ sơ bổ sung
+        </span>
+      </div>
+
+      <div class="student-level-detail-card single-level-card">
+        <div class="student-level-detail-content">
+          <div class="student-level-section">
+            <h6>Giấy chứng nhận / bằng khen SV5T đã nộp</h6>
+
+            ${
+              allEvidences.length > 0
+                ? allEvidences.map(renderOtherStudentEvidenceItem).join("")
+                : `<p class="empty-note">Chưa có minh chứng khác.</p>`
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderOtherStudentEvidenceItem(evidence) {
+  const ai = evidence.aiResult || {};
+
+  return `
+    <div class="student-detail-item other-evidence-item">
+      <strong>${escapeHtml(evidence.fileName || "Minh chứng")}</strong>
+
+      <small>
+        <br>
+        <strong>Trạng thái:</strong> ${escapeHtml(formatEvidenceStatus(evidence.status))}
+        <br>
+        <strong>AI xác định:</strong> ${escapeHtml(formatOtherAchievementType(ai.sv5tHistoryType || ai.matchedType))}
+        <br>
+        <strong>Cấp danh hiệu:</strong> ${escapeHtml(formatOtherAchievementLevel(ai.sv5tHistoryLevel))}
+        <br>
+        <strong>Số năm liền:</strong>
+        ${Number(ai.consecutiveYears || 0) > 0 ? ai.consecutiveYears : "Không xác định"}
+        <br>
+        <strong>Năm:</strong>
+        ${
+          Array.isArray(ai.sv5tHistoryYears) && ai.sv5tHistoryYears.length > 0
+            ? ai.sv5tHistoryYears.map(escapeHtml).join(", ")
+            : "Không xác định"
+        }
+        <br>
+        <strong>Đơn vị cấp/khen thưởng:</strong>
+        ${escapeHtml(ai.issuer || "Không xác định")}
+        <br>
+        <strong>Lý do AI:</strong>
+        ${escapeHtml(ai.reason || "Chưa có")}
+      </small>
+
+      ${
+        evidence.fileUrl
+          ? `<br><a href="${escapeHtml(evidence.fileUrl)}" target="_blank">Xem file</a>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+function formatOtherAchievementType(type) {
+  const map = {
+    sv5t_khoa: "Đạt Sinh viên 5 tốt cấp Khoa",
+    sv5t_truong: "Đạt Sinh viên 5 tốt cấp Trường",
+    sv5t_khoa_2_nam_lien: "Đạt Sinh viên 5 tốt cấp Khoa 2 năm liền",
+    sv5t_khoa_3_nam_lien: "Đạt Sinh viên 5 tốt cấp Khoa 3 năm liền",
+    sv5t_khoa_4_nam_lien: "Đạt Sinh viên 5 tốt cấp Khoa 4 năm liền",
+    sv5t_truong_2_nam_lien: "Đạt Sinh viên 5 tốt cấp Trường 2 năm liền",
+    sv5t_truong_3_nam_lien: "Đạt Sinh viên 5 tốt cấp Trường 3 năm liền",
+    sv5t_truong_4_nam_lien: "Đạt Sinh viên 5 tốt cấp Trường 4 năm liền",
+    sv5t_dhqg: "Đạt Sinh viên 5 tốt cấp ĐHQG-HCM",
+    sv5t_thanh: "Đạt Sinh viên 5 tốt cấp Thành phố",
+    sv5t_trung_uong: "Đạt Sinh viên 5 tốt cấp Trung ương",
+    bang_khen_giam_doc_dhqg_sv5t_tieu_bieu:
+      "Bằng khen của Giám đốc ĐHQG cho Sinh viên 5 tốt tiêu biểu",
+    unknown: "Không xác định"
+  };
+
+  return map[type] || type || "Không xác định";
+}
+
+function formatOtherAchievementLevel(level) {
+  const map = {
+    khoa: "Cấp Khoa",
+    truong: "Cấp Trường",
+    dhqg: "Cấp ĐHQG-HCM",
+    thanh: "Cấp Thành phố",
+    trung_uong: "Cấp Trung ương",
+    unknown: "Không xác định"
+  };
+
+  return map[level] || level || "Không xác định";
 }
 
 function renderSingleLevelDetailBlock(item = {}, category = "") {
