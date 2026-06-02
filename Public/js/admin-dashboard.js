@@ -31,6 +31,9 @@ async function checkAdminSession() {
     adminUsername = data.admin.username;
     adminRole = data.admin.role;
     adminClassName = data.admin.className || "";
+    if (typeof initPushNotifications === "function") {
+  initPushNotifications("admin");
+}
 
     initAdminDashboard();
   } catch (error) {

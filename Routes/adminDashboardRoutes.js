@@ -38,6 +38,11 @@ const {
 
 const ClassSupport = require("../Models/ClassSupport");
 
+const {
+  sendPushToStudent,
+  sendPushToStudents
+} = require("../Utils/pushService");
+
 const router = express.Router();
 
 const upload = multer({
@@ -1821,6 +1826,7 @@ router.post(
 
       const activityMap = {};
       const errors = [];
+      const affectedStudentIds = new Set();
 
       for (const row of rows) {
         const volunteerDays = Number(row.volunteerDays || 0);
@@ -2026,6 +2032,12 @@ router.post(
         await activity.save();
         createdActivities += 1;
 
+        (activity.participants || []).forEach((participant) => {
+          if (participant.studentId) {
+            affectedStudentIds.add(String(participant.studentId));
+          }
+        });
+
         for (const participant of item.participants) {
           const student = await Student.findOne({
             studentId: participant.studentId
@@ -2069,11 +2081,22 @@ router.post(
         }
       }
 
+      if (affectedStudentIds.size > 0) {
+        await sendPushToStudents([...affectedStudentIds], {
+          title: "Có hoạt động mới được ghi nhận",
+          body: "Admin vừa cập nhật hoạt động mới vào hồ sơ Sinh viên 5 tốt của bạn.",
+          url: "/student-dashboard.html"
+        }).catch((error) => {
+          console.error("Push uploaded activities error:", error.message);
+        });
+      }
+
       return res.json({
         success: true,
         message: "Upload danh sách hoạt động thành công",
         createdActivities,
         totalRows: rows.length,
+        notifiedStudents: affectedStudentIds.size,
         errors
       });
     } catch (error) {
@@ -2231,57 +2254,97 @@ router.patch(
       };
 
       if (status === "approved_by_admin") {
-  evidence.aiResult = evidence.aiResult || {};
+        evidence.aiResult = evidence.aiResult || {};
 
-  if (manualReview.subCriteria) {
-    evidence.aiResult.subCriteria = manualReview.subCriteria;
-  }
+        if (manualReview.subCriteria) {
+          evidence.aiResult.subCriteria = manualReview.subCriteria;
+        }
 
-  if (manualReview.foreignLanguageEvidenceType) {
-    evidence.aiResult.foreignLanguageEvidenceType =
-      manualReview.foreignLanguageEvidenceType;
-  }
+        if (manualReview.foreignLanguageEvidenceType) {
+          evidence.aiResult.foreignLanguageEvidenceType =
+            manualReview.foreignLanguageEvidenceType;
+        }
 
-  if (manualReview.kyNangEvidenceType) {
-    evidence.aiResult.kyNangEvidenceType =
-      manualReview.kyNangEvidenceType;
-  }
+        if (manualReview.kyNangEvidenceType) {
+          evidence.aiResult.kyNangEvidenceType =
+            manualReview.kyNangEvidenceType;
+        }
 
-  if (manualReview.hoiNhapEvidenceType) {
-    evidence.aiResult.hoiNhapEvidenceType =
-      manualReview.hoiNhapEvidenceType;
-  }
+        if (manualReview.hoiNhapEvidenceType) {
+          evidence.aiResult.hoiNhapEvidenceType =
+            manualReview.hoiNhapEvidenceType;
+        }
 
-  if (manualReview.academicEvidenceType) {
-    evidence.aiResult.academicEvidenceType =
-      manualReview.academicEvidenceType;
-  }
+        if (manualReview.academicEvidenceType) {
+          evidence.aiResult.academicEvidenceType =
+            manualReview.academicEvidenceType;
+        }
 
-  if (
-    manualReview.volunteerDays !== undefined &&
-    manualReview.volunteerDays !== null &&
-    manualReview.volunteerDays !== ""
-  ) {
-    evidence.aiResult.volunteerDays =
-      Number(manualReview.volunteerDays || 0);
-  }
+        if (
+          manualReview.volunteerDays !== undefined &&
+          manualReview.volunteerDays !== null &&
+          manualReview.volunteerDays !== ""
+        ) {
+          evidence.aiResult.volunteerDays =
+            Number(manualReview.volunteerDays || 0);
+        }
 
-  evidence.aiResult.hasVolunteerAward =
-    manualReview.hasVolunteerAward === true ||
-    manualReview.hasVolunteerAward === "true" ||
-    evidence.aiResult.hasVolunteerAward === true;
+        evidence.aiResult.hasVolunteerAward =
+          manualReview.hasVolunteerAward === true ||
+          manualReview.hasVolunteerAward === "true" ||
+          evidence.aiResult.hasVolunteerAward === true;
 
-  evidence.aiResult.manualOverrideByAdmin = true;
-  evidence.aiResult.isValid = true;
+        evidence.aiResult.manualOverrideByAdmin = true;
+        evidence.aiResult.isValid = true;
 
-  evidence.markModified("aiResult");
-}
+        evidence.markModified("aiResult");
+      }
 
-await evidence.save();
+      await evidence.save();
+
+      if (status === "approved_by_admin") {
+        await archiveEvidenceToR2FromAdmin(evidence);
+
+        await recomputeSchoolProgressAfterEvidence(evidence);
+        await recomputeHigherLevelProgressAfterEvidence(evidence);
+        await recomputeCentralProgressAfterEvidence(evidence);
+      }
 
       if (status === "rejected_by_admin") {
         await deleteTempEvidenceFileFromAdmin(evidence);
+      }
 
+      if (status === "approved_by_admin") {
+        await sendPushToStudent(evidence.studentId, {
+          title: "Minh chứng đã được duyệt",
+          body: `Minh chứng ${evidence.fileName} của bạn đã được admin duyệt.`,
+          url: "/student-dashboard.html"
+        }).catch((error) => {
+          console.error("Push approved evidence error:", error.message);
+        });
+      }
+
+      if (status === "rejected_by_admin") {
+        await sendPushToStudent(evidence.studentId, {
+          title: "Minh chứng chưa được duyệt",
+          body: `Minh chứng ${evidence.fileName} của bạn chưa được duyệt. Vui lòng kiểm tra lại.`,
+          url: "/student-dashboard.html"
+        }).catch((error) => {
+          console.error("Push rejected evidence error:", error.message);
+        });
+      }
+
+      if (status === "need_more_info") {
+        await sendPushToStudent(evidence.studentId, {
+          title: "Cần bổ sung minh chứng",
+          body: `Minh chứng ${evidence.fileName} cần bổ sung thông tin.`,
+          url: "/student-dashboard.html"
+        }).catch((error) => {
+          console.error("Push need more info error:", error.message);
+        });
+      }
+
+      if (status === "rejected_by_admin") {
         return res.json({
           success: true,
           message:
@@ -2298,15 +2361,7 @@ await evidence.save();
         });
       }
 
-      if (status === "approved_by_admin") {
-  await archiveEvidenceToR2FromAdmin(evidence);
-
-  await recomputeSchoolProgressAfterEvidence(evidence);
-  await recomputeHigherLevelProgressAfterEvidence(evidence);
-  await recomputeCentralProgressAfterEvidence(evidence);
-}
-
-      res.json({
+      return res.json({
         success: true,
         message:
           evidence.awardLevel === "truong"
@@ -2317,7 +2372,7 @@ await evidence.save();
     } catch (error) {
       console.error("Review evidence error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: "Lỗi server khi duyệt minh chứng"
       });

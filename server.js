@@ -109,7 +109,9 @@ const studentDashboardRoutes = require("./Routes/studentDashboardRoutes");
 const evidenceRoutes = require("./Routes/evidenceRoutes");
 const adminRoutes = require("./Routes/adminRoutes");
 const adminDashboardRoutes = require("./Routes/adminDashboardRoutes");
+const pushRoutes = require("./Routes/pushRoutes");
 
+app.use("/api/push", pushRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/student-dashboard", studentDashboardRoutes);
 app.use("/api/evidence", evidenceRoutes);

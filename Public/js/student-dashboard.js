@@ -21,6 +21,9 @@ async function checkStudentSession() {
 
     currentStudent = data.student;
     studentId = data.student.studentId;
+    if (typeof initPushNotifications === "function") {
+  initPushNotifications("student");
+}
 
     await loadDashboard();
   } catch (error) {

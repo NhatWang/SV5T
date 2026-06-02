@@ -29,6 +29,10 @@ const {
   isHigherAwardLevel
 } = require("../Utils/sv5tLevels");
 
+const {
+  sendPushToAdminsForClass
+} = require("../Utils/pushService");
+
 const router = express.Router();
 
 // ─────────────────────────────────────────
@@ -1343,6 +1347,21 @@ router.post(
       });
 
       await evidence.save();
+
+      const uploadStudent = await Student.findOne({
+  studentId
+}).select("studentId fullName className");
+
+await sendPushToAdminsForClass(
+  uploadStudent?.className || req.student.className || "",
+  {
+    title: "Có minh chứng mới cần xử lý",
+    body: `${uploadStudent?.fullName || studentId} vừa upload minh chứng ${categoryLabels[category] || category}.`,
+    url: "/admin-dashboard.html"
+  }
+).catch((error) => {
+  console.error("Push new evidence to admin error:", error.message);
+});
 
       analyzeEvidenceWithAI(req.file.path, req.file.mimetype, category, awardLevel)
         .then(async (rawAiResult) => {
