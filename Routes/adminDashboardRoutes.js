@@ -2233,6 +2233,11 @@ router.patch(
     evidence.aiResult.subCriteria = manualReview.subCriteria;
   }
 
+  if (manualReview.foreignLanguageEvidenceType) {
+    evidence.aiResult.foreignLanguageEvidenceType =
+      manualReview.foreignLanguageEvidenceType;
+  }
+
   if (manualReview.kyNangEvidenceType) {
     evidence.aiResult.kyNangEvidenceType = manualReview.kyNangEvidenceType;
   }
@@ -2242,22 +2247,30 @@ router.patch(
   }
 
   if (manualReview.academicEvidenceType) {
-    evidence.aiResult.academicEvidenceType = manualReview.academicEvidenceType;
+    evidence.aiResult.academicEvidenceType =
+      manualReview.academicEvidenceType;
   }
 
-  if (manualReview.volunteerDays !== "") {
+  if (
+    manualReview.volunteerDays !== undefined &&
+    manualReview.volunteerDays !== null &&
+    manualReview.volunteerDays !== ""
+  ) {
     evidence.aiResult.volunteerDays = Number(manualReview.volunteerDays || 0);
   }
 
-  if (manualReview.hasVolunteerAward === true) {
-    evidence.aiResult.hasVolunteerAward = true;
-  }
+  evidence.aiResult.hasVolunteerAward =
+    manualReview.hasVolunteerAward === true ||
+    manualReview.hasVolunteerAward === "true" ||
+    evidence.aiResult.hasVolunteerAward === true;
 
   evidence.aiResult.manualOverrideByAdmin = true;
-  evidence.markModified("aiResult");
-} 
+  evidence.aiResult.isValid = true;
 
-      await evidence.save();
+  evidence.markModified("aiResult");
+}
+
+await evidence.save();
 
       if (status === "rejected_by_admin") {
         await deleteTempEvidenceFileFromAdmin(evidence);
@@ -2279,14 +2292,11 @@ router.patch(
       }
 
       if (status === "approved_by_admin") {
-        if (manualReview.foreignLanguageEvidenceType) {
-  evidence.aiResult.foreignLanguageEvidenceType =
-    manualReview.foreignLanguageEvidenceType;
-}
   await archiveEvidenceToR2FromAdmin(evidence);
 
   await recomputeSchoolProgressAfterEvidence(evidence);
   await recomputeHigherLevelProgressAfterEvidence(evidence);
+  await recomputeCentralProgressAfterEvidence(evidence);
 }
 
       res.json({
