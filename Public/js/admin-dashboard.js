@@ -64,6 +64,7 @@ function formatAwardLevel(level) {
   if (level === "truong") return "Cấp Trường";
   if (level === "dhqg") return "Cấp ĐHQG-HCM";
   if (level === "thanh") return "Cấp Thành phố";
+  if (level === "trung_uong") return "Cấp Trung ương";
   return "Chưa xác định";
 }
 

@@ -1484,7 +1484,6 @@ function buildDeclarationForLevel(student, category, level) {
           approvedEvidences: categoryEvidences.filter((evidence) => {
             return ["approved_by_admin", "ai_valid"].includes(evidence.status);
           }),
-          declaration: buildDeclarationForLevel(student, category, level),
 
           otherEvidences: categoryEvidences.filter((evidence) => {
             return !["approved_by_admin", "ai_valid"].includes(evidence.status);
@@ -2229,11 +2228,13 @@ router.patch(
   }
 
   if (manualReview.kyNangEvidenceType) {
-    evidence.aiResult.kyNangEvidenceType = manualReview.kyNangEvidenceType;
+    evidence.aiResult.kyNangEvidenceType =
+      manualReview.kyNangEvidenceType;
   }
 
   if (manualReview.hoiNhapEvidenceType) {
-    evidence.aiResult.hoiNhapEvidenceType = manualReview.hoiNhapEvidenceType;
+    evidence.aiResult.hoiNhapEvidenceType =
+      manualReview.hoiNhapEvidenceType;
   }
 
   if (manualReview.academicEvidenceType) {
@@ -2246,7 +2247,8 @@ router.patch(
     manualReview.volunteerDays !== null &&
     manualReview.volunteerDays !== ""
   ) {
-    evidence.aiResult.volunteerDays = Number(manualReview.volunteerDays || 0);
+    evidence.aiResult.volunteerDays =
+      Number(manualReview.volunteerDays || 0);
   }
 
   evidence.aiResult.hasVolunteerAward =
