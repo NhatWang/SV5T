@@ -1352,14 +1352,6 @@ router.get(
         return [];
       }
 
-function formatDeclarationValue(value) {
-  if (value === true) return "Có";
-  if (value === false) return "Không";
-  if (value === null || value === undefined || value === "") return "Chưa khai";
-
-  return value;
-}
-
 function getSelfDeclarationsByCategoryAndLevel(student, category, level) {
   return (student.selfDeclarations || []).filter((item) => {
     return item.category === category && item.awardLevel === level;
@@ -1466,8 +1458,6 @@ function buildDeclarationForLevel(student, category, level) {
   completedBy: levelProgress.completedBy || "none",
   completedAt: levelProgress.completedAt || null,
   progress: levelProgress,
-
-  declaration: buildDeclarationForLevel(student, category, level),
 
   activities: levelActivities,
   approvedEvidences,
