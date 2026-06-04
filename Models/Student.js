@@ -444,5 +444,10 @@ centralSummary: {
   }
 );
 
+studentSchema.index({ studentId: 1 }, { unique: true });
+studentSchema.index({ className: 1 });
+studentSchema.index({ sv5tStatus: 1 });
+studentSchema.index({ totalCompletedCriteria: 1 });
+studentSchema.index({ className: 1, totalCompletedCriteria: 1 });
 module.exports =
   mongoose.models.Student || mongoose.model("Student", studentSchema);

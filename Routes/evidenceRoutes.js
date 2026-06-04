@@ -686,15 +686,45 @@ async function archiveEvidenceToR2(evidence) {
 
 async function safeArchiveEvidenceToR2(evidence) {
   try {
-    return await safeArchiveEvidenceToR2(evidence);
+    return await archiveEvidenceToR2(evidence);
   } catch (error) {
     console.error("Archive evidence to R2 error:", error.message);
 
     if (!evidence) return null;
 
-    const currentMissingInfo = Array.isArray(evidence.aiResult?.missingInfo)
-      ? evidence.aiResult.missingInfo
+    const currentAiResult = evidence.aiResult || {};
+
+    const currentMissingInfo = Array.isArray(currentAiResult.missingInfo)
+      ? currentAiResult.missingInfo
       : [];
+
+    const currentWarningFlags = Array.isArray(currentAiResult.warningFlags)
+      ? currentAiResult.warningFlags
+      : [];
+
+    const safeExtractedInfo = currentAiResult.extractedInfo || {
+      studentName: "",
+      studentId: "",
+      className: "",
+      faculty: "",
+      university: "",
+      activityName: "",
+      organizer: "",
+      issueDate: "",
+      semester: "",
+      academicYear: "",
+      score: "",
+      volunteerDays: 0,
+      achievement: ""
+    };
+
+    const safeVerification = currentAiResult.verification || {
+      hasStudentIdentity: false,
+      hasOrganizer: false,
+      hasDate: false,
+      hasAchievement: false,
+      matchesCurrentStudent: "unknown"
+    };
 
     evidence.storageStatus =
       evidence.filePath && fs.existsSync(evidence.filePath)
@@ -702,13 +732,72 @@ async function safeArchiveEvidenceToR2(evidence) {
         : evidence.storageStatus || "none";
 
     evidence.aiResult = {
-      ...(evidence.aiResult || getEmptyAiResult("")),
+      isValid:
+        currentAiResult.isValid === true
+          ? true
+          : currentAiResult.isValid === false
+          ? false
+          : null,
+
+      confidence: Number(currentAiResult.confidence || 0),
+
+      matchedType: currentAiResult.matchedType || "",
+      subCriteria: currentAiResult.subCriteria || "",
+      academicEvidenceType: currentAiResult.academicEvidenceType || "",
+      academicActivityCount: Number(
+        currentAiResult.academicActivityCount || 0
+      ),
+
+      volunteerDays: Number(currentAiResult.volunteerDays || 0),
+      volunteerActivityName: currentAiResult.volunteerActivityName || "",
+      hasVolunteerAward: currentAiResult.hasVolunteerAward === true,
+
+      kyNangEvidenceType: currentAiResult.kyNangEvidenceType || "",
+      foreignLanguageEvidenceType:
+        currentAiResult.foreignLanguageEvidenceType || "",
+      hoiNhapEvidenceType: currentAiResult.hoiNhapEvidenceType || "",
+      awardRank: currentAiResult.awardRank || "",
+      organizerLevel: currentAiResult.organizerLevel || "",
+
+      sv5tHistoryType: currentAiResult.sv5tHistoryType || "",
+      sv5tHistoryLevel: currentAiResult.sv5tHistoryLevel || "",
+      sv5tHistoryYears: Array.isArray(currentAiResult.sv5tHistoryYears)
+        ? currentAiResult.sv5tHistoryYears
+        : [],
+      consecutiveYears: Number(currentAiResult.consecutiveYears || 0),
+      issuer: currentAiResult.issuer || "",
+      awardTitle: currentAiResult.awardTitle || "",
+
+      extractedText: currentAiResult.extractedText || "",
+      matchedEvidence: Array.isArray(currentAiResult.matchedEvidence)
+        ? currentAiResult.matchedEvidence
+        : [],
+
+      promptVersion: currentAiResult.promptVersion || "",
+      evidenceType: currentAiResult.evidenceType || "",
+      matchedCategory:
+        currentAiResult.matchedCategory || evidence.category || "",
+      matchedSubCriteria: Array.isArray(currentAiResult.matchedSubCriteria)
+        ? currentAiResult.matchedSubCriteria
+        : [],
+
+      decision: currentAiResult.decision || "",
+
+      warningFlags: [
+        ...currentWarningFlags,
+        "r2_archive_failed"
+      ],
+
+      extractedInfo: safeExtractedInfo,
+      verification: safeVerification,
+
       missingInfo: [
         ...currentMissingInfo,
         `AI đã xử lý xong nhưng chưa lưu được file lên Cloudflare R2: ${error.message}`
       ],
-      reason: evidence.aiResult?.reason
-        ? `${evidence.aiResult.reason} Lưu ý hệ thống: AI đã xử lý xong nhưng chưa lưu được file lên Cloudflare R2, admin cần kiểm tra storage.`
+
+      reason: currentAiResult.reason
+        ? `${currentAiResult.reason} Lưu ý hệ thống: AI đã xử lý xong nhưng chưa lưu được file lên Cloudflare R2, admin cần kiểm tra storage.`
         : "AI đã xử lý xong nhưng chưa lưu được file lên Cloudflare R2, admin cần kiểm tra storage."
     };
 

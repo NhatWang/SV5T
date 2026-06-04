@@ -1708,9 +1708,10 @@ router.post(
       const sheetName = workbook.SheetNames[0];
       const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-      let inserted = 0;
-      let updated = 0;
       const errors = [];
+      const validStudents = [];
+
+      const seenStudentIds = new Set();
 
       for (const row of rows) {
         const studentId = getCellValue(row, "studentId");
@@ -1725,6 +1726,16 @@ router.post(
           continue;
         }
 
+        if (seenStudentIds.has(studentId)) {
+          errors.push({
+            row,
+            reason: `MSSV ${studentId} bị trùng trong file Excel`
+          });
+          continue;
+        }
+
+        seenStudentIds.add(studentId);
+
         if (req.admin.role === "admin" && className !== req.admin.className) {
           errors.push({
             row,
@@ -1733,25 +1744,77 @@ router.post(
           continue;
         }
 
-        const existingStudent = await Student.findOne({ studentId });
+        validStudents.push({
+          studentId,
+          fullName,
+          className
+        });
+      }
 
-        if (existingStudent) {
-          existingStudent.fullName = fullName;
-          existingStudent.className = className;
+      if (validStudents.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Không có dòng sinh viên hợp lệ để upload",
+          inserted: 0,
+          updated: 0,
+          totalRows: rows.length,
+          errors
+        });
+      }
 
-          await existingStudent.save();
+      const studentIds = validStudents.map((item) => item.studentId);
+
+      const existingStudents = await Student.find({
+        studentId: {
+          $in: studentIds
+        }
+      })
+        .select("studentId")
+        .lean();
+
+      const existingStudentIdSet = new Set(
+        existingStudents.map((item) => item.studentId)
+      );
+
+      let inserted = 0;
+      let updated = 0;
+
+      const operations = validStudents.map((item) => {
+        if (existingStudentIdSet.has(item.studentId)) {
           updated += 1;
         } else {
-          const newStudent = new Student({
-            studentId,
-            fullName,
-            className
-          });
-
-          await newStudent.save();
           inserted += 1;
         }
-      }
+
+        return {
+          updateOne: {
+            filter: {
+              studentId: item.studentId
+            },
+            update: {
+              $set: {
+                fullName: item.fullName,
+                className: item.className
+              },
+              $setOnInsert: {
+                studentId: item.studentId,
+                isActivated: false,
+                password: null,
+                sv5tStatus: "not_started",
+                sv5tProgress: {},
+                totalCompletedCriteria: 0,
+                progressPercent: 0,
+                createdAt: new Date()
+              }
+            },
+            upsert: true
+          }
+        };
+      });
+
+      await Student.bulkWrite(operations, {
+        ordered: false
+      });
 
       return res.json({
         success: true,
@@ -1759,6 +1822,7 @@ router.post(
         inserted,
         updated,
         totalRows: rows.length,
+        validRows: validStudents.length,
         errors
       });
     } catch (error) {
