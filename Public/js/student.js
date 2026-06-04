@@ -198,8 +198,9 @@ async function loginStudent() {
     if (data.success) {
       showMessage(message3, data.message, "success");
 
-        localStorage.setItem("studentFullName", data.student.fullName || "");
-        localStorage.setItem("studentClassName", data.student.className || "");
+      // FIX #7: Dùng saveStudentSession() cho nhất quán với createPassword flow
+      // (tránh set localStorage rải rác, dễ quên khi thêm field mới)
+      saveStudentSession(data.student);
 
       setTimeout(() => {
         window.location.href = "/student-dashboard.html";

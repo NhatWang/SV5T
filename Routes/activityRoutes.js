@@ -7,6 +7,13 @@ const {
   requireStudentAuth
 } = require("../Middlewares/authMiddleware");
 
+// FIX #5/#6: Dùng recompute functions từ progressRecompute thay vì hàm local đơn giản
+const {
+  recomputeHocTapProgress,
+  recomputeTinhNguyenProgress,
+  recomputeHoiNhapProgress
+} = require("../Utils/progressRecompute");
+
 const router = express.Router();
 
 const validCategories = [
@@ -16,6 +23,9 @@ const validCategories = [
   "tinhNguyenTot",
   "hoiNhapTot"
 ];
+
+// Các tiêu chí có logic recompute riêng (không set isCompleted trực tiếp)
+const RECOMPUTE_CATEGORIES = ["hocTapTot", "tinhNguyenTot", "hoiNhapTot"];
 
 // POST /api/activity/create
 router.post("/create", requireAdminAuth, async (req, res) => {
@@ -63,19 +73,48 @@ router.post("/create", requireAdminAuth, async (req, res) => {
     await activity.save();
 
     for (const participant of cleanedParticipants) {
-      const student = await Student.findOne({
-        studentId: participant.studentId
-      });
+      const { studentId } = participant;
 
-      if (student && student.sv5tProgress && student.sv5tProgress[category]) {
-        student.sv5tProgress[category].isCompleted = true;
-        student.sv5tProgress[category].completedBy = "activity";
-        student.sv5tProgress[category].completedAt = new Date();
-
-        updateStudentProgressSummary(student);
-
-        await student.save();
+      // FIX #6: Các tiêu chí có điều kiện phụ → dùng recompute đúng cách
+      if (RECOMPUTE_CATEGORIES.includes(category)) {
+        if (category === "hocTapTot") {
+          await recomputeHocTapProgress(studentId);
+        } else if (category === "tinhNguyenTot") {
+          await recomputeTinhNguyenProgress(studentId);
+        } else if (category === "hoiNhapTot") {
+          await recomputeHoiNhapProgress(studentId);
+        }
+        continue;
       }
+
+      // FIX #2: Kiểm tra null trước khi set để tránh crash với data cũ
+      const student = await Student.findOne({ studentId });
+
+      if (!student) continue;
+
+      if (!student.sv5tProgress) {
+        student.sv5tProgress = {};
+      }
+
+      if (!student.sv5tProgress[category]) {
+        student.sv5tProgress[category] = {};
+      }
+
+      student.sv5tProgress[category].isCompleted = true;
+      student.sv5tProgress[category].completedBy = "activity";
+      student.sv5tProgress[category].completedAt = new Date();
+
+      // FIX #5: Dùng hàm từ progressRecompute (có optional chaining an toàn)
+      const completed = validCategories.filter(
+        (cat) => student.sv5tProgress?.[cat]?.isCompleted
+      ).length;
+
+      student.totalCompletedCriteria = completed;
+      student.progressPercent = Math.round((completed / 5) * 100);
+      student.sv5tStatus =
+        completed === 0 ? "not_started" : completed < 5 ? "in_progress" : "completed";
+
+      await student.save();
     }
 
     res.json({
@@ -138,34 +177,5 @@ router.get("/student/:studentId", requireStudentAuth, async (req, res) => {
     });
   }
 });
-
-function updateStudentProgressSummary(student) {
-  const categories = [
-    "daoDucTot",
-    "hocTapTot",
-    "theLucTot",
-    "tinhNguyenTot",
-    "hoiNhapTot"
-  ];
-
-  let completed = 0;
-
-  categories.forEach((category) => {
-    if (student.sv5tProgress[category].isCompleted) {
-      completed++;
-    }
-  });
-
-  student.totalCompletedCriteria = completed;
-  student.progressPercent = Math.round((completed / 5) * 100);
-
-  if (completed === 0) {
-    student.sv5tStatus = "not_started";
-  } else if (completed < 5) {
-    student.sv5tStatus = "in_progress";
-  } else {
-    student.sv5tStatus = "completed";
-  }
-}
 
 module.exports = router;

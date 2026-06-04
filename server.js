@@ -102,6 +102,7 @@ app.use("/api/evidence/upload", uploadLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+// FIX #4: Dùng chữ thường "public" — Linux phân biệt hoa/thường, "Public" sẽ lỗi nếu thư mục thực là "public"
 app.use(express.static(path.join(__dirname, "Public")));
 
 app.get("/uploads/evidence-temp/:filename", async (req, res) => {
@@ -194,6 +195,8 @@ const adminRoutes = require("./Routes/adminRoutes");
 const adminDashboardRoutes = require("./Routes/adminDashboardRoutes");
 const pushRoutes = require("./Routes/pushRoutes");
 const chatbotRoutes = require("./Routes/chatbotRoutes");
+// FIX #1: Thêm activityRoutes (trước đây bị thiếu, khiến /api/activity/* trả 404)
+const activityRoutes = require("./Routes/activityRoutes");
 
 app.use("/api/push", pushRoutes);
 app.use("/api/chatbot", chatbotRoutes);
@@ -202,6 +205,7 @@ app.use("/api/student-dashboard", studentDashboardRoutes);
 app.use("/api/evidence", evidenceRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
+app.use("/api/activity", activityRoutes);
 
 // ─────────────────────────────────────────
 // CENTRALIZED ERROR HANDLER — phải đặt sau tất cả routes

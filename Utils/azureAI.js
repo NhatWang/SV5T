@@ -9,6 +9,39 @@ const AZURE_KEY      = process.env.AZURE_FOUNDRY_KEY;
 const AZURE_MODEL    = process.env.AZURE_FOUNDRY_MODEL || "gpt-5.4-mini";
 const API_VERSION    = "2025-04-01-preview";
 
+function safeParseAiJson(text) {
+  const clean = String(text || "")
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  if (!clean) return null;
+
+  try {
+    return JSON.parse(clean);
+  } catch {}
+
+  const first = clean.indexOf("{");
+  const last = clean.lastIndexOf("}");
+
+  if (first !== -1 && last !== -1 && last > first) {
+    try {
+      return JSON.parse(clean.slice(first, last + 1));
+    } catch {}
+  }
+
+  const arrayFirst = clean.indexOf("[");
+  const arrayLast = clean.lastIndexOf("]");
+
+  if (arrayFirst !== -1 && arrayLast !== -1 && arrayLast > arrayFirst) {
+    try {
+      return JSON.parse(clean.slice(arrayFirst, arrayLast + 1));
+    } catch {}
+  }
+
+  return null;
+}
+
 function getUrl(stream = false) {
   return `${AZURE_ENDPOINT}/openai/deployments/${AZURE_MODEL}/chat/completions?api-version=${API_VERSION}`;
 }
@@ -23,7 +56,7 @@ function getHeaders() {
 /**
  * Gọi GPT-5.4 mini — trả về text đầy đủ.
  */
-async function callAzureClaude({ system, messages, maxTokens = 1024, temperature = 0.7 }) {
+async function callAzureOpenAI({ system, messages, maxTokens = 1024, temperature = 0.7 }) {
   if (!AZURE_ENDPOINT || !AZURE_KEY) {
     throw new Error("Thiếu AZURE_FOUNDRY_ENDPOINT hoặc AZURE_FOUNDRY_KEY trong .env");
   }
@@ -58,7 +91,7 @@ async function callAzureClaude({ system, messages, maxTokens = 1024, temperature
 /**
  * Gọi GPT-5.4 mini với ảnh — trả về text đầy đủ.
  */
-async function callAzureClaudeWithImage({ system, base64Image, mimeType, maxTokens = 1024 }) {
+async function callAzureOpenAIWithImage({ system, base64Image, mimeType, maxTokens = 1024 }) {
   if (!AZURE_ENDPOINT || !AZURE_KEY) {
     throw new Error("Thiếu AZURE_FOUNDRY_ENDPOINT hoặc AZURE_FOUNDRY_KEY trong .env");
   }
@@ -108,7 +141,7 @@ async function callAzureClaudeWithImage({ system, base64Image, mimeType, maxToke
 /**
  * Streaming version — dùng cho chatbot SSE.
  */
-async function callAzureClaudeStream({ system, messages, maxTokens = 1024, temperature = 0.7, onChunk, onDone, onError }) {
+async function callAzureOpenAIStream({ system, messages, maxTokens = 1024, temperature = 0.7, onChunk, onDone, onError }) {
   if (!AZURE_ENDPOINT || !AZURE_KEY) {
     onError?.(new Error("Thiếu AZURE_FOUNDRY_ENDPOINT hoặc AZURE_FOUNDRY_KEY trong .env"));
     return;
@@ -188,4 +221,9 @@ async function callAzureClaudeStream({ system, messages, maxTokens = 1024, tempe
   }
 }
 
-module.exports = { callAzureClaude, callAzureClaudeWithImage, callAzureClaudeStream };
+module.exports = {
+  callAzureOpenAI,
+  callAzureOpenAIWithImage,
+  callAzureOpenAIStream,
+  safeParseAiJson
+};

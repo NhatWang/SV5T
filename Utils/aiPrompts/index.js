@@ -1,8 +1,19 @@
-const { buildHocTapPrompt }    = require("./hocTapPrompt");
-const { buildTheLucPrompt }    = require("./theLucPrompt");
-const { buildTinhNguyenPrompt } = require("./tinhNguyenPrompt");
-const { buildHoiNhapPrompt }   = require("./hoiNhapPrompt");
-const { buildKhacPrompt }      = require("./khacPrompt");
+const {
+  buildEvidencePrompt,
+  buildUniversalEvidenceSchema
+} = require("./evidencePromptBuilder");
+
+const {
+  buildChatbotPrompt,
+  buildChatbotSystemPrompt,
+  buildChatbotUserPrompt
+} = require("./chatbotPromptBuilder");
+
+const {
+  buildSuggestionPrompt,
+  buildSuggestionSystemPrompt,
+  buildSuggestionUserPrompt
+} = require("./suggestionPromptBuilder");
 
 /**
  * Kiểm tra văn bản có chứa từ khóa "thi thử" không.
@@ -30,18 +41,36 @@ function containsMockTestKeyword(text) {
 }
 
 /**
- * Điểm vào duy nhất để lấy prompt theo tiêu chí.
- * Trả về null nếu category không hợp lệ.
+ * Backward compatible wrapper.
+ * Code cũ gọi buildPrompt(...) vẫn chạy được.
+ * Nhưng code mới nên dùng buildEvidencePrompt(...).
  */
-function buildPrompt(category, contentDescription, awardLevel = "truong") {
-  switch (category) {
-    case "hocTapTot":    return buildHocTapPrompt(contentDescription, awardLevel);
-    case "theLucTot":    return buildTheLucPrompt(contentDescription, awardLevel);
-    case "tinhNguyenTot": return buildTinhNguyenPrompt(contentDescription, awardLevel);
-    case "hoiNhapTot":   return buildHoiNhapPrompt(contentDescription, awardLevel);
-    case "khac":         return buildKhacPrompt(contentDescription);
-    default:             return null;
-  }
+function buildPrompt(
+  category,
+  contentDescription,
+  awardLevel = "truong",
+  studentContext = {}
+) {
+  return buildEvidencePrompt({
+    category,
+    contentDescription,
+    awardLevel,
+    studentContext
+  });
 }
 
-module.exports = { buildPrompt, containsMockTestKeyword };
+module.exports = {
+  buildPrompt,
+  buildEvidencePrompt,
+  buildUniversalEvidenceSchema,
+
+  buildChatbotPrompt,
+  buildChatbotSystemPrompt,
+  buildChatbotUserPrompt,
+
+  buildSuggestionPrompt,
+  buildSuggestionSystemPrompt,
+  buildSuggestionUserPrompt,
+
+  containsMockTestKeyword
+};

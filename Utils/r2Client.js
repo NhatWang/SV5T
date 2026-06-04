@@ -7,6 +7,21 @@ const {
   DeleteObjectCommand
 } = require("@aws-sdk/client-s3");
 
+function assertR2Config() {
+  const required = [
+    "R2_ACCOUNT_ID",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_BUCKET_NAME"
+  ];
+
+  const missing = required.filter((key) => !process.env[key]);
+
+  if (missing.length > 0) {
+    throw new Error(`Thiếu cấu hình Cloudflare R2: ${missing.join(", ")}`);
+  }
+}
+
 const r2Client = new S3Client({
   region: "auto",
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -24,6 +39,7 @@ function buildEvidenceKey(studentId, originalName) {
 }
 
 async function uploadBufferToR2({ buffer, key, contentType }) {
+  assertR2Config();
   const command = new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,
     Key: key,
@@ -57,6 +73,7 @@ async function uploadLocalFileToR2({ localPath, key, contentType }) {
 
 async function deleteFromR2(key) {
   if (!key) return;
+  assertR2Config();
 
   const command = new DeleteObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,
@@ -70,5 +87,6 @@ module.exports = {
   buildEvidenceKey,
   uploadBufferToR2,
   uploadLocalFileToR2,
-  deleteFromR2
+  deleteFromR2,
+  assertR2Config
 };

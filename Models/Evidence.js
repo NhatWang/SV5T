@@ -221,6 +221,125 @@ awardTitle: {
   type: String,
   default: ""
 },
+// ─────────────────────────────────────────
+// AI v2 fields
+// ─────────────────────────────────────────
+
+promptVersion: {
+  type: String,
+  default: ""
+},
+
+evidenceType: {
+  type: String,
+  default: ""
+},
+
+matchedCategory: {
+  type: String,
+  default: ""
+},
+
+matchedSubCriteria: {
+  type: [String],
+  default: []
+},
+
+decision: {
+  type: String,
+  enum: [
+    "",
+    "auto_valid",
+    "manual_review",
+    "reject_suggested",
+    "partial_valid"
+  ],
+  default: ""
+},
+
+warningFlags: {
+  type: [String],
+  default: []
+},
+
+extractedInfo: {
+  studentName: {
+    type: String,
+    default: ""
+  },
+  studentId: {
+    type: String,
+    default: ""
+  },
+  className: {
+    type: String,
+    default: ""
+  },
+  faculty: {
+    type: String,
+    default: ""
+  },
+  university: {
+    type: String,
+    default: ""
+  },
+  activityName: {
+    type: String,
+    default: ""
+  },
+  organizer: {
+    type: String,
+    default: ""
+  },
+  issueDate: {
+    type: String,
+    default: ""
+  },
+  semester: {
+    type: String,
+    default: ""
+  },
+  academicYear: {
+    type: String,
+    default: ""
+  },
+  score: {
+    type: String,
+    default: ""
+  },
+  volunteerDays: {
+    type: Number,
+    default: 0
+  },
+  achievement: {
+    type: String,
+    default: ""
+  }
+},
+
+verification: {
+  hasStudentIdentity: {
+    type: Boolean,
+    default: false
+  },
+  hasOrganizer: {
+    type: Boolean,
+    default: false
+  },
+  hasDate: {
+    type: Boolean,
+    default: false
+  },
+  hasAchievement: {
+    type: Boolean,
+    default: false
+  },
+  matchesCurrentStudent: {
+    type: String,
+    enum: ["true", "false", "unknown", ""],
+    default: "unknown"
+  }
+}
     },
 
     adminReview: {

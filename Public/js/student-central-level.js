@@ -620,7 +620,15 @@ function renderCentralAISuggestions(suggestions) {
   }
 
   box.innerHTML = suggestions.map((item) => {
-    return `<li>${escapeHtml(item.message || item)}</li>`;
+    const msg = (item.message || item || "").toString();
+    const safe = msg
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/\n/g, "<br>");
+    return `<li>${safe}</li>`;
   }).join("");
 }
 

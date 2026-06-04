@@ -2,7 +2,7 @@ const express = require("express");
 const Student = require("../Models/Student");
 const Activity = require("../Models/Activity");
 const Evidence = require("../Models/Evidence");
-const { callAzureClaude } = require("../Utils/azureAI");
+const { callAzureOpenAI, safeParseAiJson } = require("../Utils/azureAI");
 const { requireStudentAuth } = require("../Middlewares/authMiddleware");
 
 const multer = require("multer");
@@ -38,6 +38,10 @@ const {
   isValidKyNangEvidenceForLevel,
   isValidHoiNhapEvidenceForLevel
 } = require("../Utils/activityEligibility");
+
+const {
+  buildSuggestionPrompt
+} = require("../Utils/aiPrompts/index");
 
 const router = express.Router();
 
@@ -180,16 +184,210 @@ const centralDefaultSuggestions = {
     "Kiểm tra điều kiện ngoại ngữ và hoạt động giao lưu quốc tế. Nếu có minh chứng như CLB ngoại ngữ, giải hội nhập/học thuật bằng ngoại ngữ hoặc chứng chỉ ngoại ngữ phù hợp, bạn có thể nộp làm tiêu chí đạt thêm."
 };
 
+function buildProgressSummaryForSuggestion(student, awardLevel) {
+  if (awardLevel === "truong") {
+    return {
+      awardLevel,
+      totalCompletedCriteria: student.totalCompletedCriteria || 0,
+      progressPercent: student.progressPercent || 0,
+      sv5tStatus: student.sv5tStatus || "not_started",
+      sv5tProgress: student.sv5tProgress || {}
+    };
+  }
+
+  if (awardLevel === "dhqg") {
+    return {
+      awardLevel,
+      higherLevelStatus: student.higherLevelStatus?.dhqg || {},
+      progress: student.dhqgProgress || {}
+    };
+  }
+
+  if (awardLevel === "thanh") {
+    return {
+      awardLevel,
+      higherLevelStatus: student.higherLevelStatus?.thanh || {},
+      progress: student.thanhProgress || {}
+    };
+  }
+
+  if (awardLevel === "trung_uong") {
+    return {
+      awardLevel,
+      centralSummary: student.centralSummary || {},
+      centralProgress: student.centralProgress || {}
+    };
+  }
+
+  return {
+    awardLevel,
+    progress: {}
+  };
+}
+
+function buildRegulationContextForSuggestion({
+  awardLevel,
+  missingCategories,
+  isAdditionalMode = false,
+  missingDetails = "",
+  additionalDetails = ""
+}) {
+  if (isAdditionalMode) {
+    return `
+Cấp xét: Trung ương
+
+Sinh viên đã đủ 5 tiêu chuẩn bắt buộc nhưng chưa đủ 2 tiêu chí đạt thêm.
+
+Danh sách tiêu chí đạt thêm có thể chọn:
+${additionalDetails || "Không có dữ liệu tiêu chí đạt thêm."}
+`.trim();
+  }
+
+  return `
+Cấp xét: ${awardLevel}
+
+Các tiêu chí còn thiếu và quy định liên quan:
+${missingDetails || "Không có dữ liệu quy định liên quan."}
+
+Chỉ tư vấn theo đúng cấp xét hiện tại. Không dùng nhầm điều kiện của cấp khác.
+`.trim();
+}
+
+function normalizeSuggestionItems(items, missingCategories) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .filter((item) => {
+      return item && missingCategories.includes(item.category);
+    })
+    .map((item) => {
+      return {
+        category: item.category,
+        message:
+          item.message ||
+          item.reason ||
+          (Array.isArray(item.actions) ? item.actions.join(" ") : "") ||
+          item.title ||
+          "Bạn nên kiểm tra tiêu chí này và bổ sung minh chứng phù hợp."
+      };
+    });
+}
+
+function buildRuleBasedSuggestions({
+  awardLevel,
+  missingCategories,
+  progress = {}
+}) {
+  if (!Array.isArray(missingCategories) || missingCategories.length === 0) {
+    return [];
+  }
+
+  const awardLevelLabelMap = {
+    truong: "cấp Trường",
+    dhqg: "cấp ĐHQG-HCM",
+    thanh: "cấp Thành phố Hồ Chí Minh",
+    trung_uong: "cấp Trung ương"
+  };
+
+  const awardLevelLabel = awardLevelLabelMap[awardLevel] || "cấp Trường";
+
+  return missingCategories.map((category) => {
+    const label =
+      CENTRAL_CATEGORY_LABELS[category] ||
+      categoryLabels[category] ||
+      category;
+
+    if (awardLevel === "trung_uong") {
+      const centralCriteria = getCentralCriteriaForCategory(category);
+
+      const conditions =
+        centralCriteria?.mandatory?.conditions ||
+        centralCriteria?.conditions ||
+        [];
+
+      const conditionText = conditions
+        .map((item) => item.text || item)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("; ");
+
+      return {
+        category,
+        message: `Bạn còn thiếu tiêu chí ${label} ở ${awardLevelLabel}. Điều kiện cần kiểm tra: ${
+          conditionText || "vui lòng xem lại quy định chi tiết của tiêu chí này"
+        }. Nếu dữ liệu tham chiếu từ các cấp trước chưa đủ, bạn cần nộp minh chứng bổ sung để admin duyệt thủ công.`
+      };
+    }
+
+    const criteria = getCriteriaForLevel(awardLevel, category);
+    const evidenceList = criteria?.minhChung || [];
+
+    if (category === "hocTapTot") {
+      return {
+        category,
+        message: `Bạn còn thiếu tiêu chí ${label} ở ${awardLevelLabel}. Hãy kiểm tra điều kiện học tập bắt buộc như GPA, nợ môn, vi phạm học thuật, sau đó bổ sung minh chứng học thuật phù hợp như hoạt động học thuật, nghiên cứu khoa học, bài báo, trợ giảng hoặc giải thưởng học thuật.`
+      };
+    }
+
+    if (category === "tinhNguyenTot") {
+      const requiredText =
+        awardLevel === "thanh"
+          ? "Ở cấp Thành phố, tiêu chí này thường cần vừa có số ngày tình nguyện phù hợp vừa có minh chứng/khen thưởng theo yêu cầu."
+          : "Bạn cần có đủ ngày tình nguyện hoặc minh chứng/khen thưởng tình nguyện phù hợp.";
+
+      return {
+        category,
+        message: `Bạn còn thiếu tiêu chí ${label} ở ${awardLevelLabel}. ${requiredText} Hãy bổ sung giấy xác nhận ngày tình nguyện, giấy chứng nhận chiến dịch hoặc giấy khen tình nguyện nếu có.`
+      };
+    }
+
+    if (category === "hoiNhapTot") {
+      const cityNote =
+        awardLevel === "thanh"
+          ? " Riêng cấp Thành phố, phần ngoại ngữ cần điều kiện cơ bản và thêm minh chứng bổ sung như giao lưu quốc tế, hội nghị/hội thảo quốc tế hoặc giải học thuật bằng ngoại ngữ từ cấp Trường trở lên."
+          : "";
+
+      return {
+        category,
+        message: `Bạn còn thiếu tiêu chí ${label} ở ${awardLevelLabel}. Hãy kiểm tra đủ 3 phần: ngoại ngữ, kỹ năng và hoạt động hội nhập.${cityNote}`
+      };
+    }
+
+    const evidenceText =
+      evidenceList.length > 0
+        ? evidenceList.slice(0, 3).join("; ")
+        : "minh chứng phù hợp theo quy định của cấp xét hiện tại";
+
+    return {
+      category,
+      message: `Bạn còn thiếu tiêu chí ${label} ở ${awardLevelLabel}. Bạn nên bổ sung minh chứng phù hợp như: ${evidenceText}.`
+    };
+  });
+}
+
 async function getAISuggestions(
   student,
   missingCategories,
   completedCategories,
-  awardLevel = CURRENT_AWARD_LEVEL
+  awardLevel = CURRENT_AWARD_LEVEL,
+  isAdditionalMode = false
 ) {
   try {
-    if (missingCategories.length === 0) {
+    if (missingCategories.length === 0 && !isAdditionalMode) {
       return null;
     }
+    if (!isAdditionalMode) {
+  const ruleBasedSuggestions = buildRuleBasedSuggestions({
+    awardLevel,
+    missingCategories
+  });
+
+  if (ruleBasedSuggestions.length > 0) {
+    return ruleBasedSuggestions;
+  }
+}
 
     const awardLevelLabelMap = {
       truong: "Cấp Trường",
@@ -245,71 +443,109 @@ ${(criteria.minhChung || [])
       })
       .join("\n");
 
-    const prompt = `
-Bạn là trợ lý tư vấn chương trình Sinh viên 5 tốt ${awardLevelLabel} cho sinh viên đại học. Dựa trên thông tin về sinh viên và các tiêu chí đã hoàn thành, hãy đề xuất những bước cụ thể, thực tế mà sinh viên có thể làm để hoàn thành các tiêu chí còn thiếu và đạt được ${awardLevelLabel}.
+    // Nếu là mode tiêu chí đạt thêm — dùng suggestion prompt builder
+if (isAdditionalMode) {
+  const additionalItems = CENTRAL_ADDITIONAL_CRITERIA;
+  const remaining = 2 - (student.centralSummary?.additionalCriteriaCount || 0);
 
-Thông tin sinh viên:
-- Họ tên: ${student.fullName}
-- Lớp: ${student.className || "Chưa cập nhật"}
-- Cấp xét hiện tại: ${awardLevelLabel}
-- Tiêu chí đã đạt: ${
-      completedLabels.length > 0
-        ? completedLabels.join(", ")
-        : "Chưa có tiêu chí nào"
-    }
+  const additionalDetails = additionalItems
+    .map((item) => {
+      return `- ${item.label}: ${item.text}`;
+    })
+    .join("\n");
 
-Các tiêu chí còn thiếu và quy định liên quan:
-${missingDetails}
+  const { systemPrompt, userPrompt } = buildSuggestionPrompt({
+    studentContext: {
+      studentId: student.studentId || "",
+      fullName: student.fullName || "",
+      className: student.className || ""
+    },
 
-Hãy tạo đề xuất ngắn gọn, thực tế, dễ làm cho từng tiêu chí còn thiếu.
+    missingCategories,
 
-Yêu cầu:
-- Viết bằng tiếng Việt.
-- Xưng hô là "bạn".
-- Không dùng từ "em".
-- Đề xuất ngắn gọn, rõ ràng, dễ hiểu.
-- Tập trung vào các tiêu chí sinh viên chưa hoàn thành.
-- Chỉ tư vấn theo tiêu chuẩn của ${awardLevelLabel}.
-- Không dùng nhầm điều kiện cấp Trường nếu đang xét cấp ĐHQG-HCM, cấp Thành phố hoặc cấp Trung ương.
-- Nếu là cấp Thành phố, cần lưu ý các điều kiện có thể chặt hơn, đặc biệt ở Tình nguyện tốt và Hội nhập tốt.
-- Nếu là cấp Thành phố và thiếu Hội nhập tốt, cần hiểu rằng Hội nhập tốt gồm 3 phần: Ngoại ngữ, Kỹ năng và Hoạt động hội nhập. Riêng phần Ngoại ngữ cấp Thành phố cần có điều kiện ngoại ngữ cơ bản và thêm 01 điều kiện bổ sung như giao lưu quốc tế hoặc giải hội nhập/học thuật bằng ngoại ngữ từ cấp Trường trở lên.
-- Mỗi đề xuất 1-2 câu, nêu rõ sinh viên nên bổ sung gì và minh chứng nào phù hợp.
-${
-  isCentralLevel
-    ? `
-- Vì đang xét cấp Trung ương, hãy tư vấn theo cấu trúc: 5 tiêu chuẩn bắt buộc và 02 tiêu chí đạt thêm.
-- Không nói rằng AI sẽ tự xác minh minh chứng cấp Trung ương. Minh chứng cấp Trung ương sẽ được admin kiểm tra và duyệt thủ công.
-- Nếu dữ liệu từ cấp Trường, cấp ĐHQG-HCM hoặc cấp Thành phố đã đủ, hãy khuyên sinh viên kiểm tra lại dữ liệu tham chiếu trước khi nộp bổ sung.
-- Nếu thiếu tiêu chí đạt thêm, hãy gợi ý sinh viên chọn đúng nhóm tiêu chí đạt thêm như Đạo đức, Học tập, Thể lực, Tình nguyện hoặc Hội nhập rồi nộp minh chứng tương ứng.
-`
-    : ""
+    progressSummary: {
+      ...buildProgressSummaryForSuggestion(student, awardLevel),
+      remainingAdditionalCriteria: remaining
+    },
+
+    evidenceSummary: [],
+    activitySummary: [],
+
+    regulationContext: buildRegulationContextForSuggestion({
+      awardLevel,
+      missingCategories,
+      isAdditionalMode: true,
+      additionalDetails
+    })
+  });
+
+  const additionalText = await callAzureOpenAI({
+    system: systemPrompt,
+    messages: [{ role: "user", content: userPrompt }],
+    maxTokens: 1024,
+    temperature: 0.3
+  });
+
+  const additionalParsed = safeParseAiJson(additionalText);
+
+  const normalized = normalizeSuggestionItems(
+    additionalParsed,
+    missingCategories
+  );
+
+  return normalized.length > 0 ? normalized : null;
 }
 
-Chỉ trả về JSON đúng format sau, không thêm markdown, không thêm giải thích ngoài JSON:
-[
-  {
-    "category": "daoDucTot",
-    "message": "nội dung đề xuất"
-  }
-]
+   const { systemPrompt, userPrompt } = buildSuggestionPrompt({
+  studentContext: {
+    studentId: student.studentId || "",
+    fullName: student.fullName || "",
+    className: student.className || ""
+  },
 
-Chỉ trả về các category còn thiếu sau:
-${missingCategories.join(", ")}
-`;
+  missingCategories,
 
-    const text = await callAzureClaude({
-      system: "Bạn là trợ lý tư vấn chương trình Sinh viên 5 tốt. Chỉ trả về JSON đúng format, không thêm markdown.",
-      messages: [{ role: "user", content: prompt }],
-      maxTokens: 1024,
-      temperature: 0.7
-    });
+  progressSummary: {
+    ...buildProgressSummaryForSuggestion(student, awardLevel),
+    completedCategories,
+    completedLabels,
+    awardLevelLabel
+  },
 
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+  evidenceSummary: [],
+  activitySummary: [],
 
-    return parsed.filter((item) => {
-      return missingCategories.includes(item.category);
-    });
+  regulationContext: buildRegulationContextForSuggestion({
+    awardLevel,
+    missingCategories,
+    missingDetails
+  })
+});
+
+const text = await callAzureOpenAI({
+  system: systemPrompt,
+  messages: [{ role: "user", content: userPrompt }],
+  maxTokens: 1024,
+  temperature: 0.3
+});
+
+    console.log("[getAISuggestions] raw text:", text.substring(0, 200));
+console.log("[getAISuggestions] missingCategories:", missingCategories);
+
+const parsed = safeParseAiJson(text);
+
+if (!Array.isArray(parsed)) {
+  console.error("[getAISuggestions] AI response is not a valid JSON array");
+  return null;
+}
+
+console.log("[getAISuggestions] parsed:", JSON.stringify(parsed));
+
+const filtered = normalizeSuggestionItems(parsed, missingCategories);
+
+console.log("[getAISuggestions] filtered:", JSON.stringify(filtered));
+
+return filtered.length > 0 ? filtered : null;
   } catch (error) {
     console.error("getAISuggestions error:", error.message);
     return null;
@@ -1356,6 +1592,43 @@ const declaration = {
   }
 });
 
+function buildCentralAdditionalSuggestions({
+  approvedAdditionalKeys,
+  additionalCriteriaCount
+}) {
+  const remaining = Math.max(0, 2 - Number(additionalCriteriaCount || 0));
+
+  const approvedSet =
+    approvedAdditionalKeys instanceof Set
+      ? approvedAdditionalKeys
+      : new Set();
+
+  const availableAdditionalCriteria = CENTRAL_ADDITIONAL_CRITERIA.filter(
+    (item) => {
+      return item && item.key && !approvedSet.has(item.key);
+    }
+  );
+
+  if (remaining <= 0) {
+    return [
+      {
+        category: "additional",
+        message:
+          "Bạn đã đạt đủ 2/2 tiêu chí đạt thêm cấp Trung ương. Hãy chờ admin kiểm tra tổng thể hồ sơ nếu cần."
+      }
+    ];
+  }
+
+  return availableAdditionalCriteria.slice(0, remaining).map((item) => {
+    return {
+      category: item.category || "additional",
+      additionalCriteriaKey: item.key,
+      label: item.label || "Tiêu chí đạt thêm",
+      message: `Bạn còn thiếu ${remaining} tiêu chí đạt thêm để đủ điều kiện cấp Trung ương. Bạn có thể chọn "${item.label}" nếu có minh chứng phù hợp. Minh chứng gợi ý: ${item.text}`
+    };
+  });
+}
+
 // GET /api/student-dashboard/me/central-level
 router.get("/me/central-level", requireStudentAuth, async (req, res) => {
   try {
@@ -1695,24 +1968,64 @@ const completedCategories = CENTRAL_CATEGORIES.filter((category) => {
   return centralProgress[category]?.isCompleted === true;
 });
 
-let aiSuggestions = await getAISuggestions(
-  student,
-  missingCategories,
-  completedCategories,
-  "trung_uong"
+// Nếu đã đủ 5 tiêu chuẩn bắt buộc nhưng chưa đủ 2 tiêu chí đạt thêm,
+// không gọi AI chung chung. Tạo gợi ý trực tiếp từ CENTRAL_ADDITIONAL_CRITERIA.
+const needsAdditional =
+  missingCategories.length === 0 && additionalCriteriaCount < 2;
+
+console.log(
+  "[Central Suggestions] missingCategories:",
+  missingCategories.length,
+  "additionalCriteriaCount:",
+  additionalCriteriaCount,
+  "needsAdditional:",
+  needsAdditional
 );
 
-if (
-  !aiSuggestions ||
-  !Array.isArray(aiSuggestions) ||
-  aiSuggestions.length === 0
-) {
-  aiSuggestions = missingCategories.map((category) => {
-    return {
-      category,
-      message: `Bạn còn thiếu tiêu chí ${CENTRAL_CATEGORY_LABELS[category] || category} ở cấp Trung ương. Hãy kiểm tra dữ liệu tham chiếu từ cấp Trường, cấp ĐHQG-HCM, cấp Thành phố hoặc nộp minh chứng bổ sung để admin duyệt thủ công.`
-    };
+let aiSuggestions = [];
+
+if (needsAdditional) {
+  aiSuggestions = buildCentralAdditionalSuggestions({
+    approvedAdditionalKeys,
+    additionalCriteriaCount
   });
+} else {
+  aiSuggestions = await getAISuggestions(
+    student,
+    missingCategories,
+    completedCategories,
+    "trung_uong",
+    false
+  );
+
+  if (
+    !aiSuggestions ||
+    !Array.isArray(aiSuggestions) ||
+    aiSuggestions.length === 0
+  ) {
+    aiSuggestions = missingCategories.map((category) => {
+      const centralCriteria = getCentralCriteriaForCategory(category);
+
+      const conditions =
+        centralCriteria?.mandatory?.conditions ||
+        centralCriteria?.conditions ||
+        [];
+
+      const conditionText = conditions
+        .map((item) => item.text || item)
+        .filter(Boolean)
+        .join("; ");
+
+      return {
+        category,
+        message: `Bạn còn thiếu tiêu chí ${
+          CENTRAL_CATEGORY_LABELS[category] || category
+        } ở cấp Trung ương. Điều kiện cần kiểm tra: ${
+          conditionText || "vui lòng xem lại quy định chi tiết của tiêu chí này"
+        }. Nếu dữ liệu tham chiếu từ các cấp trước chưa đủ, bạn cần nộp minh chứng bổ sung để admin duyệt thủ công.`
+      };
+    });
+  }
 }
 
     return res.json({
@@ -1746,6 +2059,8 @@ additionalProgressPercent,
 
   centralEvidences,
   evidences: centralEvidences,
+
+  aiSuggestions,
 
   sourceData: {
     schoolSelfDeclarations: {

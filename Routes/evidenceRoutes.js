@@ -7,6 +7,7 @@ const mammoth = require("mammoth");
 
 const Evidence = require("../Models/Evidence");
 const Student = require("../Models/Student");
+const AIReviewLog = require("../Models/AIReviewLog");
 
 const { requireStudentAuth, requireAdminAuth, requireSuperAdmin } = require("../Middlewares/authMiddleware");
 
@@ -28,17 +29,24 @@ const {
 } = require("../Utils/sv5tLevels");
 
 const {
-  buildPrompt,
+  buildEvidencePrompt,
   containsMockTestKeyword
 } = require("../Utils/aiPrompts/index");
+
+const {
+  buildStudentContext,
+  normalizeAiV2Result,
+  applyAiSafetyRules
+} = require("../Utils/aiDecisionEngine");
 
 const {
   sendPushToAdminsForClass
 } = require("../Utils/pushService");
 
 const {
-  callAzureClaude,
-  callAzureClaudeWithImage
+  callAzureOpenAI,
+  callAzureOpenAIWithImage,
+  safeParseAiJson
 } = require("../Utils/azureAI");
 
 const router = express.Router();
@@ -250,10 +258,13 @@ function getEmptyAiResult(reason) {
   return {
     isValid: null,
     confidence: 0,
+
     matchedType: "",
     subCriteria: "",
+
     academicEvidenceType: "",
     academicActivityCount: 0,
+
     volunteerDays: 0,
     volunteerActivityName: "",
     hasVolunteerAward: false,
@@ -275,6 +286,39 @@ function getEmptyAiResult(reason) {
     extractedText: "",
     matchedEvidence: [],
     missingInfo: [],
+
+    // AI v2 fields
+    promptVersion: "",
+    evidenceType: "",
+    matchedCategory: "",
+    matchedSubCriteria: [],
+    decision: "",
+    warningFlags: [],
+
+    extractedInfo: {
+      studentName: "",
+      studentId: "",
+      className: "",
+      faculty: "",
+      university: "",
+      activityName: "",
+      organizer: "",
+      issueDate: "",
+      semester: "",
+      academicYear: "",
+      score: "",
+      volunteerDays: 0,
+      achievement: ""
+    },
+
+    verification: {
+      hasStudentIdentity: false,
+      hasOrganizer: false,
+      hasDate: false,
+      hasAchievement: false,
+      matchesCurrentStudent: "unknown"
+    },
+
     reason: reason || ""
   };
 }
@@ -321,10 +365,88 @@ function normalizeAiResult(aiResult) {
       ? aiResult.missingInfo
       : [],
 
+      promptVersion: aiResult?.promptVersion ?? "",
+evidenceType: aiResult?.evidenceType ?? "",
+matchedCategory: aiResult?.matchedCategory ?? "",
+matchedSubCriteria: Array.isArray(aiResult?.matchedSubCriteria)
+  ? aiResult.matchedSubCriteria
+  : [],
+
+decision: aiResult?.decision ?? "",
+
+warningFlags: Array.isArray(aiResult?.warningFlags)
+  ? aiResult.warningFlags
+  : [],
+
+extractedInfo: {
+  studentName: aiResult?.extractedInfo?.studentName ?? "",
+  studentId: aiResult?.extractedInfo?.studentId ?? "",
+  className: aiResult?.extractedInfo?.className ?? "",
+  faculty: aiResult?.extractedInfo?.faculty ?? "",
+  university: aiResult?.extractedInfo?.university ?? "",
+  activityName: aiResult?.extractedInfo?.activityName ?? "",
+  organizer: aiResult?.extractedInfo?.organizer ?? "",
+  issueDate: aiResult?.extractedInfo?.issueDate ?? "",
+  semester: aiResult?.extractedInfo?.semester ?? "",
+  academicYear: aiResult?.extractedInfo?.academicYear ?? "",
+  score: aiResult?.extractedInfo?.score ?? "",
+  volunteerDays: Number(aiResult?.extractedInfo?.volunteerDays || 0),
+  achievement: aiResult?.extractedInfo?.achievement ?? ""
+},
+
+verification: {
+  hasStudentIdentity: aiResult?.verification?.hasStudentIdentity === true,
+  hasOrganizer: aiResult?.verification?.hasOrganizer === true,
+  hasDate: aiResult?.verification?.hasDate === true,
+  hasAchievement: aiResult?.verification?.hasAchievement === true,
+  matchesCurrentStudent:
+    aiResult?.verification?.matchesCurrentStudent === "true" ||
+    aiResult?.verification?.matchesCurrentStudent === true
+      ? "true"
+      : aiResult?.verification?.matchesCurrentStudent === "false" ||
+        aiResult?.verification?.matchesCurrentStudent === false
+      ? "false"
+      : "unknown"
+},
+
     reason:
       aiResult?.reason ||
       "AI đã xử lý nhưng không trả lý do cụ thể. Cần admin kiểm tra thủ công."
   };
+}
+
+async function createAIReviewLog({
+  studentId,
+  evidenceId,
+  category,
+  awardLevel,
+  inputType,
+  extractedTextLength = 0,
+  statusBefore = "",
+  statusAfter = "",
+  rawResponse = "",
+  parsedResult = null,
+  errorMessage = ""
+}) {
+  try {
+    await AIReviewLog.create({
+      studentId,
+      evidenceId,
+      category,
+      awardLevel,
+      model: process.env.AZURE_FOUNDRY_MODEL || "",
+      promptVersion: parsedResult?.promptVersion || "",
+      inputType,
+      extractedTextLength,
+      statusBefore,
+      statusAfter,
+      rawResponse: String(rawResponse || "").slice(0, 8000),
+      parsedResult,
+      errorMessage
+    });
+  } catch (logError) {
+    console.error("Create AIReviewLog error:", logError.message);
+  }
 }
 
 async function extractTextFromFile(filePath, fileType) {
@@ -354,79 +476,101 @@ async function extractTextFromFile(filePath, fileType) {
   }
 }
 
-async function analyzeEvidenceWithAI(filePath, fileType, category, awardLevel = "truong") {
+async function analyzeEvidenceWithAI(
+  filePath,
+  fileType,
+  category,
+  awardLevel = "truong",
+  studentContext = {}
+) {
   try {
-    // ── Xử lý ảnh: dùng Claude vision ────────────────────────────────────
+    // ── Xử lý ảnh: dùng OpenAI vision ────────────────────────────────────
     if (fileType === "image/png" || fileType === "image/jpeg") {
       const imageData = fs.readFileSync(filePath);
       const base64Image = imageData.toString("base64");
 
-      const prompt = buildPrompt(
-        category,
-        "Hãy đọc toàn bộ nội dung văn bản trong ảnh và phân tích tài liệu:",
-        awardLevel
-      );
+      const prompt = buildEvidencePrompt({
+  category,
+  contentDescription: "Hãy đọc toàn bộ nội dung văn bản trong ảnh và phân tích tài liệu:",
+  awardLevel,
+  studentContext
+});
 
       if (!prompt) return null;
 
-      const text = await callAzureClaudeWithImage({
+      const text = await callAzureOpenAIWithImage({
         system: prompt,
         base64Image,
         mimeType: fileType,
         maxTokens: 1024
       });
 
-      const clean = text.replace(/```json|```/g, "").trim();
+const parsed = safeParseAiJson(text);
 
-      try {
-        return JSON.parse(clean);
-      } catch {
-        return {
-          ...getEmptyAiResult("AI đã phản hồi nhưng không đúng định dạng JSON. Cần admin kiểm tra thủ công."),
-          extractedText: text
-        };
-      }
+if (!parsed) {
+  return {
+    ...getEmptyAiResult("AI đã phản hồi nhưng không đúng định dạng JSON. Cần admin kiểm tra thủ công."),
+    extractedText: text,
+    rawResponse: text
+  };
+}
+
+return {
+  ...parsed,
+  rawResponse: text
+};
     }
 
-    // ── Xử lý PDF / DOCX: extract text rồi gửi lên Claude ────────────────
+    // ── Xử lý PDF / DOCX: extract text rồi gửi lên OpenAI ────────────────
     const extractedText = await extractTextFromFile(filePath, fileType);
 
     if (!extractedText || extractedText.length < 20) {
-      return getEmptyAiResult(
-        "File không có nội dung text hoặc không đọc được nội dung. Cần admin xem xét thủ công."
-      );
-    }
+  const unreadableReason =
+    fileType === "application/pdf"
+      ? "File PDF có thể là bản scan/ảnh nên hệ thống chưa đọc được nội dung tự động. Vui lòng upload ảnh JPG/PNG rõ nét hoặc để admin kiểm tra thủ công."
+      : fileType === "application/msword"
+      ? "File DOC cũ có thể không đọc được tự động. Vui lòng đổi sang DOCX/PDF hoặc để admin kiểm tra thủ công."
+      : "File không có nội dung text hoặc không đọc được nội dung. Cần admin xem xét thủ công.";
+
+  return getEmptyAiResult(unreadableReason);
+}
 
     const textToSend =
       extractedText.length > 3000
         ? extractedText.substring(0, 3000) + "\n...(nội dung đã rút gọn)"
         : extractedText;
 
-    const prompt = buildPrompt(
-      category,
-      `Nội dung file:\n---\n${textToSend}\n---`,
-      awardLevel
-    );
+    const prompt = buildEvidencePrompt({
+  category,
+  contentDescription: `Nội dung file:\n---\n${textToSend}\n---`,
+  awardLevel,
+  studentContext
+});
 
     if (!prompt) return null;
 
-    const text = await callAzureClaude({
+    const text = await callAzureOpenAI({
       system: prompt,
       messages: [{ role: "user", content: "Phân tích tài liệu trên và trả về JSON." }],
       maxTokens: 1024,
       temperature: 0.2
     });
 
-    const clean = text.replace(/```json|```/g, "").trim();
+    const parsed = safeParseAiJson(text);
 
-    try {
-      return JSON.parse(clean);
-    } catch {
-      return {
-        ...getEmptyAiResult("AI đã phản hồi nhưng không đúng định dạng JSON. Cần admin kiểm tra thủ công."),
-        extractedText: text
-      };
-    }
+if (!parsed) {
+  return {
+    ...getEmptyAiResult("AI đã phản hồi nhưng không đúng định dạng JSON. Cần admin kiểm tra thủ công."),
+    extractedText,
+    rawResponse: text
+  };
+}
+
+return {
+  ...parsed,
+  extractedText,
+  rawResponse: text
+};
 
   } catch (error) {
     console.error("analyzeEvidenceWithAI error:", error.message);
@@ -540,6 +684,39 @@ async function archiveEvidenceToR2(evidence) {
   return evidence;
 }
 
+async function safeArchiveEvidenceToR2(evidence) {
+  try {
+    return await safeArchiveEvidenceToR2(evidence);
+  } catch (error) {
+    console.error("Archive evidence to R2 error:", error.message);
+
+    if (!evidence) return null;
+
+    const currentMissingInfo = Array.isArray(evidence.aiResult?.missingInfo)
+      ? evidence.aiResult.missingInfo
+      : [];
+
+    evidence.storageStatus =
+      evidence.filePath && fs.existsSync(evidence.filePath)
+        ? "local_temp"
+        : evidence.storageStatus || "none";
+
+    evidence.aiResult = {
+      ...(evidence.aiResult || getEmptyAiResult("")),
+      missingInfo: [
+        ...currentMissingInfo,
+        `AI đã xử lý xong nhưng chưa lưu được file lên Cloudflare R2: ${error.message}`
+      ],
+      reason: evidence.aiResult?.reason
+        ? `${evidence.aiResult.reason} Lưu ý hệ thống: AI đã xử lý xong nhưng chưa lưu được file lên Cloudflare R2, admin cần kiểm tra storage.`
+        : "AI đã xử lý xong nhưng chưa lưu được file lên Cloudflare R2, admin cần kiểm tra storage."
+    };
+
+    await evidence.save();
+    return evidence;
+  }
+}
+
 async function handleSchoolLevelAiResult({
   evidence,
   aiResult,
@@ -551,7 +728,7 @@ async function handleSchoolLevelAiResult({
       evidence.status = "ai_valid";
       await evidence.save();
 
-      await archiveEvidenceToR2(evidence);
+      await safeArchiveEvidenceToR2(evidence);
       await recomputeHocTapProgress(studentId);
       return;
     }
@@ -564,7 +741,7 @@ async function handleSchoolLevelAiResult({
         evidence.status = "partial_valid";
         await evidence.save();
 
-        await archiveEvidenceToR2(evidence);
+        await safeArchiveEvidenceToR2(evidence);
         await recomputeHocTapProgress(studentId);
         return;
       }
@@ -600,7 +777,7 @@ async function handleSchoolLevelAiResult({
         isAward || volunteerDays >= 5 ? "ai_valid" : "partial_valid";
 
       await evidence.save();
-      await archiveEvidenceToR2(evidence);
+      await safeArchiveEvidenceToR2(evidence);
       await recomputeTinhNguyenProgress(studentId);
       return;
     }
@@ -628,7 +805,7 @@ async function handleSchoolLevelAiResult({
       evidence.aiResult.subCriteria = subCriteria;
 
       await evidence.save();
-      await archiveEvidenceToR2(evidence);
+      await safeArchiveEvidenceToR2(evidence);
       await recomputeHoiNhapProgress(studentId);
       return;
     }
@@ -648,7 +825,7 @@ async function handleSchoolLevelAiResult({
     evidence.status = "ai_valid";
     await evidence.save();
 
-    await archiveEvidenceToR2(evidence);
+    await safeArchiveEvidenceToR2(evidence);
     await updateStudentProgress(studentId, category);
     return;
   }
@@ -685,7 +862,7 @@ async function handleOtherSv5tAiResult({
     evidence.status = "ai_valid";
 
     await evidence.save();
-    await archiveEvidenceToR2(evidence);
+    await safeArchiveEvidenceToR2(evidence);
     return;
   }
 
@@ -721,7 +898,7 @@ async function handleHigherLevelAiResult({ evidence, aiResult, awardLevel }) {
 
 router.get("/test-azure", requireAdminAuth, requireSuperAdmin, async (req, res) => {
   try {
-    const reply = await callAzureClaude({
+    const reply = await callAzureOpenAI({
       system: "Bạn là trợ lý kiểm tra kết nối.",
       messages: [{ role: "user", content: "Trả lời đúng JSON: {\"success\":true,\"message\":\"Azure OpenAI hoạt động\"}" }],
       maxTokens: 100,
@@ -730,13 +907,13 @@ router.get("/test-azure", requireAdminAuth, requireSuperAdmin, async (req, res) 
 
     res.json({
       success: true,
-      message: "Kết nối Azure Claude API thành công",
+      message: "Kết nối Azure OpenAI API thành công",
       reply
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Không gọi được Azure Claude API",
+      message: "Không gọi được Azure OpenAI API",
       error: error.message
     });
   }
@@ -814,6 +991,7 @@ router.post(
       const uploadStudent = await Student.findOne({
   studentId
 }).select("studentId fullName className");
+const studentContext = buildStudentContext(uploadStudent || req.student);
 
 await sendPushToAdminsForClass(
   uploadStudent?.className || req.student.className || "",
@@ -826,9 +1004,30 @@ await sendPushToAdminsForClass(
   console.error("Push new evidence to admin error:", error.message);
 });
 
-      analyzeEvidenceWithAI(req.file.path, req.file.mimetype, category, awardLevel)
+      analyzeEvidenceWithAI(
+  req.file.path,
+  req.file.mimetype,
+  category,
+  awardLevel,
+  studentContext
+)
         .then(async (rawAiResult) => {
-          const aiResult = normalizeAiResult(rawAiResult);
+          const rawResponse = rawAiResult?.rawResponse || "";
+
+let aiResult = normalizeAiResult(rawAiResult);
+
+aiResult = normalizeAiV2Result(
+  aiResult,
+  category,
+  awardLevel,
+  studentContext
+);
+
+aiResult = applyAiSafetyRules(aiResult, category);
+
+delete aiResult.rawResponse;
+delete aiResult._studentContext;
+delete aiResult._awardLevel;
 
           if (
             awardLevel === "dhqg" &&
@@ -855,6 +1054,17 @@ await sendPushToAdminsForClass(
           }
 
           evidence.aiResult = aiResult;
+          await createAIReviewLog({
+  studentId,
+  evidenceId: evidence._id,
+  category,
+  awardLevel,
+  inputType: req.file.mimetype,
+  extractedTextLength: String(aiResult.extractedText || "").length,
+  statusBefore: "pending",
+  rawResponse,
+  parsedResult: aiResult
+});
 
 if (category === "khac") {
   await handleOtherSv5tAiResult({
@@ -890,6 +1100,18 @@ await handleSchoolLevelAiResult({
   category
 });
 
+await createAIReviewLog({
+  studentId,
+  evidenceId: evidence._id,
+  category,
+  awardLevel,
+  inputType: req.file.mimetype,
+  extractedTextLength: String(aiResult.extractedText || "").length,
+  statusBefore: "pending",
+  statusAfter: evidence.status,
+  parsedResult: aiResult
+});
+
           console.log(
             `✅ AI [${studentId}/${category}/${awardLevel}]: ${evidence.status} (${aiResult.confidence}%) — ${aiResult.reason}`
           );
@@ -904,6 +1126,16 @@ await handleSchoolLevelAiResult({
           evidence.aiResult.missingInfo = [error.message];
 
           await evidence.save();
+          await createAIReviewLog({
+  studentId,
+  evidenceId: evidence._id,
+  category,
+  awardLevel,
+  inputType: req.file?.mimetype || "",
+  statusBefore: "pending",
+  statusAfter: "manual_review",
+  errorMessage: error.message
+});
         });
 
       res.json({

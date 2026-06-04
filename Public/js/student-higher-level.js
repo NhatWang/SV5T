@@ -188,11 +188,21 @@ function renderOverview(data) {
 
   data.aiSuggestions.forEach((item) => {
     const li = document.createElement("li");
-    li.textContent = item.message;
+    li.innerHTML = parseAISuggestionMarkdown(item.message);
     aiSuggestions.appendChild(li);
   });
 }
 
+function parseAISuggestionMarkdown(text) {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\n/g, "<br>");
+}
 
 function renderCentralPrerequisiteCard(data) {
   const card = document.getElementById("centralPrerequisiteCard");
