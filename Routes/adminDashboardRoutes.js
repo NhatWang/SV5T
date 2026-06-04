@@ -1138,6 +1138,121 @@ router.get(
   }
 );
 
+// Helper functions for sv5t-detail route
+function buildLevelMissingItems(category, level, levelProgress) {
+  if (!category || !level) return [];
+
+  if (category === "khac") {
+    return [];
+  }
+  const isCompleted = levelProgress?.isCompleted === true;
+
+  if (isCompleted) {
+    return [];
+  }
+
+  if (level === "truong") {
+    const missingMap = {
+      daoDucTot: [
+        "Cần hoàn tất điều kiện điểm rèn luyện và xác nhận không vi phạm.",
+        "Nếu thiếu dữ liệu hệ thống, sinh viên cần tự khai hoặc nộp minh chứng phù hợp."
+      ],
+      hocTapTot: [
+        "Cần đạt điều kiện học tập bắt buộc.",
+        "Cần có minh chứng học thuật hoặc hoạt động học thuật phù hợp."
+      ],
+      theLucTot: [
+        "Cần có hoạt động thể thao, giải thể thao hoặc minh chứng thể lực phù hợp."
+      ],
+      tinhNguyenTot: [
+        "Cần đủ ngày tình nguyện hoặc minh chứng/khen thưởng tình nguyện phù hợp."
+      ],
+      hoiNhapTot: [
+        "Cần đủ 3 phần: ngoại ngữ, kỹ năng và hoạt động hội nhập."
+      ],
+      khac: []
+    };
+    return missingMap[category] || [];
+  }
+
+  if (level === "dhqg") {
+    const dhqgMissingMap = {
+      daoDucTot: ["Cần đạt Đạo đức tốt cấp Trường và đủ điều kiện tham chiếu lên cấp ĐHQG-HCM."],
+      hocTapTot: ["Cần đạt Học tập tốt cấp Trường và có hoạt động/minh chứng học tập đủ điều kiện cấp ĐHQG-HCM."],
+      theLucTot: ["Cần có hoạt động hoặc minh chứng thể lực đủ điều kiện cấp ĐHQG-HCM."],
+      tinhNguyenTot: ["Cần có đủ ngày tình nguyện hoặc khen thưởng tình nguyện phù hợp cấp ĐHQG-HCM."],
+      hoiNhapTot: ["Cần đạt đủ điều kiện Hội nhập tốt theo quy định cấp ĐHQG-HCM."]
+    };
+    return dhqgMissingMap[category] || [];
+  }
+
+  if (level === "thanh") {
+    const thanhMissingMap = {
+      daoDucTot: ["Cần đạt Đạo đức tốt cấp Trường và đủ điều kiện tham chiếu lên cấp Thành phố."],
+      hocTapTot: ["Cần đạt Học tập tốt cấp Trường và có hoạt động/minh chứng học tập đủ điều kiện cấp Thành phố."],
+      theLucTot: ["Cần có hoạt động hoặc minh chứng thể lực đủ điều kiện cấp Thành phố."],
+      tinhNguyenTot: ["Cấp Thành phố yêu cầu vừa đủ ít nhất 05 ngày tình nguyện, vừa có khen thưởng/xác nhận tình nguyện phù hợp."],
+      hoiNhapTot: ["Cần đạt đủ 3 phần Hội nhập tốt: Ngoại ngữ, Kỹ năng và Hoạt động hội nhập theo quy định cấp Thành phố."]
+    };
+    return thanhMissingMap[category] || [];
+  }
+
+  if (level === "trung_uong") {
+    const centralMissingMap = {
+      daoDucTot: ["Cần đạt tiêu chuẩn bắt buộc Đạo đức tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."],
+      hocTapTot: ["Cần đạt tiêu chuẩn bắt buộc Học tập tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."],
+      theLucTot: ["Cần đạt tiêu chuẩn bắt buộc Thể lực tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."],
+      tinhNguyenTot: ["Cần đạt tiêu chuẩn bắt buộc Tình nguyện tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."],
+      hoiNhapTot: ["Cần đạt tiêu chuẩn bắt buộc Hội nhập tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."]
+    };
+    return centralMissingMap[category] || [];
+  }
+
+  return [];
+}
+
+function getSelfDeclarationsByCategoryAndLevel(student, category, level) {
+  return (student.selfDeclarations || []).filter((item) => {
+    return item.category === category && item.awardLevel === level;
+  });
+}
+
+function formatDeclarationValue(value) {
+  if (value === true) return "Có";
+  if (value === false) return "Không";
+  if (value === null || value === undefined || value === "") return "Chưa khai";
+  return String(value);
+}
+
+function buildDeclarationForLevel(student, category, level) {
+  const declarations = getSelfDeclarationsByCategoryAndLevel(student, category, level);
+
+  if (!declarations.length) {
+    return { title: "Dữ liệu sinh viên tự khai", groups: [] };
+  }
+
+  const groups = declarations.map((declaration) => {
+    const data = declaration.data || {};
+    const items = Object.keys(data).map((key) => ({
+      label: key,
+      value: formatDeclarationValue(data[key])
+    }));
+    return {
+      title: declaration.type || declaration.subCriteria || "Tự khai",
+      awardLevel: declaration.awardLevel || level,
+      category: declaration.category || category,
+      subCriteria: declaration.subCriteria || "",
+      type: declaration.type || "",
+      isCompleted: declaration.isCompleted === true,
+      reason: declaration.reason || "",
+      declaredAt: declaration.declaredAt || null,
+      items
+    };
+  });
+
+  return { title: "Dữ liệu sinh viên tự khai", groups };
+}
+
 router.get(
   "/students/:studentId/sv5t-detail",
   requireAdminAuth,
@@ -1288,150 +1403,6 @@ router.get(
         return false;
       }
 
-      function buildLevelMissingItems(category, level, levelProgress) {
-
-        if (category === "khac") {
-          return [];
-        }
-        const isCompleted = levelProgress?.isCompleted === true;
-
-        if (isCompleted) {
-          return [];
-        }
-
-        if (level === "truong") {
-          return missingMap[category] || [];
-        }
-
-        if (level === "dhqg") {
-          const dhqgMissingMap = {
-            daoDucTot: [
-              "Cần đạt Đạo đức tốt cấp Trường và đủ điều kiện tham chiếu lên cấp ĐHQG-HCM."
-            ],
-            hocTapTot: [
-              "Cần đạt Học tập tốt cấp Trường và có hoạt động/minh chứng học tập đủ điều kiện cấp ĐHQG-HCM."
-            ],
-            theLucTot: [
-              "Cần có hoạt động hoặc minh chứng thể lực đủ điều kiện cấp ĐHQG-HCM."
-            ],
-            tinhNguyenTot: [
-              "Cần có đủ ngày tình nguyện hoặc khen thưởng tình nguyện phù hợp cấp ĐHQG-HCM."
-            ],
-            hoiNhapTot: [
-              "Cần đạt đủ điều kiện Hội nhập tốt theo quy định cấp ĐHQG-HCM."
-            ]
-          };
-
-          return dhqgMissingMap[category] || [];
-        }
-
-        if (level === "thanh") {
-          const thanhMissingMap = {
-            daoDucTot: [
-              "Cần đạt Đạo đức tốt cấp Trường và đủ điều kiện tham chiếu lên cấp Thành phố."
-            ],
-            hocTapTot: [
-              "Cần đạt Học tập tốt cấp Trường và có hoạt động/minh chứng học tập đủ điều kiện cấp Thành phố."
-            ],
-            theLucTot: [
-              "Cần có hoạt động hoặc minh chứng thể lực đủ điều kiện cấp Thành phố."
-            ],
-            tinhNguyenTot: [
-              "Cấp Thành phố yêu cầu vừa đủ ít nhất 05 ngày tình nguyện, vừa có khen thưởng/xác nhận tình nguyện phù hợp."
-            ],
-            hoiNhapTot: [
-              "Cần đạt đủ 3 phần Hội nhập tốt: Ngoại ngữ, Kỹ năng và Hoạt động hội nhập theo quy định cấp Thành phố."
-            ]
-          };
-
-          return thanhMissingMap[category] || [];
-        }
-
-        if (level === "trung_uong") {
-          const centralMissingMap = {
-            daoDucTot: [
-              "Cần đạt tiêu chuẩn bắt buộc Đạo đức tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
-            ],
-            hocTapTot: [
-              "Cần đạt tiêu chuẩn bắt buộc Học tập tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
-            ],
-            theLucTot: [
-              "Cần đạt tiêu chuẩn bắt buộc Thể lực tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
-            ],
-            tinhNguyenTot: [
-              "Cần đạt tiêu chuẩn bắt buộc Tình nguyện tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
-            ],
-            hoiNhapTot: [
-              "Cần đạt tiêu chuẩn bắt buộc Hội nhập tốt cấp Trung ương hoặc có minh chứng bắt buộc đã được admin duyệt."
-            ]
-          };
-
-          return centralMissingMap[category] || [];
-        }
-
-        return [];
-      }
-
-function getSelfDeclarationsByCategoryAndLevel(student, category, level) {
-  return (student.selfDeclarations || []).filter((item) => {
-    return item.category === category && item.awardLevel === level;
-  });
-}
-
-function formatDeclarationValue(value) {
-  if (value === true) return "Có";
-  if (value === false) return "Không";
-  if (value === null || value === undefined || value === "") return "Chưa khai";
-
-  return String(value);
-}
-
-function buildDeclarationForLevel(student, category, level) {
-  const declarations = getSelfDeclarationsByCategoryAndLevel(
-    student,
-    category,
-    level
-  );
-
-  if (!declarations.length) {
-    return {
-      title: "Dữ liệu sinh viên tự khai",
-      groups: []
-    };
-  }
-
-  const groups = declarations.map((declaration) => {
-    const data = declaration.data || {};
-
-    const items = Object.keys(data).map((key) => {
-      return {
-        label: key,
-        value: formatDeclarationValue(data[key])
-      };
-    });
-
-    return {
-      title:
-        declaration.type ||
-        declaration.subCriteria ||
-        "Tự khai",
-      awardLevel: declaration.awardLevel || level,
-      category: declaration.category || category,
-      subCriteria: declaration.subCriteria || "",
-      type: declaration.type || "",
-      isCompleted: declaration.isCompleted === true,
-      reason: declaration.reason || "",
-      declaredAt: declaration.declaredAt || null,
-      items
-    };
-  });
-
-  return {
-    title: "Dữ liệu sinh viên tự khai",
-    groups
-  };
-}
-
       const details = {};
 
       categoryKeys.forEach((category) => {
@@ -1478,6 +1449,8 @@ function buildDeclarationForLevel(student, category, level) {
   completedBy: levelProgress.completedBy || "none",
   completedAt: levelProgress.completedAt || null,
   progress: levelProgress,
+
+  declaration: buildDeclarationForLevel(student, category, level),
 
   activities: levelActivities,
   approvedEvidences,
