@@ -19,4 +19,4 @@ jobs:
             cd ~/SV5T
             git pull
             npm install --production
-            pm2 restart server
+            pm2 restart sv5t
