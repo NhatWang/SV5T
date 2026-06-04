@@ -302,89 +302,63 @@
     inputEl.disabled = val;
   }
 
-  // ── Send với Streaming ────────────────────────────────────────────────────
-  async function sendMessage(text) {
-    const msg = (text || inputEl.value).trim();
-    if (!msg || isLoading) return;
+  // ── Send không dùng Streaming ─────────────────────────────────────────────
+async function sendMessage(text) {
+  const msg = (text || inputEl.value).trim();
+  if (!msg || isLoading) return;
 
-    inputEl.value = "";
-    inputEl.style.height = "auto";
-    suggestionsEl.innerHTML = "";
+  inputEl.value = "";
+  inputEl.style.height = "auto";
+  suggestionsEl.innerHTML = "";
 
-    addMessage(msg, "user");
-    history.push({ role: "user", content: msg });
+  addMessage(msg, "user");
+  history.push({ role: "user", content: msg });
 
-    setLoading(true);
-    const typingWrap = showTyping();
+  setLoading(true);
+  const typingWrap = showTyping();
 
-    try {
-      const res = await fetch("/api/chatbot/student/stream", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, history: history.slice(-10) })
-      });
+  try {
+    const res = await fetch("/api/chatbot/student", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: msg,
+        history: history.slice(-10)
+      })
+    });
 
-      typingWrap.remove();
+    typingWrap.remove();
 
-      if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({}));
-        addMessage(data.message || "Có lỗi xảy ra. Vui lòng thử lại.", "bot");
-        setLoading(false);
-        return;
-      }
+    const data = await res.json().catch(() => ({}));
 
-      const botBubble = createBubble("bot");
-      let fullText = "";
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-
-          try {
-            const parsed = JSON.parse(trimmed.slice(6));
-
-            if (parsed.type === "chunk") {
-              fullText += parsed.content;
-              botBubble.innerHTML = parseMarkdown(fullText);
-              const cur = document.createElement("span");
-              cur.className = "sv5t-cursor";
-              botBubble.appendChild(cur);
-              messagesEl.scrollTop = messagesEl.scrollHeight;
-            }
-
-            if (parsed.type === "done") {
-              botBubble.innerHTML = parseMarkdown(fullText);
-              history.push({ role: "assistant", content: fullText });
-              messagesEl.scrollTop = messagesEl.scrollHeight;
-            }
-
-            if (parsed.type === "error") {
-              botBubble.innerHTML = parseMarkdown(parsed.message || "Có lỗi xảy ra.");
-            }
-          } catch { /* bỏ qua */ }
-        }
-      }
-
-    } catch (err) {
-      typingWrap.remove();
-      addMessage("Không thể kết nối. Vui lòng kiểm tra mạng và thử lại.", "bot");
-    } finally {
-      setLoading(false);
-      inputEl.focus();
+    if (!res.ok || data.success === false) {
+      addMessage(
+        data.message || "Chatbot đang gặp lỗi. Vui lòng thử lại sau.",
+        "bot"
+      );
+      return;
     }
+
+    const reply = data.reply || "Mình chưa có câu trả lời phù hợp.";
+    addMessage(reply, "bot");
+    history.push({
+      role: "assistant",
+      content: reply
+    });
+  } catch (err) {
+    typingWrap.remove();
+    addMessage(
+      "Không thể kết nối. Vui lòng kiểm tra mạng và thử lại.",
+      "bot"
+    );
+  } finally {
+    setLoading(false);
+    inputEl.focus();
   }
+}
 
   // ── Events ────────────────────────────────────────────────────────────────
   btn.addEventListener("click", () => {
