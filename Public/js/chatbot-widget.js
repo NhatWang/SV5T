@@ -177,7 +177,7 @@
     }
     #sv5t-chat-send:disabled { background: #cbd5e0; cursor: not-allowed; }
     #sv5t-chat-send:hover:not(:disabled) { background: #2b6cb0; }
-    #sv5t-chat-send svg { width: 16px; height: 16px; fill: currentColor; }
+    #sv5t-chat-send { font-size: 18px; line-height: 1; }
   `;
   document.head.appendChild(style);
 
@@ -202,9 +202,7 @@
     <div class="sv5t-suggestions" id="sv5t-suggestions"></div>
     <div id="sv5t-chat-footer">
       <textarea id="sv5t-chat-input" rows="1" placeholder="Hỏi về tiến độ SV5T của bạn..."></textarea>
-      <button id="sv5t-chat-send" title="Gửi">
-        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-      </button>
+      <button id="sv5t-chat-send" title="Gửi">&#9658;</button>
     </div>
   `;
 
