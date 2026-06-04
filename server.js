@@ -93,6 +93,20 @@ const resetPasswordLimiter = rateLimit({
   message: { success: false, message: "Yêu cầu đặt lại mật khẩu quá nhiều lần. Vui lòng thử lại sau 1 tiếng." }
 });
 
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+
+    if (duration > 500) {
+      console.log(`[SLOW] ${req.method} ${req.originalUrl} - ${duration}ms`);
+    }
+  });
+
+  next();
+});
+
 app.use("/api", globalLimiter);
 app.use("/api/student/login", studentLoginLimiter);
 app.use("/api/student/reset-password", resetPasswordLimiter);
