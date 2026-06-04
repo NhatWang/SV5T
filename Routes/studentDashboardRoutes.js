@@ -2,7 +2,7 @@ const express = require("express");
 const Student = require("../Models/Student");
 const Activity = require("../Models/Activity");
 const Evidence = require("../Models/Evidence");
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const { callAzureClaude } = require("../Utils/azureAI");
 const { requireStudentAuth } = require("../Middlewares/authMiddleware");
 
 const multer = require("multer");
@@ -187,9 +187,7 @@ async function getAISuggestions(
   awardLevel = CURRENT_AWARD_LEVEL
 ) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey || missingCategories.length === 0) {
+    if (missingCategories.length === 0) {
       return null;
     }
 
@@ -299,34 +297,12 @@ Chỉ trả về các category còn thiếu sau:
 ${missingCategories.join(", ")}
 `;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ]
-        })
-      }
-    );
-
-    if (!response.ok) {
-      console.error("Gemini suggestions error:", response.status);
-      return null;
-    }
-
-    const result = await response.json();
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = await callAzureClaude({
+      system: "Bạn là trợ lý tư vấn chương trình Sinh viên 5 tốt. Chỉ trả về JSON đúng format, không thêm markdown.",
+      messages: [{ role: "user", content: prompt }],
+      maxTokens: 1024,
+      temperature: 0.7
+    });
 
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
