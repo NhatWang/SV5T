@@ -7,6 +7,7 @@ const Student = require("../Models/Student");
 const Activity = require("../Models/Activity");
 const Evidence = require("../Models/Evidence");
 const ClassCollectiveEvaluation = require("../Models/ClassCollectiveEvaluation");
+const Admin = require("../Models/Admin");
 
 const {
   recomputeHocTapProgress,
@@ -3215,5 +3216,55 @@ router.get("/central-evidences", requireAdminAuth, async (req, res) => {
     });
   }
 });
+
+// ===============================
+// SUPER ADMIN: TẠO MÃ RESET MẬT KHẨU CHO ADMIN
+// ===============================
+
+router.post(
+  "/admins/:username/generate-reset-code",
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const { username } = req.params;
+
+      const admin = await Admin.findOne({ username: username.trim() });
+
+      if (!admin) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy tài khoản admin"
+        });
+      }
+
+      const resetCode = generateResetCode();
+
+      admin.resetPasswordCodeHash = hashResetCode(resetCode);
+      admin.resetPasswordExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      admin.resetPasswordUsed = false;
+
+      await admin.save();
+
+      return res.json({
+        success: true,
+        message: "Tạo mã reset thành công. Mã có hiệu lực trong 10 phút.",
+        resetCode,
+        expiresInMinutes: 10,
+        admin: {
+          username: admin.username,
+          role: admin.role,
+          className: admin.className || ""
+        }
+      });
+    } catch (error) {
+      console.error("Generate admin reset code error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi tạo mã reset"
+      });
+    }
+  }
+);
 
 module.exports = router;

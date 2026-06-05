@@ -3,6 +3,11 @@ const bcrypt = require("bcryptjs");
 const Admin = require("../Models/Admin");
 const jwt = require("jsonwebtoken");
 
+const {
+  hashResetCode,
+  isResetCodeExpired
+} = require("../Utils/resetPasswordUtils");
+
 const router = express.Router();
 
 // POST /api/admin/login
@@ -130,6 +135,89 @@ router.post("/logout", (req, res) => {
     success: true,
     message: "Đăng xuất admin thành công"
   });
+});
+
+// POST /api/admin/reset-password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { username, resetCode, newPassword, confirmPassword } = req.body;
+
+    if (!username || !resetCode || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ tài khoản, mã reset và mật khẩu mới"
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Mật khẩu nhập lại không khớp"
+      });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Mật khẩu mới phải có ít nhất 6 ký tự"
+      });
+    }
+
+    const admin = await Admin.findOne({ username: String(username).trim() });
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy tài khoản admin"
+      });
+    }
+
+    if (
+      !admin.resetPasswordCodeHash ||
+      !admin.resetPasswordExpiresAt ||
+      admin.resetPasswordUsed
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Mã reset không tồn tại hoặc đã được sử dụng. Vui lòng liên hệ super admin để lấy mã mới."
+      });
+    }
+
+    if (isResetCodeExpired(admin.resetPasswordExpiresAt)) {
+      return res.status(400).json({
+        success: false,
+        message: "Mã reset đã hết hạn. Vui lòng liên hệ super admin để lấy mã mới."
+      });
+    }
+
+    const inputCodeHash = hashResetCode(String(resetCode).trim());
+
+    if (inputCodeHash !== admin.resetPasswordCodeHash) {
+      return res.status(400).json({
+        success: false,
+        message: "Mã reset không chính xác"
+      });
+    }
+
+    admin.password = await bcrypt.hash(newPassword, 10);
+    admin.resetPasswordCodeHash = "";
+    admin.resetPasswordExpiresAt = null;
+    admin.resetPasswordUsed = true;
+
+    await admin.save();
+
+    return res.json({
+      success: true,
+      message: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại."
+    });
+  } catch (error) {
+    console.error("Admin reset password error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server khi đặt lại mật khẩu admin"
+    });
+  }
 });
 
 module.exports = router;

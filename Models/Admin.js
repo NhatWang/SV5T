@@ -26,6 +26,21 @@ const adminSchema = new mongoose.Schema(
       type: String,
       default: "",
       trim: true
+    },
+
+    resetPasswordCodeHash: {
+      type: String,
+      default: ""
+    },
+
+    resetPasswordExpiresAt: {
+      type: Date,
+      default: null
+    },
+
+    resetPasswordUsed: {
+      type: Boolean,
+      default: false
     }
   },
   {

@@ -111,6 +111,7 @@ app.use("/api", globalLimiter);
 app.use("/api/student/login", studentLoginLimiter);
 app.use("/api/student/reset-password", resetPasswordLimiter);
 app.use("/api/admin/login", adminLoginLimiter);
+app.use("/api/admin/reset-password", resetPasswordLimiter);
 app.use("/api/evidence/upload", uploadLimiter);
 
 app.use(express.json());
