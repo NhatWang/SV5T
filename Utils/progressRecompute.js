@@ -201,6 +201,24 @@ async function recomputeHoiNhapProgress(studentId) {
     ]
   });
 
+  const selfDeclarations = Array.isArray(student.selfDeclarations)
+    ? student.selfDeclarations
+    : [];
+
+  const ngoaiNguSelfDeclare = selfDeclarations.find((d) => {
+    return (
+      d &&
+      d.awardLevel === "truong" &&
+      d.category === "hoiNhapTot" &&
+      d.subCriteria === "ngoaiNgu" &&
+      d.isCompleted === true
+    );
+  });
+
+  if (ngoaiNguSelfDeclare) {
+    subProgress.ngoaiNgu = true;
+  }
+
   validEvidences.forEach((evidence) => {
     const sub = evidence.aiResult?.subCriteria || "";
 

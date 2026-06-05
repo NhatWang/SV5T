@@ -40,6 +40,10 @@ const {
 } = require("../Utils/activityEligibility");
 
 const {
+  recomputeHoiNhapProgress
+} = require("../Utils/progressRecompute");
+
+const {
   buildSuggestionPrompt
 } = require("../Utils/aiPrompts/index");
 
@@ -1575,6 +1579,8 @@ const declaration = {
     student.selfDeclarations = selfDeclarations;
 
     await student.save();
+
+    await recomputeHoiNhapProgress(studentId);
 
     return res.json({
       success: true,
