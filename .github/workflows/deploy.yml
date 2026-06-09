@@ -17,6 +17,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/SV5T
-            git pull
+            git fetch origin
+            git reset --hard origin/main
             npm install --production
             pm2 restart sv5t
