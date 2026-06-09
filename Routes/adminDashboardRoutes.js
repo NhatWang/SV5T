@@ -3267,4 +3267,82 @@ router.post(
   }
 );
 
+// ===============================
+// ADMIN / SUPER ADMIN: XÓA SINH VIÊN
+// ===============================
+
+router.delete(
+  "/students/:studentId",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { studentId } = req.params;
+
+      const student = await Student.findOne({ studentId });
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy sinh viên"
+        });
+      }
+
+      if (req.admin.role === "admin" && req.admin.className !== student.className) {
+        return res.status(403).json({
+          success: false,
+          message: "Bạn chỉ được xóa sinh viên thuộc lớp mình quản lý"
+        });
+      }
+
+      await Evidence.deleteMany({ studentId });
+      await Student.deleteOne({ studentId });
+
+      res.json({
+        success: true,
+        message: `Đã xóa sinh viên ${studentId} và toàn bộ minh chứng liên quan`
+      });
+    } catch (error) {
+      console.error("Delete student error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi xóa sinh viên"
+      });
+    }
+  }
+);
+
+// ===============================
+// SUPER ADMIN: ĐẾM SINH VIÊN THEO LỚP
+// ===============================
+
+router.get(
+  "/classes/student-count",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const counts = await Student.aggregate([
+        { $group: { _id: "$className", total: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ]);
+
+      res.json({
+        success: true,
+        counts: counts.map((item) => ({
+          className: item._id,
+          total: item.total
+        }))
+      });
+    } catch (error) {
+      console.error("Student count by class error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi đếm sinh viên"
+      });
+    }
+  }
+);
+
 module.exports = router;

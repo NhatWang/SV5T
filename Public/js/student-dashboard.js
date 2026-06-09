@@ -556,7 +556,12 @@ function renderCriterionTabs(data) {
                         <small>Trạng thái: ${formatStatus(evidence.status)}</small>
                         ${
                           evidence.aiResult && evidence.aiResult.reason
-                            ? `<br><small>Ghi chú: ${evidence.aiResult.reason}</small>`
+                            ? `<br><small>Ghi chú AI: ${evidence.aiResult.reason}</small>`
+                            : ""
+                        }
+                        ${
+                          evidence.adminReview && evidence.adminReview.note
+                            ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú admin: ${evidence.adminReview.note}</small>`
                             : ""
                         }
                       </div>
@@ -622,7 +627,10 @@ function renderStorage(evidences) {
     row.innerHTML = `
       <td>${evidence.fileName}</td>
       <td>${categoryLabels[evidence.category] || evidence.category}</td>
-      <td>${formatStatus(evidence.status)}</td>
+      <td>
+        ${formatStatus(evidence.status)}
+        ${evidence.adminReview && evidence.adminReview.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${evidence.adminReview.note}</small>` : ""}
+      </td>
       <td>${formatDate(evidence.createdAt)}</td>
       <td>
         ${
@@ -1366,6 +1374,12 @@ function renderOtherEvidenceItem(evidence) {
         <strong>Lý do AI:</strong>
         ${escapeHtml(ai.reason || "Chưa có")}
       </small>
+
+      ${
+        evidence.adminReview && evidence.adminReview.note
+          ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú admin: ${escapeHtml(evidence.adminReview.note)}</small>`
+          : ""
+      }
 
       ${
         evidence.fileUrl

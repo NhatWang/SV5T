@@ -194,14 +194,14 @@ async function loadClassSelectorForSuperAdmin() {
     summaries.forEach((item) => {
       const option = document.createElement("option");
       option.value = item.className;
-      option.textContent = item.className;
+      option.textContent = `${item.className} (${item.totalStudents} sinh viên)`;
       select.appendChild(option);
     });
 
     if (table) {
       table.innerHTML = `
         <tr>
-          <td colspan="5">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
+          <td colspan="6">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
         </tr>
       `;
     }
@@ -211,7 +211,7 @@ async function loadClassSelectorForSuperAdmin() {
     if (table) {
       table.innerHTML = `
         <tr>
-          <td colspan="5">Không thể kết nối server khi tải danh sách lớp.</td>
+          <td colspan="6">Không thể kết nối server khi tải danh sách lớp.</td>
         </tr>
       `;
     }
@@ -223,11 +223,13 @@ function handleSuperAdminClassChange() {
 
   if (!select || !select.value) {
     const table = document.getElementById("studentsTable");
+    const countLabel = document.getElementById("studentsCountLabel");
+    if (countLabel) countLabel.textContent = "";
 
     if (table) {
       table.innerHTML = `
         <tr>
-          <td colspan="5">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
+          <td colspan="6">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
         </tr>
       `;
     }
@@ -366,8 +368,13 @@ async function loadClassStudents(className) {
 
     table.innerHTML = "";
 
+    const countLabel = document.getElementById("studentsCountLabel");
+    if (countLabel) {
+      countLabel.textContent = `Tổng số sinh viên: ${data.totalStudents || 0}`;
+    }
+
     if (!data.success || data.students.length === 0) {
-      table.innerHTML = `<tr><td colspan="5">Chưa có sinh viên trong lớp này.</td></tr>`;
+      table.innerHTML = `<tr><td colspan="6">Chưa có sinh viên trong lớp này.</td></tr>`;
       return;
     }
 
@@ -387,6 +394,12 @@ async function loadClassStudents(className) {
   <td>${escapeHtml(student.className)}</td>
   <td>${student.totalCompletedCriteria}/5 (${student.progressPercent}%)</td>
   <td>${formatSv5tStatus(student.sv5tStatus)}</td>
+  <td>
+    <button
+      class="danger-btn"
+      onclick="deleteStudent('${escapeHtml(student.studentId)}', '${escapeHtml(student.className)}')"
+    >Xóa</button>
+  </td>
 `;
 
       table.appendChild(row);
@@ -681,7 +694,10 @@ function renderEvidencesTable(evidences) {
         </small>
       </td>
 
-      <td>${formatEvidenceStatus(evidence.status)}</td>
+      <td>
+        ${formatEvidenceStatus(evidence.status)}
+        ${evidence.adminReview?.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
+      </td>
 
       <td>${renderEvidenceActions(evidence)}</td>
     `;
@@ -1523,7 +1539,10 @@ function renderCentralEvidenceTable(evidences) {
                 : "Không có file"
             }
           </td>
-          <td>${escapeHtml(formatEvidenceStatus(evidence.status))}</td>
+          <td>
+            ${escapeHtml(formatEvidenceStatus(evidence.status))}
+            ${evidence.adminReview?.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
+          </td>
           <td>${formatDate(evidence.createdAt)}</td>
           <td>
             ${
@@ -1611,6 +1630,39 @@ function updateCentralEvidenceRowAfterReview(buttonElement, action) {
 }
 
 window.reviewCentralEvidence = reviewCentralEvidence;
+
+async function deleteStudent(studentId, className) {
+  const confirmed = window.confirm(
+    `Bạn có chắc muốn xóa sinh viên ${studentId} không?\n\nHành động này sẽ xóa toàn bộ minh chứng của sinh viên và không thể khôi phục.`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(
+      `/api/admin-dashboard/students/${encodeURIComponent(studentId)}`,
+      {
+        method: "DELETE",
+        credentials: "include"
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || "Không thể xóa sinh viên.");
+      return;
+    }
+
+    alert(data.message);
+    loadClassStudents(className);
+  } catch (error) {
+    console.error("Delete student error:", error);
+    alert("Không thể kết nối server.");
+  }
+}
+
+window.deleteStudent = deleteStudent;
 
 function escapeHtml(value) {
   return String(value || "")
@@ -2147,6 +2199,7 @@ function renderEvidenceList(evidences) {
                 Trạng thái: ${escapeHtml(formatEvidenceStatus(evidence.status))}
                 • Ngày nộp: ${formatDateSafe(evidence.createdAt)}
               </small>
+              ${evidence.adminReview?.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú admin: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
               ${
                 fileUrl
                   ? `<br><a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer">Xem file</a>`

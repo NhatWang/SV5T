@@ -504,6 +504,7 @@ function renderCentralEvidenceList(evidences) {
 
           <p>Loại minh chứng: ${escapeHtml(formatEvidenceType(evidence.evidenceType || evidence.type))}</p>
           <p>Trạng thái: ${formatEvidenceStatus(evidence.status)}</p>
+          ${evidence.adminReview && evidence.adminReview.note ? `<p><span style="color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:4px;display:inline-block">Ghi chú admin: ${escapeHtml(evidence.adminReview.note)}</span></p>` : ""}
           <p>Ngày nộp: ${formatDate(evidence.createdAt || evidence.uploadedAt)}</p>
 
           ${
@@ -593,7 +594,10 @@ function renderCentralStorage(evidences) {
           ${escapeHtml(formatEvidenceType(evidence.evidenceType || evidence.type))}
         </td>
 
-        <td>${formatEvidenceStatus(evidence.status)}</td>
+        <td>
+          ${formatEvidenceStatus(evidence.status)}
+          ${evidence.adminReview && evidence.adminReview.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
+        </td>
 
         <td>${formatDate(evidence.createdAt || evidence.uploadedAt)}</td>
 
