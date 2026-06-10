@@ -367,6 +367,8 @@ verification: {
       pdfFileName: { type: String, default: "" },
       studentNameFound: { type: Boolean, default: false },
       studentIdFound: { type: Boolean, default: false },
+      ocrMethod: { type: String, default: "" },
+      foundPage: { type: Number, default: 0 },
       verifiedAt: { type: Date, default: null },
       error: { type: String, default: "" }
     }

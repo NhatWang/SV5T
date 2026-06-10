@@ -99,8 +99,15 @@ function formatQRVerification(evidence) {
   const qr = evidence?.qrVerification;
   if (!qr || !qr.hasQR) return "";
   if (qr.studentNameFound || qr.studentIdFound) {
-    const file = qr.pdfFileName ? ` (${escapeHtml(qr.pdfFileName)})` : "";
-    return `<br><small style="color:#065f46;background:#d1fae5;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">QR xác nhận hợp lệ${file}</small>`;
+    const parts = [];
+    if (qr.ocrMethod === "vision" && qr.foundPage) {
+      parts.push(`Vision OCR: trang ${qr.foundPage}`);
+    } else if (qr.ocrMethod === "text") {
+      parts.push("Text match");
+    }
+    if (qr.pdfFileName) parts.push(escapeHtml(qr.pdfFileName));
+    const detail = parts.length ? ` — ${parts.join(" | ")}` : "";
+    return `<br><small style="color:#065f46;background:#d1fae5;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">QR xác nhận hợp lệ${detail}</small>`;
   }
   if (qr.error) {
     return `<br><small style="color:#6b7280;background:#f3f4f6;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">QR lỗi: ${escapeHtml(qr.error)}</small>`;

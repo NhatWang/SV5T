@@ -249,6 +249,8 @@ async function verifyEvidenceQR(imagePath, student) {
     pdfFileName: "",
     studentNameFound: false,
     studentIdFound: false,
+    ocrMethod: "",
+    foundPage: 0,
     verifiedAt: null,
     error: ""
   };
@@ -308,10 +310,12 @@ async function verifyEvidenceQR(imagePath, student) {
       if (!buf || buf.slice(0, 4).toString() !== "%PDF") continue;
 
       try {
-        const { text, method } = await extractTextFromPdf(buf, studentId, fullName);
+        const { text, method, foundPage } = await extractTextFromPdf(buf, studentId, fullName);
 
         result.pdfFileId = file.id;
         result.pdfFileName = file.name || "";
+        result.ocrMethod = method || "";
+        if (foundPage) result.foundPage = foundPage;
 
         if (method === "vision") {
           // Vision confirmed found
