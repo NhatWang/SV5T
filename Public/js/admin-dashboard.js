@@ -95,6 +95,19 @@ function formatEvidenceStatus(status) {
   return status || "Chưa cập nhật";
 }
 
+function formatQRVerification(evidence) {
+  const qr = evidence?.qrVerification;
+  if (!qr || !qr.hasQR) return "";
+  if (qr.studentNameFound || qr.studentIdFound) {
+    const file = qr.pdfFileName ? ` (${escapeHtml(qr.pdfFileName)})` : "";
+    return `<br><small style="color:#065f46;background:#d1fae5;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">QR xác nhận hợp lệ${file}</small>`;
+  }
+  if (qr.error) {
+    return `<br><small style="color:#6b7280;background:#f3f4f6;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">QR lỗi: ${escapeHtml(qr.error)}</small>`;
+  }
+  return `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">QR: Không tìm thấy tên sinh viên trong tài liệu</small>`;
+}
+
 function formatSv5tStatus(status) {
   if (status === "not_started") return "Chưa đăng ký hệ thống SV5T";
   if (status === "in_progress") return "Đang thực hiện";
@@ -189,12 +202,14 @@ async function loadClassSelectorForSuperAdmin() {
       return;
     }
 
-    const summaries = data.summaries || [];
+    const summaries = (data.summaries || []).slice().sort((a, b) =>
+      a.className.localeCompare(b.className, undefined, { numeric: true, sensitivity: "base" })
+    );
 
     summaries.forEach((item) => {
       const option = document.createElement("option");
       option.value = item.className;
-      option.textContent = `${item.className} (${item.totalStudents} sinh viên)`;
+      option.textContent = item.className;
       select.appendChild(option);
     });
 
@@ -697,6 +712,7 @@ function renderEvidencesTable(evidences) {
       <td>
         ${formatEvidenceStatus(evidence.status)}
         ${evidence.adminReview?.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
+        ${formatQRVerification(evidence)}
       </td>
 
       <td>${renderEvidenceActions(evidence)}</td>
@@ -1542,6 +1558,7 @@ function renderCentralEvidenceTable(evidences) {
           <td>
             ${escapeHtml(formatEvidenceStatus(evidence.status))}
             ${evidence.adminReview?.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
+            ${formatQRVerification(evidence)}
           </td>
           <td>${formatDate(evidence.createdAt)}</td>
           <td>
@@ -2200,6 +2217,7 @@ function renderEvidenceList(evidences) {
                 • Ngày nộp: ${formatDateSafe(evidence.createdAt)}
               </small>
               ${evidence.adminReview?.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú admin: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
+              ${formatQRVerification(evidence)}
               ${
                 fileUrl
                   ? `<br><a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer">Xem file</a>`

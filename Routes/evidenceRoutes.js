@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const pdfParse = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 const mammoth = require("mammoth");
 
 const Evidence = require("../Models/Evidence");
@@ -42,6 +42,8 @@ const {
 const {
   sendPushToAdminsForClass
 } = require("../Utils/pushService");
+
+const { verifyEvidenceQR } = require("../Utils/qrVerification");
 
 const {
   callAzureOpenAI,
@@ -452,9 +454,10 @@ async function createAIReviewLog({
 async function extractTextFromFile(filePath, fileType) {
   try {
     if (fileType === "application/pdf") {
-      const buffer = fs.readFileSync(filePath);
-      const data = await pdfParse(buffer);
-      return data.text?.trim() || "";
+      const parser = new PDFParse({ url: `file://${filePath}`, verbosity: 0 });
+      await parser.load();
+      const result = await parser.getText();
+      return result?.text?.trim() || "";
     }
 
     if (
@@ -1093,6 +1096,16 @@ await sendPushToAdminsForClass(
   console.error("Push new evidence to admin error:", error.message);
 });
 
+      // Start QR verification in parallel with AI (images only)
+      const isImageEvidence =
+        req.file.mimetype === "image/png" || req.file.mimetype === "image/jpeg";
+      const qrPromise = isImageEvidence
+        ? verifyEvidenceQR(req.file.path, uploadStudent).catch((e) => {
+            console.error("QR verification error:", e.message);
+            return null;
+          })
+        : Promise.resolve(null);
+
       analyzeEvidenceWithAI(
   req.file.path,
   req.file.mimetype,
@@ -1139,6 +1152,41 @@ delete aiResult._awardLevel;
               ];
               aiResult.reason =
                 "Minh chứng thuộc nhóm Ngoại ngữ nhưng có dấu hiệu là chứng nhận/kết quả thi thử. Theo quy chế cấp ĐHQG-HCM, không chấp nhận chứng nhận trong các đợt thi thử.";
+            }
+          }
+
+          // Apply QR verification boost (runs parallel with AI, await result here)
+          const qrResult = await qrPromise;
+          if (qrResult) {
+            evidence.qrVerification = qrResult;
+
+            if (qrResult.studentNameFound || qrResult.studentIdFound) {
+              const existingConf = Number(aiResult.confidence || 0);
+              // Don't override high-confidence safety rejections (e.g. mock-test block at ≥85%)
+              if (aiResult.isValid !== false || existingConf < 85) {
+                if (aiResult.isValid === false) {
+                  aiResult.isValid = true;
+                  aiResult.confidence = Math.max(existingConf, 80);
+                } else {
+                  aiResult.confidence = Math.min(100, existingConf + 15);
+                }
+                aiResult.reason =
+                  (aiResult.reason ? aiResult.reason + " " : "") +
+                  "[QR xác nhận: Sinh viên có trong Quyết định công nhận chính thức]";
+              }
+              console.log(
+                `🔍 QR Verified [${studentId}]: name=${qrResult.studentNameFound} id=${qrResult.studentIdFound} file="${qrResult.pdfFileName}"`
+              );
+            } else if (qrResult.hasQR && !qrResult.error) {
+              aiResult.warningFlags = [
+                ...(aiResult.warningFlags || []),
+                "QR code tìm thấy nhưng tên sinh viên không có trong Quyết định công nhận"
+              ];
+              console.log(
+                `⚠️ QR found but student not in PDF [${studentId}]: ${qrResult.pdfFileName}`
+              );
+            } else if (qrResult.hasQR && qrResult.error) {
+              console.log(`⚠️ QR error [${studentId}]: ${qrResult.error}`);
             }
           }
 

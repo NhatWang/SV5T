@@ -357,6 +357,18 @@ verification: {
         type: String,
         default: ""
       }
+    },
+
+    qrVerification: {
+      hasQR: { type: Boolean, default: false },
+      qrUrl: { type: String, default: "" },
+      driveFolderId: { type: String, default: "" },
+      pdfFileId: { type: String, default: "" },
+      pdfFileName: { type: String, default: "" },
+      studentNameFound: { type: Boolean, default: false },
+      studentIdFound: { type: Boolean, default: false },
+      verifiedAt: { type: Date, default: null },
+      error: { type: String, default: "" }
     }
   },
   {
