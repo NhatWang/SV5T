@@ -1,5 +1,42 @@
 const PROMPT_VERSION = "sv5t_evidence_ai_v2.0";
 
+// Khoảng thời gian hợp lệ của minh chứng (năm học 2025–2026)
+const EVIDENCE_PERIOD_START = new Date("2025-09-15T00:00:00+07:00");
+const EVIDENCE_PERIOD_END   = new Date("2026-08-31T23:59:59+07:00");
+
+/**
+ * Parse ngày từ chuỗi linh hoạt (dd/mm/yyyy, yyyy-mm-dd, tháng chữ, v.v.)
+ * Trả về Date hoặc null nếu không parse được.
+ */
+function parseIssueDateFlexible(str) {
+  if (!str || typeof str !== "string") return null;
+  const s = str.trim();
+
+  // dd/mm/yyyy hoặc d/m/yyyy
+  const dmy = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (dmy) return new Date(`${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`);
+
+  // yyyy-mm-dd hoặc yyyy/mm/dd
+  const ymd = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  if (ymd) return new Date(`${ymd[1]}-${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}`);
+
+  // "tháng 9 năm 2025" hoặc "tháng 09/2025"
+  const viMonth = s.match(/tháng\s*(\d{1,2})[\s\/,]*năm\s*(\d{4})/i);
+  if (viMonth) return new Date(`${viMonth[2]}-${viMonth[1].padStart(2, "0")}-01`);
+
+  // mm/yyyy hoặc mm-yyyy (chỉ tháng/năm)
+  const my = s.match(/^(\d{1,2})[\/\-](\d{4})$/);
+  if (my) return new Date(`${my[2]}-${my[1].padStart(2, "0")}-01`);
+
+  // yyyy (chỉ năm)
+  const yearOnly = s.match(/^(\d{4})$/);
+  if (yearOnly) return new Date(`${yearOnly[1]}-01-01`);
+
+  // Thử Date.parse làm fallback (handles "September 15, 2025" etc.)
+  const fallback = new Date(s);
+  return isNaN(fallback.getTime()) ? null : fallback;
+}
+
 const AI_CONFIDENCE_RULES = {
   hocTapTot: {
     autoValid: 88,
@@ -178,6 +215,28 @@ function applyAiSafetyRules(aiResult, category) {
     }
   }
 
+  // Kiểm tra ngày cấp nằm trong khoảng hợp lệ (15/9/2025 – 31/8/2026)
+  const issueDateStr = result?.extractedInfo?.issueDate;
+  if (issueDateStr) {
+    const issueDate = parseIssueDateFlexible(issueDateStr);
+    if (issueDate && !isNaN(issueDate.getTime())) {
+      const outOfPeriod = issueDate < EVIDENCE_PERIOD_START || issueDate > EVIDENCE_PERIOD_END;
+      if (outOfPeriod) {
+        if (!result.warningFlags.includes("date_out_of_period")) {
+          result.warningFlags.push("date_out_of_period");
+        }
+        result.missingInfo.push(
+          `Ngày cấp minh chứng (${issueDateStr}) nằm ngoài khoảng thời gian hợp lệ của năm học 2025–2026 (15/09/2025 – 31/08/2026).`
+        );
+        result.isValid = null;
+        result.decision = "manual_review";
+        result.reason =
+          `${result.reason ? result.reason + " " : ""}Minh chứng có ngày cấp ngoài năm học 2025–2026 nên không được tự động công nhận.`;
+        return result;
+      }
+    }
+  }
+
   if (result.isValid === true && result.confidence >= rules.autoValid) {
     result.decision = result.decision || "auto_valid";
     return result;
@@ -195,8 +254,11 @@ function applyAiSafetyRules(aiResult, category) {
 module.exports = {
   PROMPT_VERSION,
   AI_CONFIDENCE_RULES,
+  EVIDENCE_PERIOD_START,
+  EVIDENCE_PERIOD_END,
   toPercentConfidence,
   buildStudentContext,
   normalizeAiV2Result,
-  applyAiSafetyRules
+  applyAiSafetyRules,
+  parseIssueDateFlexible
 };

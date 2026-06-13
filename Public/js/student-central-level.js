@@ -88,6 +88,18 @@ document.addEventListener("DOMContentLoaded", () => {
   startCentralAutoRefresh();
 });
 
+function openSidebar() {
+  document.getElementById("mainSidebar")?.classList.add("open");
+  document.getElementById("sidebarOverlay")?.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+
+function closeSidebar() {
+  document.getElementById("mainSidebar")?.classList.remove("open");
+  document.getElementById("sidebarOverlay")?.classList.remove("active");
+  document.body.style.overflow = "";
+}
+
 function showTab(tabId, button) {
   document.querySelectorAll(".tab-content").forEach((section) => {
     section.classList.remove("active");
@@ -106,9 +118,13 @@ function showTab(tabId, button) {
   if (button) {
     button.classList.add("active");
   }
+
+  if (window.innerWidth <= 768) closeSidebar();
 }
 
 window.showTab = showTab;
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
 
 async function loadCentralLevelDashboard(options = {}) {
   const silent = options.silent === true;

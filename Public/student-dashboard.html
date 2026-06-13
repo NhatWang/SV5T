@@ -2,17 +2,24 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bảng điều khiển Sinh viên 5 tốt khoa Hóa học</title>
   <link rel="stylesheet" href="./css/student-dashboard-style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 </head>
 <body>
   <div class="dashboard-layout">
 
-    <aside class="sidebar">
-      <h2>SV5T</h2>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <aside class="sidebar" id="mainSidebar">
+      <div class="sidebar-header">
+        <h2>SV5T</h2>
+        <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Đóng menu">✕</button>
+      </div>
 
       <button class="tab-btn active" onclick="showTab('overview', this)">
-        Tổng quan
+        Tổng Quan
       </button>
 
       <button class="tab-btn" onclick="showTab('daoDucTot', this)">
@@ -51,15 +58,24 @@
     </aside>
 
     <main class="main-content">
+      <div class="mobile-topbar">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Mở menu">&#9776;</button>
+        <span class="mobile-topbar-title">SV5T</span>
+      </div>
 
       <!-- TAB TỔNG QUAN -->
       <section id="overview" class="tab-content active">
-        <h1>Tổng quan</h1>
+    <h1>Tổng Quan</h1>
 
         <div class="profile-card">
-          <h2 id="studentName">Đang tải...</h2>
-          <p>MSSV: <span id="studentIdText"></span></p>
-          <p>Lớp: <span id="classNameText"></span></p>
+          <div class="profile-info">
+            <h2 id="studentName">Đang tải...</h2>
+            <p>MSSV: <span id="studentIdText"></span></p>
+            <p>Lớp: <span id="classNameText"></span></p>
+          </div>
+          <div class="profile-barcode">
+            <svg id="studentBarcode"></svg>
+          </div>
         </div>
 
         <div class="progress-card">
@@ -384,6 +400,14 @@
       Phát triển nhằm hỗ trợ quá trình theo dõi và xét thưởng Sinh viên 5 tốt.
     </p>
   </footer>
+
+  <!-- Barcode zoom modal -->
+  <div id="barcodeModal" class="barcode-modal-overlay hidden" onclick="closeBarcodeModal()">
+    <div class="barcode-modal-box" onclick="event.stopPropagation()">
+      <button class="barcode-modal-close" onclick="closeBarcodeModal()">✕</button>
+      <svg id="studentBarcodeZoom"></svg>
+    </div>
+  </div>
 
   <script src="/js/chatbot-widget.js"></script>
   <script src="./js/push-notifications.js"></script>

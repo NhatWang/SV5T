@@ -113,12 +113,18 @@ JSON schema bắt buộc:
   "reason": ""
 }
 
+THỜI GIAN HỢP LỆ CỦA MINH CHỨNG:
+- Minh chứng chỉ được tính nếu ngày cấp (issueDate) nằm trong khoảng từ 15/09/2025 đến 31/08/2026 (năm học 2025–2026).
+- Nếu xác định được issueDate và ngày đó nằm NGOÀI khoảng trên, thêm "date_out_of_period" vào warningFlags và ghi rõ vào reason.
+- Nếu không xác định được ngày cấp, hasDate = false, KHÔNG thêm "date_out_of_period".
+
 QUY TẮC RA QUYẾT ĐỊNH:
 - Nếu minh chứng rõ ràng hợp lệ, đúng sinh viên, đủ thông tin, confidence cao: decision = "auto_valid".
 - Nếu minh chứng có vẻ hợp lệ nhưng thiếu tên, MSSV, ngày, đơn vị cấp, hoặc thông tin quan trọng: decision = "manual_review".
 - Nếu minh chứng không liên quan tiêu chí đang xét: isValid = false, decision = "reject_suggested".
 - Nếu tên/MSSV không khớp sinh viên đang upload: isValid = null, decision = "manual_review", warningFlags thêm "student_identity_mismatch".
 - Nếu không xác định được danh tính sinh viên: verification.matchesCurrentStudent = "unknown", warningFlags thêm "student_identity_unknown".
+- Nếu ngày cấp nằm ngoài 15/09/2025 – 31/08/2026: isValid = null, decision = "manual_review", warningFlags thêm "date_out_of_period".
 - confidence phải là số từ 0 đến 100.
 `;
 }

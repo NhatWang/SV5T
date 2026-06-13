@@ -1665,7 +1665,7 @@ router.post(
           updatedBy: req.admin.username
         },
         {
-          new: true,
+          returnDocument: 'after',
           upsert: true
         }
       );
@@ -2783,7 +2783,7 @@ router.put("/class-support/:className", requireAdminAuth, async (req, res) => {
         updatedBy: req.admin.username || req.admin.email || "admin"
       },
       {
-        new: true,
+        returnDocument: 'after',
         upsert: true,
         runValidators: true
       }
@@ -2922,7 +2922,7 @@ router.post(
           },
           {
             upsert: true,
-            new: true,
+            returnDocument: 'after',
             runValidators: true
           }
         );
@@ -3341,6 +3341,152 @@ router.get(
         success: false,
         message: "Lỗi server khi đếm sinh viên"
       });
+    }
+  }
+);
+
+// ===============================
+// OVERVIEW STATS — trả về breakdown trạng thái + tiêu chí cho 1 lớp
+// ===============================
+router.get(
+  "/class/:className/overview-stats",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { className } = req.params;
+
+      if (req.admin.role === "admin" && req.admin.className !== className) {
+        return res.status(403).json({
+          success: false,
+          message: "Bạn chỉ được xem thống kê lớp mình."
+        });
+      }
+
+      const students = await Student.find({ className }).select(
+        "sv5tStatus sv5tProgress isActivated totalCompletedCriteria"
+      );
+
+      const statusBreakdown = {
+        not_started: 0,
+        in_progress: 0,
+        completed: 0,
+        submitted: 0,
+        approved: 0,
+        rejected: 0
+      };
+
+      const criteriaBreakdown = {
+        daoDucTot: 0,
+        hocTapTot: 0,
+        theLucTot: 0,
+        tinhNguyenTot: 0,
+        hoiNhapTot: 0
+      };
+
+      let activatedCount = 0;
+
+      students.forEach((s) => {
+        if (statusBreakdown[s.sv5tStatus] !== undefined) {
+          statusBreakdown[s.sv5tStatus]++;
+        }
+        if (s.isActivated) activatedCount++;
+        Object.keys(criteriaBreakdown).forEach((key) => {
+          if (s.sv5tProgress?.[key]?.isCompleted) criteriaBreakdown[key]++;
+        });
+      });
+
+      res.json({
+        success: true,
+        totalStudents: students.length,
+        activatedStudents: activatedCount,
+        statusBreakdown,
+        criteriaBreakdown
+      });
+    } catch (error) {
+      console.error("Overview stats error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+  }
+);
+
+// ===============================
+// OVERVIEW STATS toàn khoa — chỉ super_admin
+// ===============================
+router.get(
+  "/all-students/status-stats",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const students = await Student.find().select(
+        "sv5tStatus sv5tProgress isActivated"
+      );
+
+      const statusBreakdown = {
+        not_started: 0,
+        in_progress: 0,
+        completed: 0,
+        submitted: 0,
+        approved: 0,
+        rejected: 0
+      };
+
+      const criteriaBreakdown = {
+        daoDucTot: 0,
+        hocTapTot: 0,
+        theLucTot: 0,
+        tinhNguyenTot: 0,
+        hoiNhapTot: 0
+      };
+
+      let activatedCount = 0;
+
+      students.forEach((s) => {
+        if (statusBreakdown[s.sv5tStatus] !== undefined) {
+          statusBreakdown[s.sv5tStatus]++;
+        }
+        if (s.isActivated) activatedCount++;
+        Object.keys(criteriaBreakdown).forEach((key) => {
+          if (s.sv5tProgress?.[key]?.isCompleted) criteriaBreakdown[key]++;
+        });
+      });
+
+      res.json({
+        success: true,
+        totalStudents: students.length,
+        activatedStudents: activatedCount,
+        statusBreakdown,
+        criteriaBreakdown
+      });
+    } catch (error) {
+      console.error("All students status stats error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+  }
+);
+
+// ===============================
+// FIX ACTIVATED STATUS — cập nhật sinh viên đã kích hoạt nhưng vẫn not_started
+// ===============================
+router.patch(
+  "/fix-activated-status",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const result = await Student.updateMany(
+        { isActivated: true, sv5tStatus: "not_started" },
+        { $set: { sv5tStatus: "in_progress" } }
+      );
+
+      res.json({
+        success: true,
+        updatedCount: result.modifiedCount,
+        message: `Đã cập nhật ${result.modifiedCount} sinh viên sang "Đang thực hiện".`
+      });
+    } catch (error) {
+      console.error("Fix activated status error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server khi cập nhật trạng thái" });
     }
   }
 );

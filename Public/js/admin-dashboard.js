@@ -174,6 +174,8 @@ function showAdminTab(tabId, button) {
   if (tabId === "centralEvidenceTab") {
     loadCentralEvidences();
   }
+
+  if (window.innerWidth <= 768) closeSidebar();
 }
 
 async function loadClassSelectorForSuperAdmin() {
@@ -339,6 +341,7 @@ function initAdminDashboard() {
     loadCollectiveProgress(adminClassName);
     loadAllEvidences();
     loadUploadedActivities();
+    loadOverviewStats();
   }
 
   if (adminRole === "super_admin") {
@@ -347,6 +350,9 @@ function initAdminDashboard() {
 
     document.getElementById("overviewDescription").textContent =
       "Bạn có thể xem tiến độ tập thể các lớp, duyệt minh chứng toàn khoa, upload sinh viên và upload hoạt động.";
+
+    const fixSection = document.getElementById("fixActivatedSection");
+    if (fixSection) fixSection.classList.remove("hidden");
 
     const collectiveEvaluationTabBtn = document.getElementById(
       "collectiveEvaluationTabBtn"
@@ -369,6 +375,7 @@ function initAdminDashboard() {
     loadAllEvidences();
     loadAllCollectiveProgress();
     loadUploadedActivities();
+    loadOverviewStats();
   }
 }
 
@@ -1752,6 +1759,20 @@ function toggleUploadMenu() {
   }
 }
 
+function openSidebar() {
+  document.getElementById("mainSidebar")?.classList.add("open");
+  document.getElementById("sidebarOverlay")?.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+
+function closeSidebar() {
+  document.getElementById("mainSidebar")?.classList.remove("open");
+  document.getElementById("sidebarOverlay")?.classList.remove("active");
+  document.body.style.overflow = "";
+}
+
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
 window.toggleUploadMenu = toggleUploadMenu;
 window.showAdminTab = showAdminTab;
 
@@ -2382,6 +2403,161 @@ function formatDeclarationDisplayValue(value) {
 
 window.openStudentDetail = openStudentDetail;
 window.closeStudentDetailModal = closeStudentDetailModal;
+
+// ── Overview charts & stats ──────────────────────────────────────────────────
+
+let statusChartInstance = null;
+let criteriaChartInstance = null;
+
+const STATUS_LABELS = {
+  not_started: "Chưa đăng ký",
+  in_progress: "Đang thực hiện",
+  completed: "Hoàn thành",
+  submitted: "Đã nộp hồ sơ",
+  approved: "Được duyệt",
+  rejected: "Bị từ chối"
+};
+
+const STATUS_COLORS = {
+  not_started: "#9ca3af",
+  in_progress: "#1560c8",
+  completed: "#059669",
+  submitted: "#d97706",
+  approved: "#0b3d91",
+  rejected: "#dc2626"
+};
+
+const CRITERIA_LABELS = {
+  daoDucTot: "Đạo đức tốt",
+  hocTapTot: "Học tập tốt",
+  theLucTot: "Thể lực tốt",
+  tinhNguyenTot: "Tình nguyện tốt",
+  hoiNhapTot: "Hội nhập tốt"
+};
+
+function renderOverviewCharts(stats) {
+  const { totalStudents, activatedStudents, statusBreakdown, criteriaBreakdown } = stats;
+
+  document.getElementById("statTotal").textContent = totalStudents;
+  document.getElementById("statActivated").textContent = activatedStudents;
+  document.getElementById("statInProgress").textContent =
+    (statusBreakdown.in_progress || 0) + (statusBreakdown.submitted || 0) + (statusBreakdown.approved || 0) + (statusBreakdown.rejected || 0);
+  document.getElementById("statCompleted").textContent = statusBreakdown.completed || 0;
+
+  document.getElementById("overviewStatCards").classList.remove("hidden");
+  document.getElementById("overviewCharts").classList.remove("hidden");
+
+  // Donut — trạng thái
+  const statusKeys = Object.keys(statusBreakdown).filter(k => statusBreakdown[k] > 0);
+  const statusCtx = document.getElementById("statusChart")?.getContext("2d");
+  if (statusCtx) {
+    if (statusChartInstance) statusChartInstance.destroy();
+    statusChartInstance = new Chart(statusCtx, {
+      type: "doughnut",
+      data: {
+        labels: statusKeys.map(k => STATUS_LABELS[k] || k),
+        datasets: [{
+          data: statusKeys.map(k => statusBreakdown[k]),
+          backgroundColor: statusKeys.map(k => STATUS_COLORS[k] || "#ccc"),
+          borderWidth: 2,
+          borderColor: "#fff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: "bottom", labels: { font: { family: "Nunito", size: 13 }, padding: 12 } }
+        }
+      }
+    });
+  }
+
+  // Bar — tiêu chí
+  const criteriaKeys = Object.keys(criteriaBreakdown);
+  const criteriaCtx = document.getElementById("criteriaChart")?.getContext("2d");
+  if (criteriaCtx) {
+    if (criteriaChartInstance) criteriaChartInstance.destroy();
+    criteriaChartInstance = new Chart(criteriaCtx, {
+      type: "bar",
+      data: {
+        labels: criteriaKeys.map(k => CRITERIA_LABELS[k] || k),
+        datasets: [{
+          label: "Số sinh viên hoàn thành",
+          data: criteriaKeys.map(k => criteriaBreakdown[k]),
+          backgroundColor: "#1560c8cc",
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, font: { family: "Nunito" } },
+            max: totalStudents || undefined
+          },
+          x: { ticks: { font: { family: "Nunito", size: 12 } } }
+        }
+      }
+    });
+  }
+}
+
+async function loadOverviewStats() {
+  try {
+    let url;
+    if (adminRole === "super_admin") {
+      url = "/api/admin-dashboard/all-students/status-stats";
+    } else {
+      url = `/api/admin-dashboard/class/${encodeURIComponent(adminClassName)}/overview-stats`;
+    }
+
+    const res = await fetch(url, { credentials: "include" });
+    const data = await res.json();
+    if (data.success) {
+      renderOverviewCharts(data);
+    }
+  } catch (error) {
+    console.error("Load overview stats error:", error);
+  }
+}
+
+async function fixActivatedStudentsStatus() {
+  const btn = document.getElementById("fixActivatedBtn");
+  const result = document.getElementById("fixActivatedResult");
+  if (!btn || !result) return;
+
+  btn.disabled = true;
+  btn.textContent = "Đang cập nhật...";
+  result.textContent = "";
+
+  try {
+    const res = await fetch("/api/admin-dashboard/fix-activated-status", {
+      method: "PATCH",
+      credentials: "include"
+    });
+    const data = await res.json();
+    if (data.success) {
+      result.textContent = data.message;
+      result.className = "fix-result-msg fix-result-msg--success";
+      loadOverviewStats();
+    } else {
+      result.textContent = data.message || "Có lỗi xảy ra.";
+      result.className = "fix-result-msg fix-result-msg--error";
+    }
+  } catch (error) {
+    result.textContent = "Lỗi kết nối server.";
+    result.className = "fix-result-msg fix-result-msg--error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Cập nhật trạng thái hàng loạt";
+  }
+}
+
+window.fixActivatedStudentsStatus = fixActivatedStudentsStatus;
 
 async function logoutAdmin() {
   try {

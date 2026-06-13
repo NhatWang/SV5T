@@ -2,14 +2,21 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bảng điều khiển Admin - Sinh viên 5 tốt khoa Hóa học</title>
   <link rel="stylesheet" href="./css/admin-dashboard-style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="dashboard-layout">
 
-    <aside class="sidebar">
-      <h2>Admin SV5T</h2>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <aside class="sidebar" id="mainSidebar">
+      <div class="sidebar-header">
+        <h2>Admin SV5T</h2>
+        <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Đóng menu">✕</button>
+      </div>
 
       <p id="adminInfo"></p>
 
@@ -72,6 +79,10 @@
     </aside>
 
     <main class="main-content">
+      <div class="mobile-topbar">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Mở menu">&#9776;</button>
+        <span class="mobile-topbar-title">Admin SV5T</span>
+      </div>
 
       <section id="overview" class="tab-content active">
         <h1>Tổng quan Admin</h1>
@@ -79,6 +90,53 @@
         <div class="profile-card">
           <h2 id="overviewTitle">Đang tải...</h2>
           <p id="overviewDescription"></p>
+        </div>
+
+        <div id="overviewStatCards" class="overview-stat-cards hidden">
+          <div class="stat-card">
+            <div class="stat-number" id="statTotal">—</div>
+            <div class="stat-label">Tổng sinh viên</div>
+          </div>
+          <div class="stat-card stat-card--blue">
+            <div class="stat-number" id="statActivated">—</div>
+            <div class="stat-label">Đã tạo tài khoản</div>
+          </div>
+          <div class="stat-card stat-card--orange">
+            <div class="stat-number" id="statInProgress">—</div>
+            <div class="stat-label">Đang thực hiện</div>
+          </div>
+          <div class="stat-card stat-card--green">
+            <div class="stat-number" id="statCompleted">—</div>
+            <div class="stat-label">Hoàn thành 5/5</div>
+          </div>
+        </div>
+
+        <div id="overviewCharts" class="overview-charts-grid hidden">
+          <div class="chart-card">
+            <h3>Trạng thái sinh viên</h3>
+            <div class="chart-wrap">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3>Hoàn thành từng tiêu chí</h3>
+            <div class="chart-wrap">
+              <canvas id="criteriaChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div id="fixActivatedSection" class="criterion-card hidden">
+          <h3>Sửa trạng thái sinh viên đã tạo tài khoản</h3>
+          <p>
+            Sinh viên đã kích hoạt tài khoản nhưng trạng thái vẫn là
+            <strong>"Chưa đăng ký"</strong>. Nhấn nút bên dưới để cập nhật
+            sang <strong>"Đang thực hiện"</strong> cho toàn bộ trường hợp này.
+          </p>
+          <button id="fixActivatedBtn" onclick="fixActivatedStudentsStatus()">
+            Cập nhật trạng thái hàng loạt
+          </button>
+          <p id="fixActivatedResult" class="fix-result-msg"></p>
         </div>
       </section>
 

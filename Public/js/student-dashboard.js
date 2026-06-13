@@ -78,6 +78,8 @@ function showTab(tabId, button) {
   if (button) {
     button.classList.add("active");
   }
+
+  if (window.innerWidth <= 768) closeSidebar();
 }
 
 async function loadDashboard() {
@@ -111,6 +113,27 @@ function renderOverview(data) {
   document.getElementById("studentIdText").textContent = student.studentId;
   document.getElementById("classNameText").textContent =
     student.className || "Chưa cập nhật";
+
+  if (student.studentId && typeof JsBarcode !== "undefined") {
+    JsBarcode("#studentBarcode", student.studentId, {
+      format: "CODE128",
+      lineColor: "#0b3d91",
+      width: 2,
+      height: 56,
+      displayValue: true,
+      fontOptions: "bold",
+      fontSize: 13,
+      margin: 6,
+      background: "transparent"
+    });
+
+    const barcodeWrap = document.querySelector(".profile-barcode");
+    if (barcodeWrap) {
+      barcodeWrap.style.cursor = "pointer";
+      barcodeWrap.title = "Nhấn để phóng to";
+      barcodeWrap.onclick = () => openBarcodeModal(student.studentId);
+    }
+  }
 
   document.getElementById("progressFill").style.width =
     `${data.progressPercent || 0}%`;
@@ -991,6 +1014,48 @@ function formatStatus(status) {
   if (status === "need_more_info") return "Cần bổ sung minh chứng";
   return status || "Chưa cập nhật";
 }
+
+function openSidebar() {
+  document.getElementById("mainSidebar")?.classList.add("open");
+  document.getElementById("sidebarOverlay")?.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+
+function closeSidebar() {
+  document.getElementById("mainSidebar")?.classList.remove("open");
+  document.getElementById("sidebarOverlay")?.classList.remove("active");
+  document.body.style.overflow = "";
+}
+
+function openBarcodeModal(studentId) {
+  const modal = document.getElementById("barcodeModal");
+  if (!modal) return;
+
+  JsBarcode("#studentBarcodeZoom", studentId, {
+    format: "CODE128",
+    lineColor: "#0b3d91",
+    width: 3.5,
+    height: 130,
+    displayValue: true,
+    fontOptions: "bold",
+    fontSize: 20,
+    margin: 14,
+    background: "transparent"
+  });
+
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeBarcodeModal() {
+  const modal = document.getElementById("barcodeModal");
+  if (modal) modal.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeBarcodeModal();
+});
 
 async function logoutStudent() {
   try {

@@ -44,7 +44,7 @@ router.post("/student/subscribe", requireStudentAuth, async (req, res) => {
       },
       {
         upsert: true,
-        new: true
+        returnDocument: 'after'
       }
     );
 
@@ -91,7 +91,7 @@ router.post("/admin/subscribe", requireAdminAuth, async (req, res) => {
       },
       {
         upsert: true,
-        new: true
+        returnDocument: 'after'
       }
     );
 

@@ -181,6 +181,9 @@ router.post("/create-password", async (req, res) => {
     student.password = await bcrypt.hash(password, 10);
     student.isActivated = true;
     student.lastLogin = new Date();
+    if (student.sv5tStatus === "not_started") {
+      student.sv5tStatus = "in_progress";
+    }
 
     await student.save();
 

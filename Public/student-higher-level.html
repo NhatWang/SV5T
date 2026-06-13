@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Xét danh hiệu Sinh viên 5 tốt cấp cao hơn</title>
 
   <link rel="stylesheet" href="./css/student-higher-level-style.css" />
@@ -10,11 +11,16 @@
 <body class="higher-award-theme">
   <div class="dashboard-layout">
 
-    <aside class="sidebar">
-      <h2>SV5T+</h2>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <aside class="sidebar" id="mainSidebar">
+      <div class="sidebar-header">
+        <h2>SV5T+</h2>
+        <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Đóng menu">✕</button>
+      </div>
 
       <button class="tab-btn active" onclick="showTab('overview', this)">
-        Tổng quan
+        Tổng Quan
       </button>
 
       <button class="tab-btn" onclick="showTab('daoDucTot', this)">
@@ -51,6 +57,10 @@
     </aside>
 
     <main class="main-content">
+      <div class="mobile-topbar">
+        <button class="hamburger-btn" onclick="openSidebar()" aria-label="Mở menu">&#9776;</button>
+        <span class="mobile-topbar-title">SV5T+</span>
+      </div>
 
       <!-- TAB TỔNG QUAN -->
       <section id="overview" class="tab-content active">

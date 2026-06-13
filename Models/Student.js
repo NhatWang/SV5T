@@ -444,7 +444,6 @@ centralSummary: {
   }
 );
 
-studentSchema.index({ studentId: 1 }, { unique: true });
 studentSchema.index({ className: 1 });
 studentSchema.index({ sv5tStatus: 1 });
 studentSchema.index({ totalCompletedCriteria: 1 });
