@@ -37,6 +37,9 @@ const {
   hashResetCode
 } = require("../Utils/resetPasswordUtils");
 
+const SystemSettings = require("../Models/SystemSettings");
+const { invalidateMaintenanceCache } = require("../Middlewares/maintenanceMiddleware");
+
 const ClassSupport = require("../Models/ClassSupport");
 
 const {
@@ -2482,6 +2485,100 @@ router.get("/activities/uploaded", requireAdminAuth, async (req, res) => {
 });
 
 // ===============================
+// ===============================
+// 10b. ADMIN / SUPER ADMIN: SỬA HOẠT ĐỘNG ĐÃ UPLOAD
+// ===============================
+
+router.patch("/activities/:activityId", requireAdminAuth, async (req, res) => {
+  try {
+    const { activityId } = req.params;
+
+    const activity = await Activity.findById(activityId);
+
+    if (!activity) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy hoạt động." });
+    }
+
+    if (req.admin.role === "admin") {
+      const hasClassParticipant = (activity.participants || []).some(
+        (p) => p.className === req.admin.className
+      );
+      if (!hasClassParticipant) {
+        return res.status(403).json({ success: false, message: "Bạn không có quyền sửa hoạt động này." });
+      }
+    }
+
+    const {
+      title,
+      category,
+      organizerLevel,
+      date,
+      subCriteria,
+      academicEvidenceType,
+      volunteerDays,
+      kyNangEvidenceType,
+      hoiNhapEvidenceType
+    } = req.body;
+
+    const oldCategory = activity.category;
+    const oldEligible = [...(activity.eligibleAwardLevels || [])];
+
+    if (title !== undefined)               activity.title               = String(title).trim();
+    if (category !== undefined)            activity.category            = category;
+    if (organizerLevel !== undefined)      activity.organizerLevel      = organizerLevel;
+    if (date !== undefined)                activity.date                = new Date(date);
+    if (subCriteria !== undefined)         activity.subCriteria         = String(subCriteria || "").trim();
+    if (academicEvidenceType !== undefined) activity.academicEvidenceType = String(academicEvidenceType || "").trim();
+    if (volunteerDays !== undefined)       activity.volunteerDays       = Number(volunteerDays) || 0;
+    if (kyNangEvidenceType !== undefined)  activity.kyNangEvidenceType  = String(kyNangEvidenceType || "").trim();
+    if (hoiNhapEvidenceType !== undefined) activity.hoiNhapEvidenceType = String(hoiNhapEvidenceType || "").trim();
+
+    const newEligible = inferEligibleAwardLevels({
+      category:              activity.category,
+      organizerLevel:        activity.organizerLevel,
+      subCriteria:           activity.subCriteria,
+      academicEvidenceType:  activity.academicEvidenceType,
+      kyNangEvidenceType:    activity.kyNangEvidenceType,
+      hoiNhapEvidenceType:   activity.hoiNhapEvidenceType,
+      volunteerDays:         activity.volunteerDays
+    });
+
+    activity.eligibleAwardLevels = newEligible || [];
+    activity.awardLevel = (newEligible && newEligible[0]) || "truong";
+
+    await activity.save();
+
+    // Recompute tiến độ cho các sinh viên tham gia
+    const affectedStudentIds = [
+      ...new Set((activity.participants || []).map((p) => p.studentId).filter(Boolean))
+    ];
+
+    const allCategories = [...new Set([oldCategory, activity.category].filter(Boolean))];
+
+    for (const studentId of affectedStudentIds) {
+      for (const cat of allCategories) {
+        if (cat === "hocTapTot") {
+          await recomputeHocTapProgress(studentId);
+        } else if (cat === "tinhNguyenTot") {
+          await recomputeTinhNguyenProgress(studentId);
+        } else if (cat === "hoiNhapTot") {
+          await recomputeHoiNhapProgress(studentId);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Đã cập nhật hoạt động.",
+      eligibleAwardLevels: activity.eligibleAwardLevels
+    });
+  } catch (error) {
+    console.error("Edit activity error:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi sửa hoạt động." });
+  }
+});
+
+// ===============================
 // 10. ADMIN / SUPER ADMIN: XÓA HOẠT ĐỘNG ĐÃ UPLOAD
 // ===============================
 
@@ -3487,6 +3584,54 @@ router.patch(
     } catch (error) {
       console.error("Fix activated status error:", error);
       res.status(500).json({ success: false, message: "Lỗi server khi cập nhật trạng thái" });
+    }
+  }
+);
+
+// ===============================
+// MAINTENANCE MODE
+// ===============================
+router.get(
+  "/maintenance-mode",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const doc = await SystemSettings.findOne({ key: "maintenanceMode" }).lean();
+      res.json({ success: true, enabled: doc?.value === true });
+    } catch (error) {
+      console.error("Get maintenance mode error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server." });
+    }
+  }
+);
+
+router.patch(
+  "/maintenance-mode",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      if (typeof enabled !== "boolean") {
+        return res.status(400).json({ success: false, message: "enabled phải là boolean." });
+      }
+      await SystemSettings.findOneAndUpdate(
+        { key: "maintenanceMode" },
+        { value: enabled, updatedBy: req.admin.username, updatedAt: new Date() },
+        { upsert: true, returnDocument: "after" }
+      );
+      invalidateMaintenanceCache();
+      res.json({
+        success: true,
+        enabled,
+        message: enabled
+          ? "Đã bật chế độ bảo trì."
+          : "Đã tắt chế độ bảo trì."
+      });
+    } catch (error) {
+      console.error("Patch maintenance mode error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server." });
     }
   }
 );

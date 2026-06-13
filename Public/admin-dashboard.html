@@ -138,6 +138,25 @@
           </button>
           <p id="fixActivatedResult" class="fix-result-msg"></p>
         </div>
+
+        <div id="maintenanceSection" class="criterion-card hidden">
+          <div class="maintenance-header">
+            <div>
+              <h3>Chế độ bảo trì</h3>
+              <p id="maintenanceDesc">
+                Khi bật, sinh viên sẽ thấy trang thông báo bảo trì thay vì truy cập hệ thống.
+                Admin vẫn đăng nhập và quản lý bình thường.
+              </p>
+            </div>
+            <label class="toggle-switch" title="Bật/tắt chế độ bảo trì">
+              <input type="checkbox" id="maintenanceToggle" onchange="onMaintenanceToggle(this)" />
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+          </div>
+          <p id="maintenanceResult" class="fix-result-msg"></p>
+        </div>
       </section>
 
      <section id="students" class="tab-content">
@@ -584,6 +603,26 @@
       <option value="hoiNhapTot">Hội nhập tốt</option>
     </select>
   </div>
+
+  <div class="filter-item">
+    <label for="evidenceClassSort">Sắp xếp theo lớp</label>
+    <select id="evidenceClassSort" onchange="applyEvidenceFilters()">
+      <option value="">Không sắp xếp</option>
+      <option value="asc">Lớp A → Z</option>
+      <option value="desc">Lớp Z → A</option>
+    </select>
+  </div>
+
+  <div class="filter-item filter-item--wide">
+    <label for="evidenceSearch">Tìm MSSV hoặc họ tên</label>
+    <input
+      type="text"
+      id="evidenceSearch"
+      placeholder="Nhập MSSV hoặc họ tên..."
+      oninput="applyEvidenceFilters()"
+      autocomplete="off"
+    />
+  </div>
 </div>
 
         <table>
@@ -637,6 +676,118 @@
 </section>
     </main>
   </div>
+<!-- Edit Activity Modal -->
+<div id="editActivityModal" class="admin-modal hidden" onclick="closeEditActivityModal()">
+  <div class="admin-modal-box" onclick="event.stopPropagation()">
+    <div class="admin-modal-header">
+      <h2>Chỉnh sửa hoạt động</h2>
+      <button class="admin-modal-close" onclick="closeEditActivityModal()">✕</button>
+    </div>
+
+    <div class="admin-modal-body">
+      <input type="hidden" id="editActivityId" />
+
+      <div class="edit-form-group">
+        <label>Tên hoạt động</label>
+        <input type="text" id="editActivityTitle" />
+      </div>
+
+      <div class="edit-form-row">
+        <div class="edit-form-group">
+          <label>Tiêu chí</label>
+          <select id="editActivityCategory" onchange="onEditCategoryChange()">
+            <option value="daoDucTot">Đạo đức tốt</option>
+            <option value="hocTapTot">Học tập tốt</option>
+            <option value="theLucTot">Thể lực tốt</option>
+            <option value="tinhNguyenTot">Tình nguyện tốt</option>
+            <option value="hoiNhapTot">Hội nhập tốt</option>
+          </select>
+        </div>
+
+        <div class="edit-form-group">
+          <label>Cấp tổ chức</label>
+          <select id="editActivityOrganizerLevel">
+            <option value="bo_mon">Bộ môn</option>
+            <option value="khoa">Khoa</option>
+            <option value="truong">Trường</option>
+            <option value="dhqg">ĐHQG-HCM</option>
+            <option value="thanh">Thành phố</option>
+            <option value="quoc_gia">Quốc gia</option>
+            <option value="quoc_te">Quốc tế</option>
+            <option value="khac">Khác</option>
+          </select>
+        </div>
+
+        <div class="edit-form-group">
+          <label>Ngày tổ chức</label>
+          <input type="date" id="editActivityDate" />
+        </div>
+      </div>
+
+      <!-- Học tập tốt -->
+      <div id="editAcademicGroup" class="edit-form-group hidden">
+        <label>Loại minh chứng học tập</label>
+        <select id="editActivityAcademicType">
+          <option value="hocThuat_3_activities">Hoạt động học thuật (1/3)</option>
+          <option value="nghienCuu">Nghiên cứu khoa học / khóa luận</option>
+          <option value="sangTao">Ý tưởng sáng tạo</option>
+          <option value="troGiang">Trợ giảng / cố vấn học tập</option>
+          <option value="baiBao">Bài báo khoa học</option>
+          <option value="doiTuyen">Đội tuyển Olympic / HSG</option>
+          <option value="khac_direct">Học tập khác (đạt thẳng)</option>
+        </select>
+      </div>
+
+      <!-- Tình nguyện tốt -->
+      <div id="editVolunteerGroup" class="edit-form-group hidden">
+        <label>Số ngày tình nguyện</label>
+        <input type="number" id="editActivityVolunteerDays" min="0" placeholder="Ví dụ: 3" />
+      </div>
+
+      <!-- Hội nhập tốt -->
+      <div id="editHoiNhapGroup" class="edit-form-group hidden">
+        <label>Phân nhóm hội nhập</label>
+        <select id="editActivitySubCriteria" onchange="onEditSubCriteriaChange()">
+          <option value="ngoaiNgu">Ngoại ngữ</option>
+          <option value="kyNang">Kỹ năng</option>
+          <option value="hoiNhap">Hoạt động hội nhập</option>
+        </select>
+      </div>
+
+      <div id="editKyNangGroup" class="edit-form-group hidden">
+        <label>Loại minh chứng kỹ năng</label>
+        <select id="editActivityKyNangType">
+          <option value="skill_course">Khoá học kỹ năng được công nhận</option>
+          <option value="skill_competition_award_khoa_or_above">Giải cuộc thi kỹ năng cấp Khoa trở lên</option>
+          <option value="skill_competition_award_truong_or_above">Giải cuộc thi kỹ năng cấp Trường trở lên</option>
+          <option value="skill_reporter_khoa_or_above">BTV / Phóng viên cấp Khoa trở lên</option>
+          <option value="skill_reporter_truong_or_above">BTV / Phóng viên cấp Trường trở lên</option>
+          <option value="union_association_award_truong_or_above">Khen thưởng Đoàn/Hội cấp Trường trở lên</option>
+          <option value="student_leader_competition_finalist_truong_or_above">Vào chung kết SV tiêu biểu cấp Trường trở lên</option>
+        </select>
+      </div>
+
+      <div id="editHoiNhapTypeGroup" class="edit-form-group hidden">
+        <label>Loại hoạt động hội nhập</label>
+        <select id="editActivityHoiNhapType">
+          <option value="exchange_program">Chương trình giao lưu quốc tế</option>
+          <option value="foreign_language_club">CLB ngoại ngữ / văn hoá quốc tế</option>
+          <option value="international_competition">Cuộc thi quốc tế</option>
+          <option value="cultural_event">Sự kiện văn hoá quốc tế</option>
+          <option value="other_hoi_nhap">Hoạt động hội nhập khác</option>
+        </select>
+      </div>
+
+      <div id="editActivityEligibleInfo" class="edit-eligible-info hidden"></div>
+    </div>
+
+    <div class="admin-modal-footer">
+      <button class="btn-secondary" onclick="closeEditActivityModal()">Huỷ</button>
+      <button class="btn-primary" onclick="saveEditActivity()">Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
 <div id="studentDetailModal" class="admin-modal hidden">
   <div class="admin-modal-backdrop" onclick="closeStudentDetailModal()"></div>
 

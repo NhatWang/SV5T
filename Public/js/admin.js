@@ -40,6 +40,17 @@ async function loginAdmin() {
   }
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  const usernameEl = document.getElementById("adminUsername");
+  const passwordEl = document.getElementById("adminPassword");
+  if (usernameEl) usernameEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); passwordEl ? passwordEl.focus() : loginAdmin(); }
+  });
+  if (passwordEl) passwordEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); loginAdmin(); }
+  });
+});
+
 function togglePassword(inputId, button) {
   const input = document.getElementById(inputId);
 

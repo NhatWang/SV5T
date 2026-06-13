@@ -354,6 +354,11 @@ function initAdminDashboard() {
     const fixSection = document.getElementById("fixActivatedSection");
     if (fixSection) fixSection.classList.remove("hidden");
 
+    const maintenanceSection = document.getElementById("maintenanceSection");
+    if (maintenanceSection) maintenanceSection.classList.remove("hidden");
+
+    loadMaintenanceStatus();
+
     const collectiveEvaluationTabBtn = document.getElementById(
       "collectiveEvaluationTabBtn"
     );
@@ -626,6 +631,8 @@ async function loadAllCollectiveProgress() {
   }
 }
 
+let allEvidencesCache = [];
+
 async function loadAllEvidences() {
   try {
     const awardLevel =
@@ -657,11 +664,41 @@ async function loadAllEvidences() {
       return;
     }
 
-    renderEvidencesTable(data.evidences || []);
+    allEvidencesCache = data.evidences || [];
+    applyEvidenceFilters();
   } catch (error) {
     console.error("Load evidences error:", error);
     alert("Không thể kết nối server khi tải minh chứng.");
   }
+}
+
+function applyEvidenceFilters() {
+  const search = (document.getElementById("evidenceSearch")?.value || "").trim().toLowerCase();
+  const sortDir = document.getElementById("evidenceClassSort")?.value || "";
+
+  let list = [...allEvidencesCache];
+
+  if (search) {
+    list = list.filter((ev) => {
+      const student = ev.student || {};
+      return (
+        (student.studentId || "").toLowerCase().includes(search) ||
+        (student.fullName || "").toLowerCase().includes(search)
+      );
+    });
+  }
+
+  if (sortDir === "asc") {
+    list.sort((a, b) =>
+      (a.student?.className || "").localeCompare(b.student?.className || "", "vi", { numeric: true })
+    );
+  } else if (sortDir === "desc") {
+    list.sort((a, b) =>
+      (b.student?.className || "").localeCompare(a.student?.className || "", "vi", { numeric: true })
+    );
+  }
+
+  renderEvidencesTable(list);
 }
 
 function renderEvidencesTable(evidences) {
@@ -1275,12 +1312,20 @@ async function loadUploadedActivities() {
   <td>${participantCount}</td>
   <td>${activity.uploadedBy || "admin"}</td>
   <td>
-    <button
-      class="danger-btn"
-      onclick="deleteUploadedActivity('${activity._id}')"
-    >
-      Xóa
-    </button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button
+        class="edit-btn"
+        onclick="openEditActivityModal(${JSON.stringify(activity)})"
+      >
+        Sửa
+      </button>
+      <button
+        class="danger-btn"
+        onclick="deleteUploadedActivity('${activity._id}')"
+      >
+        Xóa
+      </button>
+    </div>
   </td>
 `;
 
@@ -1771,6 +1816,7 @@ function closeSidebar() {
   document.body.style.overflow = "";
 }
 
+window.applyEvidenceFilters = applyEvidenceFilters;
 window.openSidebar = openSidebar;
 window.closeSidebar = closeSidebar;
 window.toggleUploadMenu = toggleUploadMenu;
@@ -2558,6 +2604,180 @@ async function fixActivatedStudentsStatus() {
 }
 
 window.fixActivatedStudentsStatus = fixActivatedStudentsStatus;
+
+// ── Maintenance Mode ──────────────────────────────────────────────────────
+
+async function loadMaintenanceStatus() {
+  try {
+    const res = await fetch("/api/admin-dashboard/maintenance-mode", { credentials: "include" });
+    const data = await res.json();
+    if (data.success) {
+      const toggle = document.getElementById("maintenanceToggle");
+      if (toggle) toggle.checked = data.enabled;
+      updateMaintenanceDesc(data.enabled);
+    }
+  } catch (e) {
+    console.error("Load maintenance status error:", e);
+  }
+}
+
+async function onMaintenanceToggle(checkbox) {
+  const enabled = checkbox.checked;
+  const result = document.getElementById("maintenanceResult");
+  checkbox.disabled = true;
+
+  try {
+    const res = await fetch("/api/admin-dashboard/maintenance-mode", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled })
+    });
+    const data = await res.json();
+    if (data.success) {
+      result.textContent = data.message;
+      result.className = "fix-result-msg fix-result-msg--success";
+      updateMaintenanceDesc(enabled);
+    } else {
+      result.textContent = data.message || "Có lỗi xảy ra.";
+      result.className = "fix-result-msg fix-result-msg--error";
+      checkbox.checked = !enabled;
+    }
+  } catch (e) {
+    result.textContent = "Lỗi kết nối server.";
+    result.className = "fix-result-msg fix-result-msg--error";
+    checkbox.checked = !enabled;
+  } finally {
+    checkbox.disabled = false;
+    setTimeout(() => { result.textContent = ""; }, 4000);
+  }
+}
+
+function updateMaintenanceDesc(enabled) {
+  const desc = document.getElementById("maintenanceDesc");
+  if (!desc) return;
+  if (enabled) {
+    desc.innerHTML =
+      '<strong style="color:var(--red)">Đang bật — sinh viên không thể truy cập hệ thống.</strong> ' +
+      'Admin vẫn hoạt động bình thường.';
+  } else {
+    desc.textContent =
+      "Khi bật, sinh viên sẽ thấy trang thông báo bảo trì thay vì truy cập hệ thống. Admin vẫn đăng nhập và quản lý bình thường.";
+  }
+}
+
+window.onMaintenanceToggle = onMaintenanceToggle;
+
+// ── Edit Activity Modal ────────────────────────────────────────────────────
+
+function openEditActivityModal(activity) {
+  document.getElementById("editActivityId").value = activity._id;
+  document.getElementById("editActivityTitle").value = activity.title || "";
+  document.getElementById("editActivityCategory").value = activity.category || "daoDucTot";
+  document.getElementById("editActivityOrganizerLevel").value = activity.organizerLevel || "khac";
+
+  const dateVal = activity.date ? activity.date.slice(0, 10) : "";
+  document.getElementById("editActivityDate").value = dateVal;
+
+  document.getElementById("editActivityAcademicType").value = activity.academicEvidenceType || "";
+  document.getElementById("editActivityVolunteerDays").value = activity.volunteerDays ?? 0;
+  document.getElementById("editActivitySubCriteria").value = activity.subCriteria || "ngoaiNgu";
+  document.getElementById("editActivityKyNangType").value = activity.kyNangEvidenceType || "";
+  document.getElementById("editActivityHoiNhapType").value = activity.hoiNhapEvidenceType || "";
+
+  document.getElementById("editActivityEligibleInfo").classList.add("hidden");
+
+  onEditCategoryChange();
+
+  document.getElementById("editActivityModal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeEditActivityModal() {
+  document.getElementById("editActivityModal").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+function onEditCategoryChange() {
+  const cat = document.getElementById("editActivityCategory").value;
+  document.getElementById("editAcademicGroup").classList.toggle("hidden", cat !== "hocTapTot");
+  document.getElementById("editVolunteerGroup").classList.toggle("hidden", cat !== "tinhNguyenTot");
+  document.getElementById("editHoiNhapGroup").classList.toggle("hidden", cat !== "hoiNhapTot");
+  onEditSubCriteriaChange();
+}
+
+function onEditSubCriteriaChange() {
+  const cat = document.getElementById("editActivityCategory").value;
+  const sub = document.getElementById("editActivitySubCriteria").value;
+  const isHoiNhap = cat === "hoiNhapTot";
+  document.getElementById("editKyNangGroup").classList.toggle("hidden", !(isHoiNhap && sub === "kyNang"));
+  document.getElementById("editHoiNhapTypeGroup").classList.toggle("hidden", !(isHoiNhap && sub === "hoiNhap"));
+}
+
+async function saveEditActivity() {
+  const id = document.getElementById("editActivityId").value;
+  const cat = document.getElementById("editActivityCategory").value;
+
+  const body = {
+    title:            document.getElementById("editActivityTitle").value.trim(),
+    category:         cat,
+    organizerLevel:   document.getElementById("editActivityOrganizerLevel").value,
+    date:             document.getElementById("editActivityDate").value
+  };
+
+  if (cat === "hocTapTot") {
+    body.academicEvidenceType = document.getElementById("editActivityAcademicType").value;
+  }
+  if (cat === "tinhNguyenTot") {
+    body.volunteerDays = Number(document.getElementById("editActivityVolunteerDays").value) || 0;
+  }
+  if (cat === "hoiNhapTot") {
+    const sub = document.getElementById("editActivitySubCriteria").value;
+    body.subCriteria = sub;
+    if (sub === "kyNang")   body.kyNangEvidenceType  = document.getElementById("editActivityKyNangType").value;
+    if (sub === "hoiNhap")  body.hoiNhapEvidenceType = document.getElementById("editActivityHoiNhapType").value;
+  }
+
+  const saveBtn = document.querySelector("#editActivityModal .btn-primary");
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Đang lưu..."; }
+
+  try {
+    const res = await fetch(`/api/admin-dashboard/activities/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const info = document.getElementById("editActivityEligibleInfo");
+      const levels = (data.eligibleAwardLevels || []).map(l =>
+        l === "truong" ? "Cấp Trường" : l === "dhqg" ? "ĐHQG-HCM" : "Thành phố"
+      ).join(", ");
+      info.textContent = `Đã lưu. Cấp công nhận: ${levels || "Chưa xác định"}`;
+      info.className = "edit-eligible-info edit-eligible-info--ok";
+
+      await loadUploadedActivities();
+      closeEditActivityModal();
+    } else {
+      const info = document.getElementById("editActivityEligibleInfo");
+      info.textContent = data.message || "Lưu thất bại.";
+      info.className = "edit-eligible-info edit-eligible-info--err";
+    }
+  } catch (err) {
+    console.error("Save edit activity error:", err);
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Lưu thay đổi"; }
+  }
+}
+
+window.openEditActivityModal = openEditActivityModal;
+window.closeEditActivityModal = closeEditActivityModal;
+window.onEditCategoryChange = onEditCategoryChange;
+window.onEditSubCriteriaChange = onEditSubCriteriaChange;
+window.saveEditActivity = saveEditActivity;
 
 async function logoutAdmin() {
   try {

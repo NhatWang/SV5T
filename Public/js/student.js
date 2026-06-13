@@ -395,6 +395,24 @@ function showStep(stepId) {
   }
 }
 
+function bindEnter(inputId, action) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); action(); }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  bindEnter("studentId",          checkMSSV);
+  bindEnter("newPassword",        () => document.getElementById("confirmPassword")?.focus());
+  bindEnter("confirmPassword",    createPassword);
+  bindEnter("loginPassword",      loginStudent);
+  bindEnter("resetCode",          () => document.getElementById("resetNewPassword")?.focus());
+  bindEnter("resetNewPassword",   () => document.getElementById("resetConfirmPassword")?.focus());
+  bindEnter("resetConfirmPassword", resetPassword);
+});
+
 function showMessage(el, text, type) {
   el.textContent = text;
   el.className = type === "success" ? "msg-success" : "msg-error";

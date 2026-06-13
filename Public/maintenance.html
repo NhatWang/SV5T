@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hệ thống đang bảo trì – SV5T</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #071f4e 0%, #0b3d91 60%, #1560c8 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #fff;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 28px;
+      padding: 56px 48px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 32px 80px rgba(7, 31, 78, 0.4);
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.25));
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      margin: 28px 0;
+    }
+
+    .school {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.55);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .check-status {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 40px 28px; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="icon">🔧</span>
+    <h1>Hệ thống đang bảo trì</h1>
+    <p class="subtitle">
+      Chúng tôi đang nâng cấp hệ thống để phục vụ bạn tốt hơn.<br />
+      Vui lòng quay lại sau ít phút.
+    </p>
+    <div class="spinner"></div>
+    <p class="check-status" id="checkStatus">Đang tự động kiểm tra...</p>
+    <hr class="divider" />
+    <p class="school">Sinh viên 5 tốt – Khoa Hóa học, ĐHQG-HCM</p>
+  </div>
+
+  <script>
+    const returnTo = sessionStorage.getItem('maintenanceReturnTo');
+
+    async function checkStatus() {
+      try {
+        const res = await fetch('/api/system/status');
+        const data = await res.json();
+        if (data.success && !data.maintenance) {
+          sessionStorage.removeItem('maintenanceReturnTo');
+          window.location.replace(returnTo || '/');
+        }
+      } catch (e) {}
+    }
+
+    // Check immediately on load, then every 5s
+    checkStatus();
+    setInterval(checkStatus, 5_000);
+  </script>
+</body>
+</html>

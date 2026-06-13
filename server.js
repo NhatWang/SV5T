@@ -213,11 +213,24 @@ const chatbotRoutes = require("./Routes/chatbotRoutes");
 // FIX #1: Thêm activityRoutes (trước đây bị thiếu, khiến /api/activity/* trả 404)
 const activityRoutes = require("./Routes/activityRoutes");
 
+const { maintenanceMiddleware, getMaintenanceStatus } = require("./Middlewares/maintenanceMiddleware");
+const SystemSettings = require("./Models/SystemSettings");
+
+// Public endpoint — no auth, used by student pages to check maintenance status
+app.get("/api/system/status", async (req, res) => {
+  try {
+    const maintenance = await getMaintenanceStatus();
+    res.json({ success: true, maintenance });
+  } catch (e) {
+    res.json({ success: true, maintenance: false });
+  }
+});
+
 app.use("/api/push", pushRoutes);
 app.use("/api/chatbot", chatbotRoutes);
-app.use("/api/student", studentRoutes);
-app.use("/api/student-dashboard", studentDashboardRoutes);
-app.use("/api/evidence", evidenceRoutes);
+app.use("/api/student", maintenanceMiddleware, studentRoutes);
+app.use("/api/student-dashboard", maintenanceMiddleware, studentDashboardRoutes);
+app.use("/api/evidence", maintenanceMiddleware, evidenceRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
 app.use("/api/activity", activityRoutes);
