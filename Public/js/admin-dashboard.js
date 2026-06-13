@@ -357,6 +357,9 @@ function initAdminDashboard() {
     const maintenanceSection = document.getElementById("maintenanceSection");
     if (maintenanceSection) maintenanceSection.classList.remove("hidden");
 
+    const broadcastPushSection = document.getElementById("broadcastPushSection");
+    if (broadcastPushSection) broadcastPushSection.classList.remove("hidden");
+
     loadMaintenanceStatus();
 
     const collectiveEvaluationTabBtn = document.getElementById(
@@ -2667,6 +2670,56 @@ function updateMaintenanceDesc(enabled) {
 }
 
 window.onMaintenanceToggle = onMaintenanceToggle;
+
+// ── Broadcast Push Notification ───────────────────────────────────────────
+
+async function sendBroadcastPush() {
+  const btn = document.getElementById("broadcastPushBtn");
+  const result = document.getElementById("broadcastPushResult");
+  const title = document.getElementById("broadcastTitle").value.trim();
+  const body = document.getElementById("broadcastBody").value.trim();
+  const url = document.getElementById("broadcastUrl").value.trim();
+  const target = document.getElementById("broadcastTarget").value;
+
+  if (!title || !body) {
+    result.textContent = "Vui lòng nhập tiêu đề và nội dung thông báo.";
+    result.className = "fix-result-msg fix-result-msg--error";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Đang gửi...";
+  result.textContent = "";
+
+  try {
+    const res = await fetch("/api/admin-dashboard/broadcast-push", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, body, url: url || undefined, target })
+    });
+    const data = await res.json();
+    if (data.success) {
+      result.textContent = data.message;
+      result.className = "fix-result-msg fix-result-msg--success";
+      document.getElementById("broadcastTitle").value = "";
+      document.getElementById("broadcastBody").value = "";
+      document.getElementById("broadcastUrl").value = "";
+    } else {
+      result.textContent = data.message || "Có lỗi xảy ra.";
+      result.className = "fix-result-msg fix-result-msg--error";
+    }
+  } catch (e) {
+    result.textContent = "Lỗi kết nối server.";
+    result.className = "fix-result-msg fix-result-msg--error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Gửi thông báo";
+    setTimeout(() => { result.textContent = ""; }, 6000);
+  }
+}
+
+window.sendBroadcastPush = sendBroadcastPush;
 
 // ── Edit Activity Modal ────────────────────────────────────────────────────
 

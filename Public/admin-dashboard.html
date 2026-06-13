@@ -157,6 +157,42 @@
           </div>
           <p id="maintenanceResult" class="fix-result-msg"></p>
         </div>
+
+        <div id="broadcastPushSection" class="criterion-card hidden">
+          <h3>Gửi thông báo Web Push</h3>
+          <p style="margin-bottom:12px;color:var(--text-secondary);font-size:0.93rem;">
+            Soạn nội dung và gửi thông báo tới thiết bị đã đăng ký nhận push notification.
+          </p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <label for="broadcastTarget" style="font-weight:600;font-size:0.9rem;">Gửi tới</label>
+              <select id="broadcastTarget" style="width:100%;margin-top:4px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.93rem;">
+                <option value="students">Tất cả sinh viên</option>
+                <option value="admins">Tất cả admin</option>
+                <option value="all">Tất cả (sinh viên + admin)</option>
+              </select>
+            </div>
+            <div>
+              <label for="broadcastTitle" style="font-weight:600;font-size:0.9rem;">Tiêu đề</label>
+              <input type="text" id="broadcastTitle" placeholder="VD: Thông báo bảo trì hệ thống"
+                style="width:100%;margin-top:4px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.93rem;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label for="broadcastBody" style="font-weight:600;font-size:0.9rem;">Nội dung</label>
+              <textarea id="broadcastBody" rows="3" placeholder="VD: Hệ thống sẽ bảo trì từ 8AM - 12PM ngày 14/6/2026. Vui lòng hoàn tất các thao tác trước thời gian này."
+                style="width:100%;margin-top:4px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.93rem;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>
+            </div>
+            <div>
+              <label for="broadcastUrl" style="font-weight:600;font-size:0.9rem;">Đường dẫn khi bấm vào thông báo <span style="font-weight:400;color:var(--text-secondary)">(tuỳ chọn)</span></label>
+              <input type="text" id="broadcastUrl" placeholder="/student-dashboard.html"
+                style="width:100%;margin-top:4px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.93rem;box-sizing:border-box;" />
+            </div>
+            <button id="broadcastPushBtn" onclick="sendBroadcastPush()" style="align-self:flex-start;">
+              Gửi thông báo
+            </button>
+            <p id="broadcastPushResult" class="fix-result-msg"></p>
+          </div>
+        </div>
       </section>
 
      <section id="students" class="tab-content">

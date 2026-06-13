@@ -44,7 +44,8 @@ const ClassSupport = require("../Models/ClassSupport");
 
 const {
   sendPushToStudent,
-  sendPushToStudents
+  sendPushToStudents,
+  sendPushBroadcast
 } = require("../Utils/pushService");
 
 const router = express.Router();
@@ -3632,6 +3633,40 @@ router.patch(
     } catch (error) {
       console.error("Patch maintenance mode error:", error);
       res.status(500).json({ success: false, message: "Lỗi server." });
+    }
+  }
+);
+
+// ===============================
+// BROADCAST PUSH NOTIFICATION
+// ===============================
+router.post(
+  "/broadcast-push",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const { title, body, url, target } = req.body;
+      if (!title || !body) {
+        return res.status(400).json({ success: false, message: "Tiêu đề và nội dung không được để trống." });
+      }
+      const validTargets = ["students", "admins", "all"];
+      const resolvedTarget = validTargets.includes(target) ? target : "students";
+
+      const count = await sendPushBroadcast(resolvedTarget, {
+        title: String(title).trim(),
+        body: String(body).trim(),
+        url: url ? String(url).trim() : "/student-dashboard.html"
+      });
+
+      res.json({
+        success: true,
+        message: `Đã gửi thông báo tới ${count} thiết bị.`,
+        count
+      });
+    } catch (error) {
+      console.error("Broadcast push error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server khi gửi thông báo." });
     }
   }
 );

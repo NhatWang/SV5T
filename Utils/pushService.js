@@ -87,8 +87,23 @@ async function sendPushToAdminsForClass(className, payload) {
   });
 }
 
+async function sendPushBroadcast(target, payload) {
+  let query = {};
+  if (target === "students") {
+    query = { targetType: "student" };
+  } else if (target === "admins") {
+    query = { targetType: "admin" };
+  }
+  // target === "all" → no filter
+
+  const subscriptions = await PushSubscription.find(query);
+  await sendPushToSubscriptions(subscriptions, payload);
+  return subscriptions.length;
+}
+
 module.exports = {
   sendPushToStudent,
   sendPushToStudents,
-  sendPushToAdminsForClass
+  sendPushToAdminsForClass,
+  sendPushBroadcast
 };
