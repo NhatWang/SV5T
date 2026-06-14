@@ -193,6 +193,16 @@
             <p id="broadcastPushResult" class="fix-result-msg"></p>
           </div>
         </div>
+
+        <div id="classSupportListSection" class="criterion-card hidden">
+          <h3>Thông tin Ban Chi Hội các lớp</h3>
+          <p style="margin-bottom:14px;color:var(--text-secondary);font-size:0.93rem;">
+            Danh sách Chi Hội trưởng, Chi Hội phó, Ủy viên BCH và CTV BCH đã được upload.
+          </p>
+          <div id="classSupportListBody" style="display:flex;flex-direction:column;gap:14px;">
+            <p style="color:var(--text-secondary);font-size:0.9rem;">Đang tải...</p>
+          </div>
+        </div>
       </section>
 
      <section id="students" class="tab-content">
@@ -343,7 +353,7 @@
           <h3>Hướng dẫn file Excel hỗ trợ lớp</h3>
           <p>
             File dùng để cập nhật Chi Hội trưởng và danh sách Chi Hội phó theo từng lớp.
-            Chỉ super admin được upload file này.
+            Super admin có thể upload nhiều lớp cùng lúc. Admin lớp chỉ upload được thông tin lớp của mình.
           </p>
         </div>
       </div>
@@ -499,7 +509,7 @@
 
   <div class="upload-guide-note">
     <strong>organizerLevel hợp lệ:</strong>
-    <code>bo_mon</code> <code>khoa</code> <code>truong</code>,
+    <code>chi_hoi</code> <code>khoa</code> <code>truong</code>,
     <code>dhqg</code> <code>thanh</code> <code>quoc_gia</code> <code>quoc_te</code>
   </div>
 </div>
@@ -523,7 +533,7 @@
 
     <select id="activityOrganizerLevelFilter" onchange="loadUploadedActivities()">
       <option value="">Tất cả cấp tổ chức</option>
-      <option value="bo_mon">Bộ môn</option>
+      <option value="chi_hoi">Chi Hội</option>
       <option value="khoa">Khoa</option>
       <option value="truong">Trường</option>
       <option value="dhqg">ĐHQG-HCM</option>
@@ -743,7 +753,7 @@
         <div class="edit-form-group">
           <label>Cấp tổ chức</label>
           <select id="editActivityOrganizerLevel">
-            <option value="bo_mon">Bộ môn</option>
+            <option value="chi_hoi">Chi Hội</option>
             <option value="khoa">Khoa</option>
             <option value="truong">Trường</option>
             <option value="dhqg">ĐHQG-HCM</option>

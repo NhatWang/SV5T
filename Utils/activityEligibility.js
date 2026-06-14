@@ -1,6 +1,6 @@
 const ORGANIZER_LEVEL_RANK = {
   khac: 0,
-  bo_mon: 1,
+  chi_hoi: 1,
   khoa: 2,
   truong: 3,
   dhqg: 4,
@@ -79,10 +79,13 @@ function normalizeOrganizerLevel(value) {
   if (!raw) return "khac";
 
   const aliases = {
-    bo_mon: "bo_mon",
-    bomon: "bo_mon",
-    bo: "bo_mon",
-    mon: "bo_mon",
+    chi_hoi: "chi_hoi",
+    chihoi: "chi_hoi",
+    chi: "chi_hoi",
+    bo_mon: "chi_hoi",
+    bomon: "chi_hoi",
+    bo: "chi_hoi",
+    mon: "chi_hoi",
 
     khoa: "khoa",
     cap_khoa: "khoa",

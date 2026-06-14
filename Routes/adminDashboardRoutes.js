@@ -76,7 +76,7 @@ const hoiNhapSubCriteria = ["ngoaiNgu", "kyNang", "hoiNhap"];
 const VALID_AWARD_LEVELS = ["truong", "dhqg", "thanh"];
 
 const VALID_ORGANIZER_LEVELS = [
-  "bo_mon",
+  "chi_hoi",
   "khoa",
   "truong",
   "dhqg",
@@ -1918,7 +1918,7 @@ router.post(
           errors.push({
             row,
             reason:
-              "Thiếu organizerLevel. Vui lòng nhập cấp tổ chức: bo_mon, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
+              "Thiếu organizerLevel. Vui lòng nhập cấp tổ chức: chi_hoi, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
           });
           continue;
         }
@@ -1927,7 +1927,7 @@ router.post(
           errors.push({
             row,
             reason:
-              "organizerLevel không hợp lệ. Chỉ được dùng: bo_mon, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
+              "organizerLevel không hợp lệ. Chỉ được dùng: chi_hoi, khoa, truong, dhqg, thanh, quoc_gia hoặc quoc_te."
           });
           continue;
         }
@@ -2433,7 +2433,7 @@ router.get("/activities/uploaded", requireAdminAuth, async (req, res) => {
     const query = {};
 
     const validOrganizerLevels = [
-      "bo_mon",
+      "chi_hoi",
       "khoa",
       "truong",
       "dhqg",
@@ -2914,13 +2914,6 @@ router.post(
     const tempFilePath = req.file?.path;
 
     try {
-      if (req.admin.role !== "super_admin") {
-        return res.status(403).json({
-          success: false,
-          message: "Chỉ super admin được upload danh sách hỗ trợ lớp"
-        });
-      }
-
       if (!req.file) {
         return res.status(400).json({
           success: false,
@@ -2942,6 +2935,14 @@ router.post(
           errors.push({
             row,
             reason: "Thiếu className"
+          });
+          continue;
+        }
+
+        if (req.admin.role === "admin" && className !== req.admin.className) {
+          errors.push({
+            row,
+            reason: `Admin lớp ${req.admin.className} không được upload thông tin lớp ${className}`
           });
           continue;
         }
@@ -3016,7 +3017,7 @@ router.post(
             chiHoiPho,
             uyVienBCHList,
             ctvBCH,
-            updatedBy: req.admin.username || req.admin.email || "super_admin"
+            updatedBy: req.admin.username || req.admin.email || "admin"
           },
           {
             upsert: true,
@@ -3314,6 +3315,29 @@ router.get("/central-evidences", requireAdminAuth, async (req, res) => {
     });
   }
 });
+
+// ===============================
+// SUPER ADMIN: XEM THÔNG TIN BAN CHỈ HỘI TẤT CẢ LỚP
+// ===============================
+
+router.get(
+  "/all-class-support",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const list = await ClassSupport.find()
+        .select("-__v")
+        .sort({ className: 1 })
+        .lean();
+
+      return res.json({ success: true, list });
+    } catch (error) {
+      console.error("Get all class support error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server." });
+    }
+  }
+);
 
 // ===============================
 // SUPER ADMIN: TẠO MÃ RESET MẬT KHẨU CHO ADMIN

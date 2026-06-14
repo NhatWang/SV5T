@@ -93,6 +93,7 @@ const activitySchema = new mongoose.Schema(
     organizerLevel: {
       type: String,
       enum: [
+        "chi_hoi",
         "bo_mon",
         "khoa",
         "truong",

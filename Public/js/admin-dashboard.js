@@ -360,7 +360,11 @@ function initAdminDashboard() {
     const broadcastPushSection = document.getElementById("broadcastPushSection");
     if (broadcastPushSection) broadcastPushSection.classList.remove("hidden");
 
+    const classSupportListSection = document.getElementById("classSupportListSection");
+    if (classSupportListSection) classSupportListSection.classList.remove("hidden");
+
     loadMaintenanceStatus();
+    loadClassSupportList();
 
     const collectiveEvaluationTabBtn = document.getElementById(
       "collectiveEvaluationTabBtn"
@@ -1340,7 +1344,8 @@ async function loadUploadedActivities() {
 }
 
 function formatOrganizerLevel(level) {
-  if (level === "bo_mon") return "Bộ môn";
+  if (level === "chi_hoi") return "Chi Hội";
+  if (level === "bo_mon") return "Chi Hội";
   if (level === "khoa") return "Khoa";
   if (level === "truong") return "Trường";
   if (level === "dhqg") return "ĐHQG-HCM";
@@ -2720,6 +2725,60 @@ async function sendBroadcastPush() {
 }
 
 window.sendBroadcastPush = sendBroadcastPush;
+
+// ── Class Support List ────────────────────────────────────────────────────
+
+function renderPersonRow(label, person) {
+  if (!person || !person.fullName) return "";
+  const phone = person.phone ? `<span style="color:var(--text-secondary);margin-left:8px;">📞 ${escapeHtml(person.phone)}</span>` : "";
+  const zalo  = person.zalo  ? `<span style="color:var(--text-secondary);margin-left:8px;">Zalo: ${escapeHtml(person.zalo)}</span>`  : "";
+  return `<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;font-size:0.88rem;">
+    <span style="min-width:120px;font-weight:600;color:var(--text-secondary);">${label}</span>
+    <span>${escapeHtml(person.fullName)}</span>${phone}${zalo}
+  </div>`;
+}
+
+async function loadClassSupportList() {
+  const container = document.getElementById("classSupportListBody");
+  if (!container) return;
+
+  try {
+    const res = await fetch("/api/admin-dashboard/all-class-support", { credentials: "include" });
+    const data = await res.json();
+
+    if (!data.success) {
+      container.innerHTML = `<p style="color:var(--red);font-size:0.9rem;">${data.message || "Không thể tải dữ liệu."}</p>`;
+      return;
+    }
+
+    if (!data.list || data.list.length === 0) {
+      container.innerHTML = `<p style="color:var(--text-secondary);font-size:0.9rem;">Chưa có thông tin nào được upload.</p>`;
+      return;
+    }
+
+    container.innerHTML = data.list.map(item => {
+      const uyVienRows = (item.uyVienBCHList || [])
+        .map((uv, idx) => renderPersonRow(`Ủy viên BCH ${idx + 1}`, uv))
+        .join("");
+      const updatedAt = item.updatedAt
+        ? new Date(item.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+        : "";
+
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-weight:700;font-size:1rem;">${escapeHtml(item.className)}</span>
+          ${updatedAt ? `<span style="font-size:0.8rem;color:var(--text-secondary);">Cập nhật: ${updatedAt}</span>` : ""}
+        </div>
+        ${renderPersonRow("Chi Hội trưởng", item.chiHoiTruong)}
+        ${renderPersonRow("Chi Hội phó", item.chiHoiPho)}
+        ${uyVienRows}
+        ${renderPersonRow("CTV BCH", item.ctvBCH)}
+      </div>`;
+    }).join("");
+  } catch (e) {
+    container.innerHTML = `<p style="color:var(--red);font-size:0.9rem;">Lỗi kết nối server.</p>`;
+  }
+}
 
 // ── Edit Activity Modal ────────────────────────────────────────────────────
 

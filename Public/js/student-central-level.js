@@ -790,9 +790,11 @@ function formatAwardLevel(level) {
   const labelMap = {
     khac: "Khác",
 
-    bo_mon: "Cấp Bộ môn",
-    bomon: "Cấp Bộ môn",
-    bo: "Cấp Bộ môn",
+    chi_hoi: "Cấp Chi Hội",
+    chihoi: "Cấp Chi Hội",
+    bo_mon: "Cấp Chi Hội",
+    bomon: "Cấp Chi Hội",
+    bo: "Cấp Chi Hội",
 
     khoa: "Cấp Khoa",
     faculty: "Cấp Khoa",
