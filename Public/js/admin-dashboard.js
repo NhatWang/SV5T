@@ -2629,34 +2629,80 @@ async function loadMaintenanceStatus() {
   }
 }
 
-async function onMaintenanceToggle(checkbox) {
+function onMaintenanceToggle(checkbox) {
   const enabled = checkbox.checked;
+  if (enabled) {
+    checkbox.checked = false;
+    const codeBox = document.getElementById("maintenanceCodeBox");
+    const codeInput = document.getElementById("maintenanceSecurityCode");
+    const codeError = document.getElementById("maintenanceCodeError");
+    if (codeBox) codeBox.style.display = "block";
+    if (codeError) codeError.style.display = "none";
+    if (codeInput) { codeInput.value = ""; codeInput.focus(); }
+  } else {
+    applyMaintenanceChange(false);
+  }
+}
+
+async function confirmMaintenanceEnable() {
+  const codeInput = document.getElementById("maintenanceSecurityCode");
+  const codeError = document.getElementById("maintenanceCodeError");
+  const code = codeInput ? codeInput.value.trim() : "";
+
+  if (!code) {
+    if (codeError) { codeError.textContent = "Vui lòng nhập mã bảo mật."; codeError.style.display = "block"; }
+    return;
+  }
+
+  await applyMaintenanceChange(true, code);
+}
+
+function cancelMaintenanceEnable() {
+  const codeBox = document.getElementById("maintenanceCodeBox");
+  const codeInput = document.getElementById("maintenanceSecurityCode");
+  const codeError = document.getElementById("maintenanceCodeError");
+  if (codeBox) codeBox.style.display = "none";
+  if (codeInput) codeInput.value = "";
+  if (codeError) codeError.style.display = "none";
+}
+
+async function applyMaintenanceChange(enabled, securityCode) {
+  const checkbox = document.getElementById("maintenanceToggle");
   const result = document.getElementById("maintenanceResult");
-  checkbox.disabled = true;
+  const codeBox = document.getElementById("maintenanceCodeBox");
+  const codeError = document.getElementById("maintenanceCodeError");
+  if (checkbox) checkbox.disabled = true;
 
   try {
     const res = await fetch("/api/admin-dashboard/maintenance-mode", {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled })
+      body: JSON.stringify({ enabled, securityCode })
     });
     const data = await res.json();
     if (data.success) {
+      if (checkbox) checkbox.checked = enabled;
+      if (codeBox) codeBox.style.display = "none";
       result.textContent = data.message;
       result.className = "fix-result-msg fix-result-msg--success";
       updateMaintenanceDesc(enabled);
     } else {
-      result.textContent = data.message || "Có lỗi xảy ra.";
-      result.className = "fix-result-msg fix-result-msg--error";
-      checkbox.checked = !enabled;
+      if (enabled && codeError) {
+        codeError.textContent = data.message || "Mã bảo mật không đúng.";
+        codeError.style.display = "block";
+      } else {
+        result.textContent = data.message || "Có lỗi xảy ra.";
+        result.className = "fix-result-msg fix-result-msg--error";
+      }
+      if (checkbox) checkbox.checked = !enabled;
     }
   } catch (e) {
     result.textContent = "Lỗi kết nối server.";
     result.className = "fix-result-msg fix-result-msg--error";
-    checkbox.checked = !enabled;
+    if (checkbox) checkbox.checked = !enabled;
   } finally {
-    checkbox.disabled = false;
+    if (checkbox) checkbox.disabled = false;
     setTimeout(() => { result.textContent = ""; }, 4000);
   }
 }
@@ -2675,6 +2721,8 @@ function updateMaintenanceDesc(enabled) {
 }
 
 window.onMaintenanceToggle = onMaintenanceToggle;
+window.confirmMaintenanceEnable = confirmMaintenanceEnable;
+window.cancelMaintenanceEnable = cancelMaintenanceEnable;
 
 // ── Broadcast Push Notification ───────────────────────────────────────────
 
