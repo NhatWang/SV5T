@@ -3641,11 +3641,9 @@ router.patch(
       if (typeof enabled !== "boolean") {
         return res.status(400).json({ success: false, message: "enabled phải là boolean." });
       }
-      if (enabled) {
-        const MAINTENANCE_CODE = process.env.MAINTENANCE_CODE || "19062006";
-        if (String(securityCode || "").trim() !== MAINTENANCE_CODE) {
-          return res.status(403).json({ success: false, message: "Mã bảo mật không đúng." });
-        }
+      const MAINTENANCE_CODE = process.env.MAINTENANCE_CODE || "19062006";
+      if (String(securityCode || "").trim() !== MAINTENANCE_CODE) {
+        return res.status(403).json({ success: false, message: "Mã bảo mật không đúng." });
       }
       await SystemSettings.findOneAndUpdate(
         { key: "maintenanceMode" },

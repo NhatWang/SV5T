@@ -2631,30 +2631,28 @@ async function loadMaintenanceStatus() {
 
 function onMaintenanceToggle(checkbox) {
   const enabled = checkbox.checked;
-  if (enabled) {
-    checkbox.checked = false;
-    const codeBox = document.getElementById("maintenanceCodeBox");
-    const codeInput = document.getElementById("maintenanceSecurityCode");
-    const codeError = document.getElementById("maintenanceCodeError");
-    if (codeBox) codeBox.style.display = "block";
-    if (codeError) codeError.style.display = "none";
-    if (codeInput) { codeInput.value = ""; codeInput.focus(); }
-  } else {
-    applyMaintenanceChange(false);
-  }
+  checkbox.checked = !enabled;
+  const codeBox = document.getElementById("maintenanceCodeBox");
+  const codeInput = document.getElementById("maintenanceSecurityCode");
+  const codeError = document.getElementById("maintenanceCodeError");
+  if (codeBox) { codeBox.style.display = "block"; codeBox.dataset.target = enabled ? "1" : "0"; }
+  if (codeError) codeError.style.display = "none";
+  if (codeInput) { codeInput.value = ""; codeInput.focus(); }
 }
 
 async function confirmMaintenanceEnable() {
   const codeInput = document.getElementById("maintenanceSecurityCode");
   const codeError = document.getElementById("maintenanceCodeError");
+  const codeBox = document.getElementById("maintenanceCodeBox");
   const code = codeInput ? codeInput.value.trim() : "";
+  const targetEnabled = codeBox?.dataset.target === "1";
 
   if (!code) {
     if (codeError) { codeError.textContent = "Vui lòng nhập mã bảo mật."; codeError.style.display = "block"; }
     return;
   }
 
-  await applyMaintenanceChange(true, code);
+  await applyMaintenanceChange(targetEnabled, code);
 }
 
 function cancelMaintenanceEnable() {
