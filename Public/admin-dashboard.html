@@ -73,6 +73,10 @@
         Đánh giá Chi Hội
       </button>
 
+      <button id="checkinTabBtn" class="tab-btn" onclick="showAdminTab('checkin', this)">
+        Check-in hoạt động
+      </button>
+
       <button class="logout-btn" onclick="logoutAdmin()">
         Đăng xuất
       </button>
@@ -626,6 +630,102 @@
         </div>
       </section>
 
+      <section id="checkin" class="tab-content">
+        <h1>Check-in hoạt động</h1>
+
+        <div class="checkin-layout">
+          <!-- Cột trái: Tạo & chọn phiên -->
+          <div class="checkin-sidebar">
+            <div class="criterion-card">
+              <h3 style="margin-bottom:12px;">Tạo phiên mới</h3>
+              <div class="form-group">
+                <label>Tên phiên</label>
+                <input type="text" id="checkinSessionTitle" placeholder="VD: Hội trại 2024" />
+              </div>
+              <div class="form-group">
+                <label>Mô tả (tuỳ chọn)</label>
+                <input type="text" id="checkinSessionDesc" placeholder="Ghi chú thêm..." />
+              </div>
+              <button class="btn-primary" onclick="createCheckinSession()">Tạo phiên</button>
+              <p id="createCheckinMsg" class="checkin-msg"></p>
+            </div>
+
+            <div class="criterion-card" style="margin-top:16px;">
+              <h3 style="margin-bottom:12px;">Danh sách phiên</h3>
+              <div id="checkinSessionList" class="checkin-session-list">
+                <p style="color:var(--gray-500);font-size:0.85rem;">Chưa có phiên nào.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cột phải: Scanner + danh sách đã check-in -->
+          <div class="checkin-main">
+            <div id="checkinActivePanel" class="hidden">
+              <div class="criterion-card" style="margin-bottom:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                  <div>
+                    <h3 id="checkinActiveTitle" style="margin:0;"></h3>
+                    <p id="checkinActiveDesc" style="margin:4px 0 0;font-size:0.85rem;color:var(--gray-500);"></p>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span id="checkinCount" class="checkin-badge">0 sinh viên</span>
+                    <button class="btn-secondary" style="font-size:0.82rem;padding:5px 12px;" onclick="exportCheckinExcel()">Xuất Excel</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Scanner -->
+              <div class="criterion-card" style="margin-bottom:16px;">
+                <h3 style="margin-bottom:12px;">Quét mã vạch</h3>
+                <div id="checkinScannerWrap" class="checkin-scanner-wrap hidden">
+                  <div id="checkinScannerViewport" class="checkin-scanner-viewport">
+                    <div class="scanner-line"></div>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn-secondary" onclick="stopCheckinScanner()">Dừng camera</button>
+                    <button id="switchCamBtn" class="btn-secondary hidden" onclick="switchCheckinCamera()" title="Đổi camera">⇄ Đổi camera</button>
+                  </div>
+                </div>
+                <div id="checkinScannerOff" style="display:flex;flex-direction:column;gap:10px;">
+                  <button class="btn-primary" onclick="startCheckinScanner()">Bật camera quét barcode</button>
+                  <p style="text-align:center;color:var(--gray-500);font-size:0.85rem;margin:0;">hoặc</p>
+                  <div style="display:flex;gap:8px;">
+                    <input type="text" id="checkinManualInput" placeholder="Nhập MSSV thủ công..." style="flex:1;" onkeydown="if(event.key==='Enter') doManualCheckin()" />
+                    <button class="btn-primary" onclick="doManualCheckin()">Check-in</button>
+                  </div>
+                </div>
+                <p id="checkinScanMsg" class="checkin-msg" style="margin-top:10px;"></p>
+              </div>
+
+              <!-- Danh sách đã check-in -->
+              <div class="criterion-card">
+                <h3 style="margin-bottom:12px;">Danh sách đã check-in</h3>
+                <div style="overflow:auto;">
+                  <table style="width:100%;border-collapse:collapse;font-size:0.87rem;">
+                    <thead>
+                      <tr>
+                        <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">STT</th>
+                        <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">MSSV</th>
+                        <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Họ tên</th>
+                        <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Lớp</th>
+                        <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Thời gian check-in</th>
+                      </tr>
+                    </thead>
+                    <tbody id="checkinRecordBody">
+                      <tr><td colspan="5" style="padding:12px;color:var(--gray-500);text-align:center;">Chưa có ai check-in.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="checkinNoSession" class="criterion-card" style="text-align:center;color:var(--gray-500);">
+              <p>Chọn hoặc tạo phiên check-in để bắt đầu.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="evidences" class="tab-content">
         <h1>Duyệt minh chứng</h1>
 
@@ -888,6 +988,7 @@
     </div>
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script src="./js/push-notifications.js"></script>
   <script src="./js/admin-dashboard.js"></script>
 </body>

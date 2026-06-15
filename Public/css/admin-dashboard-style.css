@@ -2243,3 +2243,162 @@ td .student-detail-link::after {
     padding: 14px 18px;
   }
 }
+
+/* ===== CHECK-IN ===== */
+.checkin-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .checkin-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.checkin-session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.checkin-session-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-200);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.checkin-session-item:hover {
+  border-color: var(--blue-mid);
+  background: var(--blue-light);
+}
+
+.checkin-session-item.active {
+  border-color: var(--blue-mid);
+  background: var(--blue-light);
+}
+
+.checkin-badge {
+  display: inline-block;
+  background: var(--blue-light);
+  color: var(--blue-mid);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.checkin-scanner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.checkin-scanner-viewport {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 4/3;
+}
+
+/* Quagga injects its own <video> and <canvas> into the viewport div */
+.checkin-scanner-viewport video,
+.checkin-scanner-viewport canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* drawingBuffer canvas should be invisible — only the video matters */
+.checkin-scanner-viewport canvas.drawingBuffer {
+  display: none;
+}
+
+.checkin-scanner-viewport::before {
+  content: "";
+  position: absolute;
+  inset: 20% 5%;
+  z-index: 9;
+  border: 2px solid rgba(22, 200, 100, 0.6);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.scanner-line {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 50%;
+  height: 2px;
+  z-index: 10;
+  background: rgba(22, 200, 100, 0.9);
+  box-shadow: 0 0 8px rgba(22, 200, 100, 0.7);
+  animation: scanMove 1.8s ease-in-out infinite;
+}
+
+@keyframes scanMove {
+  0%   { top: 22%; }
+  50%  { top: 78%; }
+  100% { top: 22%; }
+}
+
+.checkin-msg {
+  font-size: 0.87rem;
+  font-weight: 600;
+  min-height: 1.2em;
+}
+
+.checkin-msg-success { color: var(--green); }
+.checkin-msg-error   { color: var(--red); }
+
+@keyframes checkinShake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+.checkin-shake {
+  animation: checkinShake 0.4s ease;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.form-group label {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--gray-600);
+}
+
+.form-group input {
+  padding: 8px 10px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color var(--transition);
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--blue-mid);
+}

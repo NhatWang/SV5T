@@ -176,6 +176,10 @@ function showAdminTab(tabId, button) {
     loadCentralEvidences();
   }
 
+  if (tabId === "checkin") {
+    loadCheckinSessions();
+  }
+
   if (window.innerWidth <= 768) closeSidebar();
 }
 
@@ -1086,6 +1090,11 @@ async function uploadStudentsExcel() {
     });
 
     const data = await res.json();
+
+    if (!data.success) {
+      message.textContent = data.message || "Upload thất bại.";
+      return;
+    }
 
     message.textContent =
       `${data.message}. Thêm mới: ${data.inserted || 0}, cập nhật: ${data.updated || 0}`;
@@ -3032,7 +3041,299 @@ window.onEditCategoryChange = onEditCategoryChange;
 window.onEditSubCriteriaChange = onEditSubCriteriaChange;
 window.saveEditActivity = saveEditActivity;
 
+// ===============================
+// CHECK-IN HOẠT ĐỘNG
+// ===============================
+
+let activeCheckinSessionId = null;
+let checkinScannerRunning = false;
+let currentFacingMode = "environment";
+
+async function loadCheckinSessions() {
+  try {
+    const res = await fetch("/api/admin-dashboard/checkin/sessions", { credentials: "include" });
+    const data = await res.json();
+
+    const list = document.getElementById("checkinSessionList");
+    if (!list) return;
+
+    if (!data.sessions || data.sessions.length === 0) {
+      list.innerHTML = '<p style="color:var(--gray-500);font-size:0.85rem;">Chưa có phiên nào.</p>';
+      return;
+    }
+
+    list.innerHTML = data.sessions.map((s) => `
+      <div class="checkin-session-item ${s._id === activeCheckinSessionId ? "active" : ""}" onclick="selectCheckinSession('${s._id}', ${JSON.stringify(s.title).replace(/"/g, '&quot;')}, ${JSON.stringify(s.description || "").replace(/"/g, '&quot;')})">
+        <div style="font-weight:600;font-size:0.9rem;">${s.title}</div>
+        ${s.description ? `<div style="font-size:0.8rem;color:var(--gray-500);">${s.description}</div>` : ""}
+        <div style="font-size:0.78rem;color:var(--gray-400);margin-top:2px;">${new Date(s.createdAt).toLocaleString("vi-VN")}</div>
+      </div>
+    `).join("");
+  } catch (error) {
+    console.error("Load checkin sessions error:", error);
+  }
+}
+
+async function createCheckinSession() {
+  const title = document.getElementById("checkinSessionTitle").value.trim();
+  const description = document.getElementById("checkinSessionDesc").value.trim();
+  const msg = document.getElementById("createCheckinMsg");
+
+  msg.textContent = "";
+  msg.className = "checkin-msg";
+
+  if (!title) {
+    msg.textContent = "Vui lòng nhập tên phiên.";
+    msg.classList.add("checkin-msg-error");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/admin-dashboard/checkin/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ title, description })
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      msg.textContent = data.message || "Tạo phiên thất bại.";
+      msg.classList.add("checkin-msg-error");
+      return;
+    }
+
+    document.getElementById("checkinSessionTitle").value = "";
+    document.getElementById("checkinSessionDesc").value = "";
+    msg.textContent = "Tạo phiên thành công!";
+    msg.classList.add("checkin-msg-success");
+
+    await loadCheckinSessions();
+    selectCheckinSession(data.session._id, data.session.title, data.session.description || "");
+  } catch (error) {
+    console.error("Create checkin session error:", error);
+    msg.textContent = "Lỗi kết nối.";
+    msg.classList.add("checkin-msg-error");
+  }
+}
+
+async function selectCheckinSession(id, title, description) {
+  stopCheckinScanner();
+  activeCheckinSessionId = id;
+
+  document.getElementById("checkinActiveTitle").textContent = title;
+  document.getElementById("checkinActiveDesc").textContent = description;
+  document.getElementById("checkinActivePanel").classList.remove("hidden");
+  document.getElementById("checkinNoSession").classList.add("hidden");
+  document.getElementById("checkinScanMsg").textContent = "";
+
+  await loadCheckinSessions();
+  await loadCheckinRecords();
+}
+
+async function loadCheckinRecords() {
+  if (!activeCheckinSessionId) return;
+
+  try {
+    const res = await fetch(`/api/admin-dashboard/checkin/sessions/${activeCheckinSessionId}`, { credentials: "include" });
+    const data = await res.json();
+
+    if (!data.success) return;
+
+    const checkins = data.session.checkins || [];
+    const badge = document.getElementById("checkinCount");
+    badge.textContent = `${checkins.length} sinh viên`;
+
+    const tbody = document.getElementById("checkinRecordBody");
+    if (checkins.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:12px;color:var(--gray-500);text-align:center;">Chưa có ai check-in.</td></tr>';
+      return;
+    }
+
+    const sorted = [...checkins].sort((a, b) => new Date(b.checkinAt) - new Date(a.checkinAt));
+    tbody.innerHTML = sorted.map((c, i) => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid var(--gray-200);">${checkins.length - i}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--gray-200);font-family:monospace;">${c.studentId}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--gray-200);font-weight:500;">${c.fullName}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--gray-200);">${c.className}</td>
+        <td style="padding:8px;border-bottom:1px solid var(--gray-200);color:var(--gray-500);font-size:0.83rem;">${new Date(c.checkinAt).toLocaleString("vi-VN")}</td>
+      </tr>
+    `).join("");
+  } catch (error) {
+    console.error("Load checkin records error:", error);
+  }
+}
+
+async function processCheckin(studentId) {
+  if (!activeCheckinSessionId || !studentId?.trim()) return;
+
+  const msg = document.getElementById("checkinScanMsg");
+
+  try {
+    const res = await fetch(`/api/admin-dashboard/checkin/sessions/${activeCheckinSessionId}/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ studentId: studentId.trim() })
+    });
+    const data = await res.json();
+
+    msg.className = "checkin-msg";
+
+    if (!data.success) {
+      msg.textContent = data.message || "Check-in thất bại.";
+      msg.classList.add("checkin-msg-error");
+      return;
+    }
+
+    const c = data.checkin;
+    msg.textContent = `✓ ${c.fullName} (${c.studentId}) — ${c.className}`;
+    msg.classList.add("checkin-msg-success");
+
+    if (navigator.vibrate) navigator.vibrate(150);
+    msg.classList.add("checkin-shake");
+    setTimeout(() => msg.classList.remove("checkin-shake"), 400);
+
+    await loadCheckinRecords();
+  } catch (error) {
+    console.error("Checkin scan error:", error);
+    msg.textContent = "Lỗi kết nối.";
+    msg.className = "checkin-msg checkin-msg-error";
+  }
+}
+
+function exportCheckinExcel() {
+  if (!activeCheckinSessionId) return;
+  window.open(`/api/admin-dashboard/checkin/sessions/${activeCheckinSessionId}/export`, "_blank");
+}
+
+async function doManualCheckin() {
+  const input = document.getElementById("checkinManualInput");
+  const studentId = input.value.trim();
+  if (!studentId) return;
+
+  await processCheckin(studentId);
+  input.value = "";
+  input.focus();
+}
+
+function startCheckinScanner() {
+  if (checkinScannerRunning) return;
+
+  const wrap = document.getElementById("checkinScannerWrap");
+  const off = document.getElementById("checkinScannerOff");
+
+  wrap.classList.remove("hidden");
+  off.style.display = "none";
+
+  const config = {
+    inputStream: {
+      type: "LiveStream",
+      target: document.getElementById("checkinScannerViewport"),
+      constraints: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      // Chỉ xử lý vùng giữa frame, giảm nhiễu từ background
+      area: { top: "20%", right: "5%", bottom: "20%", left: "5%" }
+    },
+    locator: {
+      patchSize: "medium",  // "small" nhanh hơn nhưng kém hơn với barcode nhỏ
+      halfSample: true
+    },
+    decoder: {
+      readers: ["code_128_reader"]  // JsBarcode dùng Code128 — chỉ cần reader này
+    },
+    frequency: 12,  // xử lý 12 frame/giây, đủ nhanh mà không tốn CPU
+    locate: true
+  };
+
+  // Xác nhận đa frame: chỉ commit sau khi cùng 1 mã xuất hiện CONFIRM_NEEDED lần liên tiếp
+  const CONFIRM_NEEDED = 3;
+  // Sau khi đã check-in thành công, bỏ qua cùng mã trong COOLDOWN ms
+  const COOLDOWN_MS = 3000;
+
+  let detectionBuffer = [];
+  let lastConfirmed = "";
+  let lastConfirmedTime = 0;
+
+  Quagga.init(config, (err) => {
+    if (err) {
+      console.error("Quagga init error:", err);
+      const msg = document.getElementById("checkinScanMsg");
+      msg.textContent = "Không thể bật camera. Vui lòng dùng nhập thủ công.";
+      msg.className = "checkin-msg checkin-msg-error";
+      stopCheckinScanner();
+      return;
+    }
+
+    Quagga.start();
+    checkinScannerRunning = true;
+
+    // Hiện nút switch nếu thiết bị có nhiều camera
+    navigator.mediaDevices?.enumerateDevices().then((devices) => {
+      const videoCams = devices.filter((d) => d.kind === "videoinput");
+      const btn = document.getElementById("switchCamBtn");
+      if (btn) btn.classList.toggle("hidden", videoCams.length < 2);
+    }).catch(() => {});
+
+    Quagga.onDetected((result) => {
+      const code = result?.codeResult?.code;
+      if (!code) return;
+
+      // Lọc theo error rate trung bình từng ký tự — bỏ qua đọc có chất lượng thấp
+      const charErrors = (result.codeResult.decodedCodes || [])
+        .filter((c) => c.error !== undefined)
+        .map((c) => c.error);
+      if (charErrors.length > 0) {
+        const avgError = charErrors.reduce((a, b) => a + b, 0) / charErrors.length;
+        if (avgError > 0.12) return;
+      }
+
+      // Rolling buffer xác nhận đa frame
+      detectionBuffer.push(code);
+      if (detectionBuffer.length > CONFIRM_NEEDED) detectionBuffer.shift();
+
+      const confirmed = detectionBuffer.length === CONFIRM_NEEDED
+        && detectionBuffer.every((c) => c === code);
+
+      if (!confirmed) return;
+
+      detectionBuffer = [];
+
+      // Cooldown sau khi đã xử lý mã này gần đây
+      const now = Date.now();
+      if (code === lastConfirmed && now - lastConfirmedTime < COOLDOWN_MS) return;
+
+      lastConfirmed = code;
+      lastConfirmedTime = now;
+
+      processCheckin(code);
+    });
+  });
+}
+
+function stopCheckinScanner() {
+  if (!checkinScannerRunning) return;
+
+  Quagga.stop();
+  checkinScannerRunning = false;
+
+  document.getElementById("checkinScannerWrap").classList.add("hidden");
+  document.getElementById("checkinScannerOff").style.display = "flex";
+
+  const btn = document.getElementById("switchCamBtn");
+  if (btn) btn.classList.add("hidden");
+}
+
+function switchCheckinCamera() {
+  currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+  Quagga.stop();
+  checkinScannerRunning = false;
+  startCheckinScanner();
+}
+
 async function logoutAdmin() {
+  stopCheckinScanner();
+
   try {
     await fetch("/api/admin/logout", {
       method: "POST",

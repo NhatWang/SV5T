@@ -8,6 +8,7 @@ const Activity = require("../Models/Activity");
 const Evidence = require("../Models/Evidence");
 const ClassCollectiveEvaluation = require("../Models/ClassCollectiveEvaluation");
 const Admin = require("../Models/Admin");
+const CheckinSession = require("../Models/CheckinSession");
 
 const {
   recomputeHocTapProgress,
@@ -1764,6 +1765,22 @@ router.post(
           updated: 0,
           totalRows: rows.length,
           errors
+        });
+      }
+
+      const classNamesInFile = [...new Set(validStudents.map((item) => item.className))];
+
+      const existingClasses = await Student.aggregate([
+        { $match: { className: { $in: classNamesInFile } } },
+        { $group: { _id: "$className" } }
+      ]);
+
+      if (existingClasses.length > 0) {
+        const blockedClasses = existingClasses.map((c) => c._id);
+        return res.status(400).json({
+          success: false,
+          message: `Các lớp sau đã có danh sách sinh viên: ${blockedClasses.join(", ")}. Không thể upload lại.`,
+          blockedClasses
         });
       }
 
@@ -3768,6 +3785,191 @@ router.post(
     } catch (error) {
       console.error("Broadcast push error:", error);
       res.status(500).json({ success: false, message: "Lỗi server khi gửi thông báo." });
+    }
+  }
+);
+
+// ===============================
+// CHECK-IN HOẠT ĐỘNG
+// ===============================
+
+router.post(
+  "/checkin/sessions",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { title, description } = req.body;
+
+      if (!title?.trim()) {
+        return res.status(400).json({ success: false, message: "Vui lòng nhập tên phiên check-in" });
+      }
+
+      const session = new CheckinSession({
+        title: title.trim(),
+        description: description?.trim() || "",
+        createdBy: req.admin.username
+      });
+
+      await session.save();
+
+      return res.json({ success: true, session });
+    } catch (error) {
+      console.error("Create checkin session error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server khi tạo phiên check-in" });
+    }
+  }
+);
+
+router.get(
+  "/checkin/sessions",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const sessions = await CheckinSession.find({})
+        .sort({ createdAt: -1 })
+        .select("-checkins")
+        .lean();
+
+      return res.json({ success: true, sessions });
+    } catch (error) {
+      console.error("List checkin sessions error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+  }
+);
+
+router.get(
+  "/checkin/sessions/:id",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const session = await CheckinSession.findById(req.params.id).lean();
+
+      if (!session) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy phiên check-in" });
+      }
+
+      return res.json({ success: true, session });
+    } catch (error) {
+      console.error("Get checkin session error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+  }
+);
+
+router.post(
+  "/checkin/sessions/:id/scan",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { studentId } = req.body;
+
+      if (!studentId?.trim()) {
+        return res.status(400).json({ success: false, message: "Thiếu MSSV" });
+      }
+
+      const session = await CheckinSession.findById(req.params.id);
+
+      if (!session) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy phiên check-in" });
+      }
+
+      const alreadyIn = session.checkins.some((c) => c.studentId === studentId.trim());
+      if (alreadyIn) {
+        return res.status(409).json({
+          success: false,
+          message: `Sinh viên ${studentId} đã check-in trong phiên này rồi`
+        });
+      }
+
+      const student = await Student.findOne({ studentId: studentId.trim() })
+        .select("studentId fullName className")
+        .lean();
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: `Không tìm thấy sinh viên với MSSV ${studentId}`
+        });
+      }
+
+      if (req.admin.role === "admin" && student.className !== req.admin.className) {
+        return res.status(403).json({
+          success: false,
+          message: `Sinh viên ${student.fullName} không thuộc chi Hội của bạn`
+        });
+      }
+
+      const record = {
+        studentId: student.studentId,
+        fullName: student.fullName,
+        className: student.className,
+        checkinAt: new Date()
+      };
+
+      session.checkins.push(record);
+      await session.save();
+
+      return res.json({ success: true, checkin: record });
+    } catch (error) {
+      console.error("Checkin scan error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server khi ghi nhận check-in" });
+    }
+  }
+);
+
+router.get(
+  "/checkin/sessions/:id/export",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const session = await CheckinSession.findById(req.params.id).lean();
+
+      if (!session) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy phiên check-in" });
+      }
+
+      const rows = session.checkins.map((c, i) => ({
+        STT: i + 1,
+        MSSV: c.studentId,
+        "Họ và tên": c.fullName,
+        Lớp: c.className,
+        "Thời gian check-in": new Date(c.checkinAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
+      }));
+
+      const wb = xlsx.utils.book_new();
+      const ws = xlsx.utils.json_to_sheet(rows, {
+        header: ["STT", "MSSV", "Họ và tên", "Lớp", "Thời gian check-in"]
+      });
+
+      ws["!cols"] = [{ wch: 5 }, { wch: 14 }, { wch: 30 }, { wch: 16 }, { wch: 22 }];
+
+      xlsx.utils.book_append_sheet(wb, ws, "CheckIn");
+
+      const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+      const filename = `checkin-${session.title.replace(/[^a-zA-Z0-9À-ɏḀ-ỿ ]/g, "_")}.xlsx`;
+
+      res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      return res.send(buffer);
+    } catch (error) {
+      console.error("Export checkin error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server khi xuất Excel" });
+    }
+  }
+);
+
+router.delete(
+  "/checkin/sessions/:id",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      await CheckinSession.findByIdAndDelete(req.params.id);
+      return res.json({ success: true, message: "Đã xóa phiên check-in" });
+    } catch (error) {
+      console.error("Delete checkin session error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
     }
   }
 );
