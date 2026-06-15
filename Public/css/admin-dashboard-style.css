@@ -2157,19 +2157,27 @@ td .student-detail-link::after {
 }
 .btn-primary:hover { background: var(--blue-deep); }
 
-.btn-secondary {
+.btn-secondary,
+button.btn-secondary {
   padding: 9px 22px;
-  border: 1.5px solid var(--gray-200);
+  border: 1.5px solid var(--gray-200) !important;
   border-radius: 10px;
-  background: var(--white);
-  color: var(--gray-600);
+  background: var(--white) !important;
+  color: var(--gray-600) !important;
   font-family: inherit;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: none !important;
   transition: border-color var(--transition), color var(--transition);
 }
-.btn-secondary:hover { border-color: var(--blue-mid); color: var(--blue-mid); }
+.btn-secondary:hover,
+button.btn-secondary:hover {
+  border-color: var(--blue-mid) !important;
+  color: var(--blue-mid) !important;
+  background: var(--white) !important;
+  box-shadow: none !important;
+}
 
 .edit-form-group {
   display: flex;

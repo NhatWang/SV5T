@@ -3258,10 +3258,13 @@ function startCheckinScanner() {
   Quagga.init(config, (err) => {
     if (err) {
       console.error("Quagga init error:", err);
+      // Ẩn wrap bất kể checkinScannerRunning vì init chưa kịp set flag
+      document.getElementById("checkinScannerWrap").classList.add("hidden");
+      document.getElementById("checkinScannerOff").style.display = "flex";
+      document.getElementById("switchCamBtn")?.classList.add("hidden");
       const msg = document.getElementById("checkinScanMsg");
       msg.textContent = "Không thể bật camera. Vui lòng dùng nhập thủ công.";
       msg.className = "checkin-msg checkin-msg-error";
-      stopCheckinScanner();
       return;
     }
 
