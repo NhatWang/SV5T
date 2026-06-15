@@ -522,6 +522,13 @@
     <code>chi_hoi</code> <code>khoa</code> <code>truong</code>,
     <code>dhqg</code> <code>thanh</code> <code>quoc_gia</code> <code>quoc_te</code>
   </div>
+
+  <div class="upload-guide-note" style="border-left-color:var(--orange,#f59e0b);background:var(--orange-light,#fffbeb);" id="adminClassUploadNote">
+    <strong>Lưu ý dành cho Admin lớp:</strong>
+    Chỉ được upload hoạt động có <code>organizerLevel = chi_hoi</code>.
+    Các cấp khác (<code>khoa</code>, <code>truong</code>…) sẽ bị từ chối.
+    Mỗi dòng phải có <code>className</code> đúng với lớp bạn quản lý.
+  </div>
 </div>
 
           <input type="file" id="activityExcelFile" accept=".xlsx,.xls" />
@@ -861,6 +868,23 @@
 
     <div id="studentDetailBody" class="student-detail-body">
       Đang tải dữ liệu...
+    </div>
+  </div>
+</div>
+<div id="activityParticipantsModal" class="admin-modal hidden" onclick="closeActivityParticipantsModal()" style="background:rgba(7,31,78,0.55);backdrop-filter:blur(4px);">
+  <div class="admin-modal-box" onclick="event.stopPropagation()" style="width:min(980px,97%);">
+    <div class="admin-modal-header">
+      <h2 id="activityParticipantsTitle" style="font-size:1rem;"></h2>
+      <button class="admin-modal-close" onclick="closeActivityParticipantsModal()">✕</button>
+    </div>
+    <div class="admin-modal-body" style="padding:0;overflow:hidden;">
+      <p id="activityParticipantsCount" style="padding:8px 16px;font-size:0.88rem;color:var(--text-secondary);margin:0;border-bottom:1px solid var(--border);flex-shrink:0;"></p>
+      <div style="overflow:auto;max-height:60vh;">
+        <table style="width:100%;border-collapse:collapse;min-width:700px;font-size:0.84rem;">
+          <thead id="activityParticipantsHead"></thead>
+          <tbody id="activityParticipantsBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

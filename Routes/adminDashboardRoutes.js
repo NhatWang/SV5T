@@ -1949,6 +1949,14 @@ router.post(
           continue;
         }
 
+        if (req.admin.role === "admin" && organizerLevel !== "chi_hoi") {
+          errors.push({
+            row,
+            reason: `Admin lớp chỉ được upload hoạt động cấp Chi Hội. Hoạt động "${title}" có cấp "${organizerLevel || organizerLevelRaw}" không hợp lệ.`
+          });
+          continue;
+        }
+
         if (
           category === "hoiNhapTot" &&
           !hoiNhapSubCriteria.includes(subCriteria)
@@ -2486,6 +2494,71 @@ router.get("/activities/uploaded", requireAdminAuth, async (req, res) => {
 });
 
 // ===============================
+// ===============================
+// 10b. ADMIN / SUPER ADMIN: XUẤT EXCEL HOẠT ĐỘNG ĐÃ UPLOAD
+// ===============================
+
+router.get("/activities/export", requireAdminAuth, async (req, res) => {
+  try {
+    const { activityId } = req.query;
+    const query = {};
+    if (activityId) {
+      query._id = activityId;
+    }
+    if (req.admin.role === "admin") {
+      query["participants.className"] = req.admin.className;
+    }
+
+    const activities = await Activity.find(query).sort({ createdAt: -1 }).lean();
+
+    const rows = [];
+    for (const act of activities) {
+      const participants = req.admin.role === "admin"
+        ? (act.participants || []).filter(p => p.className === req.admin.className)
+        : (act.participants || []);
+
+      for (const p of participants) {
+        rows.push({
+          title: act.title || "",
+          category: act.category || "",
+          organizerLevel: act.organizerLevel || "",
+          subCriteria: act.subCriteria || "",
+          academicEvidenceType: act.academicEvidenceType || "",
+          kyNangEvidenceType: act.kyNangEvidenceType || "",
+          hoiNhapEvidenceType: act.hoiNhapEvidenceType || "",
+          volunteerDays: act.volunteerDays ?? "",
+          date: act.date ? new Date(act.date).toLocaleDateString("vi-VN") : "",
+          studentId: p.studentId || "",
+          fullName: p.fullName || "",
+          className: p.className || "",
+          uploadedBy: act.uploadedBy || ""
+        });
+      }
+    }
+
+    const wb = xlsx.utils.book_new();
+    const ws = xlsx.utils.json_to_sheet(rows, {
+      header: [
+        "title", "category", "organizerLevel", "subCriteria",
+        "academicEvidenceType", "kyNangEvidenceType", "hoiNhapEvidenceType",
+        "volunteerDays", "date", "studentId", "fullName", "className", "uploadedBy"
+      ]
+    });
+    xlsx.utils.book_append_sheet(wb, ws, "HoatDong");
+
+    const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+    const filename = activityId && activities[0]?.title
+      ? `${activities[0].title.replace(/[^a-zA-Z0-9À-ɏḀ-ỿ ]/g, "_")}.xlsx`
+      : "hoat-dong.xlsx";
+    res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buffer);
+  } catch (error) {
+    console.error("Export activities error:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi xuất Excel." });
+  }
+});
+
 // ===============================
 // 10b. ADMIN / SUPER ADMIN: SỬA HOẠT ĐỘNG ĐÃ UPLOAD
 // ===============================

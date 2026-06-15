@@ -4,6 +4,7 @@ let adminClassName = "";
 let currentCentralStudentId = "";
 let currentStudentDetailData = null;
 let currentStudentDetailLevel = "truong";
+let _activityParticipantsMap = {};
 
 const categoryLabels = {
   daoDucTot: "Đạo đức tốt",
@@ -293,6 +294,11 @@ function initAdminDashboard() {
       adminRole === "super_admin"
         ? `Super Admin: ${adminUsername}`
         : `Admin lớp: ${adminClassName}`;
+  }
+
+  const adminClassUploadNote = document.getElementById("adminClassUploadNote");
+  if (adminClassUploadNote) {
+    adminClassUploadNote.style.display = adminRole === "admin" ? "" : "none";
   }
 
   if (adminRole === "admin") {
@@ -1262,6 +1268,7 @@ async function loadUploadedActivities() {
     if (!table) return;
 
     table.innerHTML = "";
+    _activityParticipantsMap = {};
 
     if (!data.success || !data.activities || data.activities.length === 0) {
       table.innerHTML = `
@@ -1293,8 +1300,19 @@ async function loadUploadedActivities() {
         detail = "-";
       }
 
+      const activityId = String(activity._id);
+      _activityParticipantsMap[activityId] = {
+        title: activity.title || "Không rõ",
+        participants: activity.participants || [],
+        activity
+      };
+
       row.innerHTML = `
-  <td>${activity.title || "Không rõ"}</td>
+  <td>
+    <button class="activity-title-btn" onclick="openActivityParticipantsModal('${activityId}')" style="background:none;border:none;padding:0;color:var(--blue,#2563eb);font-weight:600;cursor:pointer;text-align:left;font-size:inherit;text-decoration:underline;text-underline-offset:2px;">
+      ${escapeHtml(activity.title || "Không rõ")}
+    </button>
+  </td>
 
   <td>
     <span class="award-badge ${activity.organizerLevel || "khac"}">
@@ -1322,7 +1340,7 @@ async function loadUploadedActivities() {
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
       <button
         class="edit-btn"
-        onclick="openEditActivityModal(${JSON.stringify(activity)})"
+        onclick="openEditActivityModal(_activityParticipantsMap[String('${activityId}')]?.activity)"
       >
         Sửa
       </button>
@@ -2825,6 +2843,83 @@ async function loadClassSupportList() {
     container.innerHTML = `<p style="color:var(--red);font-size:0.9rem;">Lỗi kết nối server.</p>`;
   }
 }
+
+// ── Activity Participants Modal ───────────────────────────────────────────
+
+function openActivityParticipantsModal(activityId) {
+  const modal = document.getElementById("activityParticipantsModal");
+  const titleEl = document.getElementById("activityParticipantsTitle");
+  const countEl = document.getElementById("activityParticipantsCount");
+  const thead = document.getElementById("activityParticipantsHead");
+  const tbody = document.getElementById("activityParticipantsBody");
+
+  if (!modal) return;
+
+  const entry = _activityParticipantsMap[activityId] || { title: "Không rõ", participants: [], activity: null };
+  const { title, participants, activity: act } = entry;
+
+  titleEl.textContent = title;
+  countEl.textContent = `${participants.length} sinh viên tham gia`;
+
+  const TH = (label) => `<th style="padding:8px 10px;border-bottom:2px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;background:var(--surface-alt,#f9fafb);font-size:0.82rem;">${label}</th>`;
+  const TD = (val, bold) => `<td style="padding:7px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;${bold ? "font-weight:600;" : "color:var(--text-secondary);"}">${escapeHtml(String(val ?? ""))}</td>`;
+
+  const hasSubCriteria     = participants.some(p => p.subCriteria);
+  const hasAcademic        = act?.category === "hocTapTot";
+  const hasKyNang          = participants.some(p => p.kyNangEvidenceType);
+  const hasHoiNhap         = participants.some(p => p.hoiNhapEvidenceType);
+  const hasVolunteerDays   = participants.some(p => p.volunteerDays);
+
+  const actDate = act?.date ? new Date(act.date).toLocaleDateString("vi-VN") : "";
+  const actOrg  = formatOrganizerLevel(act?.organizerLevel);
+  const actCat  = categoryLabels[act?.category] || act?.category || "";
+
+  thead.innerHTML = `<tr>
+    ${TH("#")}${TH("MSSV")}${TH("Họ và tên")}${TH("Chi Hội")}
+    ${TH("Tên hoạt động")}${TH("Tiêu chí")}${TH("Cấp tổ chức")}${TH("Ngày")}
+    ${hasSubCriteria   ? TH("Phân nhóm")          : ""}
+    ${hasAcademic      ? TH("Loại học thuật")      : ""}
+    ${hasKyNang        ? TH("Loại kỹ năng")        : ""}
+    ${hasHoiNhap       ? TH("Loại hội nhập")       : ""}
+    ${hasVolunteerDays ? TH("Số ngày TN")          : ""}
+  </tr>`;
+
+  if (participants.length === 0) {
+    const cols = 8 + [hasSubCriteria, hasAcademic, hasKyNang, hasHoiNhap, hasVolunteerDays].filter(Boolean).length;
+    tbody.innerHTML = `<tr><td colspan="${cols}" style="padding:14px 10px;color:var(--text-secondary);">Không có sinh viên nào.</td></tr>`;
+  } else {
+    tbody.innerHTML = participants.map((p, i) => {
+      const bg = i % 2 === 1 ? "background:var(--surface-alt,#f9fafb);" : "";
+      return `<tr style="${bg}">
+        ${TD(i + 1)}
+        ${TD(p.studentId || "—", true)}
+        ${TD(p.fullName || "—", true)}
+        ${TD(p.className || "—")}
+        ${TD(title)}
+        ${TD(actCat)}
+        ${TD(actOrg)}
+        ${TD(actDate)}
+        ${hasSubCriteria   ? TD(formatHoiNhapSubCriteria(p.subCriteria))         : ""}
+        ${hasAcademic      ? TD(formatAcademicEvidenceType(p.academicEvidenceType)) : ""}
+        ${hasKyNang        ? TD(formatKyNangEvidenceType(p.kyNangEvidenceType))   : ""}
+        ${hasHoiNhap       ? TD(formatHoiNhapEvidenceType(p.hoiNhapEvidenceType)) : ""}
+        ${hasVolunteerDays ? TD(p.volunteerDays ? `${p.volunteerDays} ngày` : "—") : ""}
+      </tr>`;
+    }).join("");
+  }
+
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeActivityParticipantsModal() {
+  const modal = document.getElementById("activityParticipantsModal");
+  if (modal) modal.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+window.openActivityParticipantsModal = openActivityParticipantsModal;
+window.closeActivityParticipantsModal = closeActivityParticipantsModal;
 
 // ── Edit Activity Modal ────────────────────────────────────────────────────
 
