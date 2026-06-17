@@ -1015,7 +1015,7 @@ router.get(
   });
 }
 
-      const students = await Student.find({ className }).select("-password");
+      const students = await Student.find({ className }).select("-password").sort({ studentId: 1 });
 
       const result = students.map((student) => {
         return {
