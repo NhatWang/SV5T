@@ -209,7 +209,7 @@
         </div>
 
         <div id="classSupportListSection" class="criterion-card hidden">
-          <h3>Thông tin Ban Chi Hội các lớp</h3>
+          <h3>Thông tin Ban Chi Hội các chi Hội</h3>
           <p style="margin-bottom:14px;color:var(--text-secondary);font-size:0.93rem;">
             Danh sách Chi Hội trưởng, Chi Hội phó, Ủy viên BCH và CTV BCH đã được upload.
           </p>
@@ -231,7 +231,7 @@
   <div id="superAdminClassPicker" class="class-picker hidden">
     <label for="superAdminClassSelect">Chọn chi Hội</label>
     <select id="superAdminClassSelect" onchange="handleSuperAdminClassChange()">
-      <option value="">Chọn lớp cần xem</option>
+      <option value="">Chọn chi Hội cần xem</option>
     </select>
   </div>
 </div>
@@ -243,7 +243,7 @@
       <tr>
         <th>MSSV</th>
         <th>Họ tên</th>
-        <th>Lớp</th>
+        <th>chi Hội</th>
         <th>Tiến độ</th>
         <th>Trạng thái</th>
         <th>Thao tác</th>
@@ -271,7 +271,7 @@
 
       <div class="upload-guide-note">
         <strong>Lưu ý:</strong>
-        Admin lớp chỉ được tạo mã reset cho sinh viên thuộc lớp mình.
+        Admin chi Hội chỉ được tạo mã reset cho sinh viên thuộc chi Hội mình.
         Super admin có thể tạo mã cho tất cả sinh viên.
       </div>
     </div>
@@ -322,7 +322,7 @@
       <span class="upload-guide-icon">i</span>
       <div>
         <h3>Hướng dẫn file Excel upload sinh viên</h3>
-        <p>File dùng để tạo hoặc cập nhật danh sách sinh viên theo lớp.</p>
+        <p>File dùng để tạo hoặc cập nhật danh sách sinh viên theo chi Hội.</p>
       </div>
     </div>
 
@@ -339,7 +339,7 @@
       <strong>Lưu ý:</strong>
       <code>studentId</code> là MSSV,
       <code>fullName</code> là họ tên sinh viên,
-      <code>className</code> cần nhập đúng mã lớp trong hệ thống, ví dụ
+      <code>className</code> cần nhập đúng mã chi Hội trong hệ thống, ví dụ
       <code>24HOH_CLC1</code>.
     </div>
   </div>
@@ -357,17 +357,17 @@
       </section>
 
       <section id="uploadClassSupport" class="tab-content">
-  <h1>Upload thông tin hỗ trợ lớp</h1>
+  <h1>Upload thông tin hỗ trợ chi Hội</h1>
 
   <div class="criterion-card">
     <div class="upload-guide-card upload-student-guide">
       <div class="upload-guide-header">
         <span class="upload-guide-icon">i</span>
         <div>
-          <h3>Hướng dẫn file Excel hỗ trợ lớp</h3>
+          <h3>Hướng dẫn file Excel hỗ trợ chi Hội</h3>
           <p>
-            File dùng để cập nhật Chi Hội trưởng và danh sách Chi Hội phó theo từng lớp.
-            Super admin có thể upload nhiều lớp cùng lúc. Admin lớp chỉ upload được thông tin lớp của mình.
+            File dùng để cập nhật Chi Hội trưởng và danh sách Chi Hội phó theo từng chi Hội.
+            Super admin có thể upload nhiều chi Hội cùng lúc. Admin chi Hội chỉ upload được thông tin chi Hội của mình.
           </p>
         </div>
       </div>
@@ -402,7 +402,7 @@
         <code>chiHoiPhoPhone</code>,
         <code>chiHoiPhoZalo</code>
       </p>
-      <p>Có thể để trống nếu lớp không có Chi Hội phó.</p>
+      <p>Có thể để trống nếu chi Hội không có Chi Hội phó.</p>
     </div>
 
     <div class="guide-item">
@@ -430,7 +430,7 @@
         <code>uyVienBCH3Phone</code>,
         <code>uyVienBCH3Zalo</code>
       </p>
-      <p>Có thể để trống nếu lớp chỉ có 2 Ủy viên BCH.</p>
+      <p>Có thể để trống nếu chi Hội chỉ có 2 Ủy viên BCH.</p>
     </div>
 
     <div class="guide-item">
@@ -440,23 +440,23 @@
         <code>ctvBCHPhone</code>,
         <code>ctvBCHZalo</code>
       </p>
-      <p>Có thể để trống nếu lớp không có CTV BCH.</p>
+      <p>Có thể để trống nếu chi Hội không có CTV BCH.</p>
     </div>
   </div>
 </div>
 
 <div class="upload-guide-note">
   <strong>Lưu ý:</strong>
-  Mỗi lớp bắt buộc có <code>className</code>, <code>chiHoiTruongName</code>
+  Mỗi chi Hội bắt buộc có <code>className</code>, <code>chiHoiTruongName</code>
   và từ 2 đến 3 Ủy viên BCH. Chi Hội phó và CTV BCH có thể để trống.
-  Tên lớp cần đúng format trong hệ thống, ví dụ <code>24HOH_CLC2</code>.
+  Tên chi Hội cần đúng format trong hệ thống, ví dụ <code>24HOH_CLC2</code>.
 </div>
 
     <div class="upload-action-box">
       <input type="file" id="classSupportExcelFile" accept=".xlsx,.xls" />
 
       <button onclick="uploadClassSupportExcel()">
-        Upload thông tin hỗ trợ lớp
+        Upload thông tin hỗ trợ chi Hội
       </button>
 
       <p id="uploadClassSupportMessage"></p>
@@ -528,10 +528,10 @@
   </div>
 
   <div class="upload-guide-note" style="border-left-color:var(--orange,#f59e0b);background:var(--orange-light,#fffbeb);" id="adminClassUploadNote">
-    <strong>Lưu ý dành cho Admin lớp:</strong>
+    <strong>Lưu ý dành cho Admin chi Hội:</strong>
     Chỉ được upload hoạt động có <code>organizerLevel = chi_hoi</code>.
     Các cấp khác (<code>khoa</code>, <code>truong</code>…) sẽ bị từ chối.
-    Mỗi dòng phải có <code>className</code> đúng với lớp bạn quản lý.
+    Mỗi dòng phải có <code>className</code> đúng với chi Hội bạn quản lý.
   </div>
 </div>
 
@@ -588,10 +588,10 @@
 
         <div id="collectiveEvaluationPanel" class="criterion-card hidden">
           <p>
-            Chỉ Admin lớp được cập nhật các điều kiện thủ công của Chi Hội.
+            Chỉ Admin chi Hội được cập nhật các điều kiện thủ công của Chi Hội.
           </p>
 
-          <label for="evaluationClassName">Lớp / Chi Hội</label>
+          <label for="evaluationClassName">chi Hội / Chi Hội</label>
           <input
             type="text"
             id="evaluationClassName"
@@ -672,6 +672,17 @@
                     <button class="btn-secondary" style="font-size:0.82rem;padding:5px 12px;" onclick="exportCheckinExcel()">Xuất Excel</button>
                   </div>
                 </div>
+                <!-- Mã bảo mật cho tình nguyện viên -->
+                <div style="margin-top:14px;padding:12px 16px;background:var(--blue-light);border-radius:10px;display:flex;align-items:center;flex-wrap:wrap;gap:12px;">
+                  <div>
+                    <p style="margin:0;font-size:0.78rem;font-weight:700;color:var(--blue-deep);text-transform:uppercase;letter-spacing:.04em;">Mã bảo mật tình nguyện viên</p>
+                    <span id="checkinSecurityCode" style="font-family:monospace;font-size:1.5rem;font-weight:900;letter-spacing:.18em;color:var(--blue-deep);">------</span>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn-secondary" style="font-size:0.82rem;padding:5px 12px;" onclick="copySecurityCode()">Sao chép mã</button>
+                    <button class="btn-primary" style="font-size:0.82rem;padding:5px 12px;" onclick="showVolunteerQRModal()">QR trang TNV</button>
+                  </div>
+                </div>
               </div>
 
               <!-- Scanner -->
@@ -707,7 +718,7 @@
                         <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">STT</th>
                         <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">MSSV</th>
                         <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Họ tên</th>
-                        <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Lớp</th>
+                        <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">chi Hội</th>
                         <th style="text-align:left;padding:8px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">Thời gian check-in</th>
                       </tr>
                     </thead>
@@ -768,11 +779,11 @@
   </div>
 
   <div class="filter-item">
-    <label for="evidenceClassSort">Sắp xếp theo lớp</label>
+    <label for="evidenceClassSort">Sắp xếp theo chi Hội</label>
     <select id="evidenceClassSort" onchange="applyEvidenceFilters()">
       <option value="">Không sắp xếp</option>
-      <option value="asc">Lớp A → Z</option>
-      <option value="desc">Lớp Z → A</option>
+      <option value="asc">chi Hội A → Z</option>
+      <option value="desc">chi Hội Z → A</option>
     </select>
   </div>
 
@@ -793,7 +804,7 @@
             <tr>
               <th>MSSV</th>
               <th>Họ tên</th>
-              <th>Lớp</th>
+              <th>chi Hội</th>
               <th>Cấp xét</th>
               <th>Tiêu chí</th>
               <th>File</th>
@@ -988,7 +999,29 @@
     </div>
   </div>
 </div>
+<!-- QR TNV Modal -->
+<div id="volunteerQRModal" class="admin-modal hidden" onclick="closeVolunteerQRModal()">
+  <div class="admin-modal-box" style="max-width:340px;text-align:center;" onclick="event.stopPropagation()">
+    <div class="admin-modal-header">
+      <h2>QR trang tình nguyện viên</h2>
+      <button class="admin-modal-close" onclick="closeVolunteerQRModal()">✕</button>
+    </div>
+    <div class="admin-modal-body" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:8px;">
+      <div id="volunteerQRCanvas" style="padding:12px;background:#fff;border-radius:10px;display:inline-block;"></div>
+      <p style="margin:0;font-size:0.78rem;color:var(--text-muted);">Quét để mở trang check-in tình nguyện viên</p>
+      <div style="background:var(--blue-light);border-radius:8px;padding:8px 16px;">
+        <p style="margin:0;font-size:0.72rem;font-weight:700;color:var(--blue-deep);text-transform:uppercase;letter-spacing:.04em;">Mã bảo mật</p>
+        <span id="volunteerQRCode" style="font-family:monospace;font-size:1.3rem;font-weight:900;letter-spacing:.18em;color:var(--blue-deep);"></span>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn-secondary" onclick="closeVolunteerQRModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="./js/push-notifications.js"></script>
   <script src="./js/admin-dashboard.js"></script>
 </body>

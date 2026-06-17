@@ -178,7 +178,7 @@ ${requiredEvidence}`;
 
 * Họ tên: ${student.fullName}
 * MSSV: ${student.studentId}
-* Lớp: ${student.className || "Chưa cập nhật"}
+* chi Hội: ${student.className || "Chưa cập nhật"}
 * Tiến độ tổng quan: Hoàn thành ${student.totalCompletedCriteria || 0}/5 tiêu chí (Đạt ${student.progressPercent || 0}%)
 * Trạng thái hồ sơ đợt này: ${student.sv5tStatus || "Chưa bắt đầu (not_started)"}
 

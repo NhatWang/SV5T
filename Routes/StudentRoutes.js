@@ -326,14 +326,14 @@ router.post("/reset-password", async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Mã reset không tồn tại hoặc đã được sử dụng. Vui lòng liên hệ admin lớp để lấy mã mới."
+        message: "Mã reset không tồn tại hoặc đã được sử dụng. Vui lòng liên hệ admin chi Hội để lấy mã mới."
       });
     }
 
     if (isResetCodeExpired(student.resetPasswordExpiresAt)) {
       return res.status(400).json({
         success: false,
-        message: "Mã reset đã hết hạn. Vui lòng liên hệ admin lớp để lấy mã mới."
+        message: "Mã reset đã hết hạn. Vui lòng liên hệ admin chi Hội để lấy mã mới."
       });
     }
 

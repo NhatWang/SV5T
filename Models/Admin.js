@@ -20,7 +20,7 @@ const adminSchema = new mongoose.Schema(
       default: "admin"
     },
 
-    // Admin thường chỉ quản lý 1 lớp
+    // Admin thường chỉ quản lý 1 chi Hội
     // Super admin có thể để trống className
     className: {
       type: String,

@@ -1310,7 +1310,7 @@ if (supportClassNameText) {
 } else {
       classBox.innerHTML = `
         <p class="status-text-warning">
-          Chưa có thông tin hỗ trợ cho lớp ${data.student?.className || ""}.
+          Chưa có thông tin hỗ trợ cho chi Hội ${data.student?.className || ""}.
         </p>
       `;
     }

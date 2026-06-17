@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check-in hoạt động — Tình nguyện viên</title>
+  <link rel="stylesheet" href="./css/checkin-volunteer-style.css" />
+</head>
+<body>
+
+  <!-- Brand -->
+  <div class="login-brand">
+    <img src="./images/Logo 2.png" alt="Liên Chi Hội Khoa Hóa học" />
+    <span class="login-brand-title">LIÊN CHI HỘI<br>KHOA HÓA HỌC</span>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+    <div class="card-header">CHECK-IN HOẠT ĐỘNG — TÌNH NGUYỆN VIÊN</div>
+
+    <div class="card-body">
+
+      <!-- Bước 1: Nhập mã bảo mật -->
+      <div id="step1">
+        <label for="codeInput">Mã bảo mật phiên check-in</label>
+        <input
+          type="text"
+          id="codeInput"
+          class="code-input"
+          placeholder="XXXXXX"
+          maxlength="6"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+        />
+        <div id="codeMsg" class="msg"></div>
+        <button id="codeSubmitBtn" class="btn-primary" onclick="submitCode()">Xác nhận mã</button>
+        <p style="margin:16px 0 0;font-size:12px;color:var(--gray-500);text-align:center;">
+          Nhận mã từ quản trị viên phụ trách phiên check-in.
+        </p>
+      </div>
+
+      <!-- Bước 2: Check-in -->
+      <div id="step2" class="hidden">
+
+        <div class="session-info">
+          <h3 id="sessionTitle"></h3>
+          <p id="sessionDesc"></p>
+          <span id="checkinCountBadge" class="session-badge">0 sinh viên đã check-in</span>
+        </div>
+
+        <!-- Camera scanner -->
+        <div id="scannerWrap" class="scanner-wrap hidden">
+          <div id="scannerViewport" class="scanner-viewport">
+            <div class="scanner-line"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button class="btn-ghost" style="flex:1;" onclick="stopScanner()">Dừng camera</button>
+            <button id="switchCamBtn" class="btn-ghost hidden" style="flex:1;" onclick="switchCamera()">⇄ Đổi camera</button>
+          </div>
+        </div>
+
+        <!-- Trạng thái tắt scanner -->
+        <div id="scannerOff">
+          <button class="btn-primary" onclick="startScanner()">📷 Bật camera quét barcode</button>
+          <p class="or-divider">hoặc nhập thủ công</p>
+          <div style="display:flex;gap:8px;">
+            <input
+              type="text"
+              id="mssvInput"
+              placeholder="Nhập MSSV..."
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              style="flex:1;"
+            />
+            <button class="btn-inline" onclick="submitCheckin()">Check-in</button>
+          </div>
+        </div>
+
+        <!-- Kết quả -->
+        <div id="checkinMsg" class="msg"></div>
+
+        <button class="btn-ghost" style="margin-top:14px;" onclick="changeSession()">Đổi phiên / mã khác</button>
+
+        <!-- Check-ins gần đây -->
+        <div id="recentSection" class="hidden">
+          <hr class="divider" />
+          <p class="recent-label">Vừa check-in</p>
+          <div id="recentList" class="recent-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2026 SV5T Khoa Hóa học. Liên Chi Hội Khoa Hóa học.</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+  <script src="./js/checkin-volunteer.js"></script>
+</body>
+</html>

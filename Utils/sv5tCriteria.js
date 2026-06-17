@@ -82,14 +82,14 @@ const officialCriteriaByLevel = {
       mandatory: [
         "Điểm rèn luyện đạt từ 70 điểm trở lên trên thang điểm 100.",
         "Không vi phạm pháp luật.",
-        "Không vi phạm quy chế, nội quy của trường, lớp, quy định của địa phương cư trú và nơi công cộng.",
+        "Không vi phạm quy chế, nội quy của trường, chi Hội, quy định của địa phương cư trú và nơi công cộng.",
         "Đánh giá chất lượng Đoàn viên/Hội viên cuối năm đạt Hoàn thành xuất sắc nhiệm vụ."
       ],
 
       batBuoc: [
         "Điểm rèn luyện năm học đạt từ 70/100 trở lên.",
         "Không vi phạm pháp luật.",
-        "Không vi phạm quy chế, nội quy của trường, lớp, địa phương cư trú và nơi công cộng.",
+        "Không vi phạm quy chế, nội quy của trường, chi Hội, địa phương cư trú và nơi công cộng.",
         "Đánh giá chất lượng Đoàn viên/Hội viên cuối năm đạt Hoàn thành xuất sắc nhiệm vụ."
         ],
       otherRequiredRule: "Khuyến khích có thêm minh chứng đạo đức, khen thưởng hoặc hoạt động rèn luyện phù hợp.",
@@ -146,7 +146,7 @@ const officialCriteriaByLevel = {
         "Có đề tài nghiên cứu khoa học sinh viên hoặc khóa luận tốt nghiệp trong năm học được hội đồng khoa học cấp Khoa/Bộ môn nghiệm thu đánh giá từ 7.0 điểm hoặc loại Khá trở lên.",
         "Tham gia các cuộc thi ý tưởng sáng tạo, nghiên cứu khoa học từ cấp Khoa/Bộ môn trở lên.",
         "Tham gia ít nhất 03 hoạt động học thuật và có giấy xác nhận. Các hoạt động cổ vũ cuộc thi học thuật chỉ được tính chung là 01 hoạt động.",
-        "Là trợ giảng ít nhất 01 học kỳ các lớp học tập, có giấy xác nhận của Chi ủy - Ban Chủ nhiệm Khoa.",
+        "Là trợ giảng ít nhất 01 học kỳ các chi Hội học tập, có giấy xác nhận của Chi ủy - Ban Chủ nhiệm Khoa.",
         "Có bài viết đăng trên báo, tạp chí chuyên ngành của trường hoặc có bài tham luận tham gia hội thảo khoa học, sinh hoạt chuyên đề cấp Khoa trở lên.",
         "Có sản phẩm sáng tạo, giải pháp hữu ích được cấp bằng sáng chế hoặc được chấp nhận đơn đăng ký chứng nhận quyền sở hữu trí tuệ, cấp giấy phép xuất bản.",
         "Là thành viên chính thức đội tuyển tham gia các cuộc thi học thuật cấp quốc gia hoặc quốc tế."
@@ -308,7 +308,7 @@ const officialCriteriaByLevel = {
           evidenceTypes: [
             "Giấy chứng nhận hoàn thành ít nhất 01 khóa kỹ năng thực hành xã hội.",
             "Đạt giải trong các cuộc thi về kỹ năng từ cấp Khoa trở lên.",
-            "Là báo cáo viên các lớp kỹ năng từ cấp Khoa hoặc tương đương trở lên, có giấy xác nhận.",
+            "Là báo cáo viên các chi Hội kỹ năng từ cấp Khoa hoặc tương đương trở lên, có giấy xác nhận.",
             "Được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng về thành tích xuất sắc trong công tác Đoàn và phong trào thanh niên hoặc công tác Hội và phong trào sinh viên.",
             "Tham gia vào vòng Chung kết các cuộc thi về thủ lĩnh sinh viên cấp Trường trở lên."
           ]
@@ -342,7 +342,7 @@ const officialCriteriaByLevel = {
 
         "Nhóm Kỹ năng: Giấy chứng nhận hoàn thành ít nhất 01 khóa trang bị kỹ năng thực hành xã hội.",
         "Nhóm Kỹ năng: Minh chứng đạt giải trong các cuộc thi về kỹ năng từ cấp Khoa trở lên.",
-        "Nhóm Kỹ năng: Giấy xác nhận là báo cáo viên các lớp kỹ năng từ cấp Khoa hoặc tương đương trở lên.",
+        "Nhóm Kỹ năng: Giấy xác nhận là báo cáo viên các chi Hội kỹ năng từ cấp Khoa hoặc tương đương trở lên.",
         "Nhóm Kỹ năng: Giấy khen hoặc minh chứng được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng về thành tích trong công tác Đoàn, phong trào thanh niên, công tác Hội hoặc phong trào sinh viên.",
         "Nhóm Kỹ năng: Minh chứng tham gia và vào vòng Chung kết các cuộc thi về thủ lĩnh sinh viên cấp Trường trở lên.",
 
@@ -360,7 +360,7 @@ const officialCriteriaByLevel = {
 
     collective: {
       title: "Tập thể Sinh viên 5 tốt cấp Trường",
-      object: "Chi Hội/Lớp sinh viên trong hệ thống cấp Trường.",
+      object: "Chi Hội/chi Hội sinh viên trong hệ thống cấp Trường.",
       criteria: [
         "Đánh giá chất lượng Chi Hội cuối năm xếp loại Mạnh.",
         "Có hình thức cụ thể để sinh viên đăng ký phấn đấu trở thành Sinh viên 5 tốt.",
@@ -394,7 +394,7 @@ const officialCriteriaByLevel = {
 
       mandatory: [
         "Có lòng yêu nước, trung thành với mục tiêu, lý tưởng cách mạng của Đảng.",
-        "Không vi phạm pháp luật và các quy chế, nội quy của trường, lớp, quy định của địa phương cư trú, nơi công cộng.",
+        "Không vi phạm pháp luật và các quy chế, nội quy của trường, chi Hội, quy định của địa phương cư trú, nơi công cộng.",
         "Điểm rèn luyện đạt từ 80 điểm trở lên trên thang điểm 100 theo quy chế đánh giá kết quả rèn luyện sinh viên hiện hành.",
         "Đối với các trường đặc thù không đánh giá rèn luyện theo quy chế hiện hành thì mức xếp loại rèn luyện phải đạt Xuất sắc.",
         "Đánh giá chất lượng Đoàn viên cuối năm, đối với Hội viên là Đoàn viên, đạt Hoàn thành xuất sắc nhiệm vụ.",
@@ -404,7 +404,7 @@ const officialCriteriaByLevel = {
       batBuoc: [
         "Phải đã đạt danh hiệu Sinh viên 5 tốt cấp Trường.",
         "Điểm rèn luyện đạt từ 80/100 trở lên hoặc xếp loại rèn luyện Xuất sắc đối với trường đặc thù.",
-        "Không vi phạm pháp luật, quy chế, nội quy của trường, lớp, địa phương cư trú và nơi công cộng.",
+        "Không vi phạm pháp luật, quy chế, nội quy của trường, chi Hội, địa phương cư trú và nơi công cộng.",
         "Đánh giá chất lượng Đoàn viên/Hội viên cuối năm đạt Hoàn thành xuất sắc nhiệm vụ."
         ],
 
@@ -631,7 +631,7 @@ const officialCriteriaByLevel = {
           evidenceTypes: [
             "Đạt giấy chứng nhận hoàn thành ít nhất 01 khóa trang bị kỹ năng thực hành xã hội, khuyến khích theo khung kỹ năng thực hành xã hội căn cứ theo Phụ lục III.",
             "Đạt giải trong các cuộc thi về kỹ năng từ cấp Trường trở lên.",
-            "Là báo cáo viên các lớp kỹ năng từ cấp Trường trở lên.",
+            "Là báo cáo viên các chi Hội kỹ năng từ cấp Trường trở lên.",
             "Được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng về thành tích xuất sắc trong công tác Đoàn và phong trào thanh niên hoặc công tác Hội và phong trào sinh viên."
           ]
         }
@@ -658,7 +658,7 @@ const officialCriteriaByLevel = {
 
         "Nhóm Kỹ năng: Giấy chứng nhận hoàn thành ít nhất 01 khóa trang bị kỹ năng thực hành xã hội.",
         "Nhóm Kỹ năng: Minh chứng đạt giải trong cuộc thi kỹ năng từ cấp Trường trở lên.",
-        "Nhóm Kỹ năng: Giấy xác nhận là báo cáo viên lớp kỹ năng từ cấp Trường trở lên.",
+        "Nhóm Kỹ năng: Giấy xác nhận là báo cáo viên chi Hội kỹ năng từ cấp Trường trở lên.",
         "Nhóm Kỹ năng: Giấy khen hoặc minh chứng được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng về công tác Đoàn, phong trào thanh niên, công tác Hội hoặc phong trào sinh viên."
         ],
 
@@ -707,7 +707,7 @@ const officialCriteriaByLevel = {
 
       mandatory: [
         "Có lòng yêu nước, trung thành với mục tiêu, lý tưởng cách mạng của Đảng.",
-        "Không vi phạm pháp luật và các quy chế, nội quy của trường, lớp, quy định của địa phương cư trú, nơi công cộng.",
+        "Không vi phạm pháp luật và các quy chế, nội quy của trường, chi Hội, quy định của địa phương cư trú, nơi công cộng.",
         "Điểm rèn luyện đạt từ 90 điểm trở lên trên thang điểm 100 theo quy chế đánh giá kết quả rèn luyện sinh viên hiện hành.",
         "Đối với những trường đặc thù không đánh giá kết quả rèn luyện sinh viên theo quy chế hiện hành thì mức xếp loại rèn luyện phải đạt Xuất sắc.",
         "Đánh giá chất lượng Đoàn viên cuối năm, đối với Hội viên là Đoàn viên, đạt Hoàn thành xuất sắc nhiệm vụ.",
@@ -717,7 +717,7 @@ const officialCriteriaByLevel = {
       batBuoc: [
         "Phải đã đạt danh hiệu Sinh viên 5 tốt cấp Trường.",
         "Điểm rèn luyện đạt từ 90/100 trở lên hoặc xếp loại rèn luyện Xuất sắc đối với trường đặc thù.",
-        "Không vi phạm pháp luật, quy chế, nội quy của trường, lớp, địa phương cư trú và nơi công cộng.",
+        "Không vi phạm pháp luật, quy chế, nội quy của trường, chi Hội, địa phương cư trú và nơi công cộng.",
         "Đánh giá chất lượng Đoàn viên/Hội viên cuối năm đạt Hoàn thành xuất sắc nhiệm vụ.",
         "Đạt thêm ít nhất 01 tiêu chuẩn đạo đức khác theo quy chế cấp Thành phố."
         ],

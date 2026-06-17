@@ -508,8 +508,8 @@ if (category === "hoiNhapTot") {
   currentAwardLevel === "thanh"
     ? "Cấp Thành phố chỉ chấp nhận khóa kỹ năng thực hành xã hội hoặc khen thưởng Đoàn/Hội từ cấp Trường trở lên."
     : currentAwardLevel === "dhqg"
-    ? "Cấp ĐHQG-HCM chấp nhận khóa kỹ năng, giải cuộc thi kỹ năng từ cấp Trường trở lên, báo cáo viên lớp kỹ năng từ cấp Trường trở lên hoặc khen thưởng Đoàn/Hội từ cấp Trường trở lên."
-    : "Cấp Trường chấp nhận khóa kỹ năng, giải cuộc thi kỹ năng từ cấp Khoa trở lên, báo cáo viên lớp kỹ năng từ cấp Khoa trở lên, khen thưởng Đoàn/Hội từ cấp Trường trở lên hoặc chung kết thủ lĩnh sinh viên cấp Trường trở lên.";
+    ? "Cấp ĐHQG-HCM chấp nhận khóa kỹ năng, giải cuộc thi kỹ năng từ cấp Trường trở lên, báo cáo viên chi Hội kỹ năng từ cấp Trường trở lên hoặc khen thưởng Đoàn/Hội từ cấp Trường trở lên."
+    : "Cấp Trường chấp nhận khóa kỹ năng, giải cuộc thi kỹ năng từ cấp Khoa trở lên, báo cáo viên chi Hội kỹ năng từ cấp Khoa trở lên, khen thưởng Đoàn/Hội từ cấp Trường trở lên hoặc chung kết thủ lĩnh sinh viên cấp Trường trở lên.";
 
 const hoiNhapDescription =
   currentAwardLevel === "thanh"

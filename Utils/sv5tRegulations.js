@@ -21,7 +21,7 @@ const sv5tRegulations = {
 
     daoDucTot: {
       batBuoc: [
-        "Không vi phạm pháp luật, quy chế, nội quy của trường, lớp, địa phương, nơi công cộng",
+        "Không vi phạm pháp luật, quy chế, nội quy của trường, chi Hội, địa phương, nơi công cộng",
         "Điểm rèn luyện đạt từ 70 điểm trở lên (thang 100)",
         "Đánh giá chất lượng Đoàn viên/Hội viên cuối năm đạt Hoàn thành xuất sắc nhiệm vụ"
       ],
@@ -111,7 +111,7 @@ const sv5tRegulations = {
         cacLua: [
           "Hoàn thành ít nhất 01 khóa kỹ năng thực hành xã hội",
           "Đạt giải cuộc thi kỹ năng từ cấp Khoa trở lên",
-          "Là báo cáo viên lớp kỹ năng từ cấp Khoa/tương đương trở lên (có xác nhận Chi ủy - BCN Khoa)",
+          "Là báo cáo viên chi Hội kỹ năng từ cấp Khoa/tương đương trở lên (có xác nhận Chi ủy - BCN Khoa)",
           "Được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng về thành tích xuất sắc công tác Đoàn/Hội",
           "Tham gia và vào vòng Chung kết cuộc thi thủ lĩnh sinh viên cấp Trường trở lên"
         ],
@@ -146,7 +146,7 @@ const sv5tRegulations = {
 
     daoDucTot: {
       batBuoc: [
-        "Không vi phạm pháp luật và quy chế, nội quy của trường, lớp, địa phương, nơi công cộng",
+        "Không vi phạm pháp luật và quy chế, nội quy của trường, chi Hội, địa phương, nơi công cộng",
         "Điểm rèn luyện đạt từ 80 điểm trở lên (thang 100) hoặc xếp loại Xuất sắc",
         "Đánh giá chất lượng Đoàn viên/Hội viên cuối năm đạt Hoàn thành xuất sắc nhiệm vụ"
       ]
@@ -205,7 +205,7 @@ const sv5tRegulations = {
         cacLua: [
           "Hoàn thành ít nhất 01 khóa kỹ năng thực hành xã hội",
           "Đạt giải cuộc thi kỹ năng từ cấp trường trở lên",
-          "Là báo cáo viên lớp kỹ năng từ cấp trường trở lên",
+          "Là báo cáo viên chi Hội kỹ năng từ cấp trường trở lên",
           "Được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng thành tích xuất sắc công tác Đoàn/Hội"
         ]
       }
@@ -221,7 +221,7 @@ const sv5tRegulations = {
 
     daoDucTot: {
       batBuoc: [
-        "Không vi phạm pháp luật và quy chế, nội quy của trường, lớp, địa phương, nơi công cộng",
+        "Không vi phạm pháp luật và quy chế, nội quy của trường, chi Hội, địa phương, nơi công cộng",
         "Điểm rèn luyện đạt từ 90 điểm trở lên (thang 100) hoặc xếp loại Xuất sắc",
         "Đánh giá chất lượng Đoàn viên/Hội viên cuối năm đạt Hoàn thành xuất sắc nhiệm vụ"
       ],

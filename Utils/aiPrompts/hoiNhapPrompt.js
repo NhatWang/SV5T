@@ -30,7 +30,7 @@ NHÓM 1 - NGOẠI NGỮ, subCriteria = "ngoaiNgu":
 ${isDhqgLevel ? `- QUY TẮC RIÊNG CẤP ĐHQG-HCM: Không chấp nhận chứng nhận trong các đợt thi thử. Nếu tài liệu có dấu hiệu là thi thử, mock test, practice test, placement test thử, kiểm tra thử, chứng nhận thử, kết quả thi thử hoặc giấy chứng nhận từ một đợt thi thử thì phải đánh giá là không hợp lệ cho nhóm Ngoại ngữ cấp ĐHQG-HCM.` : ""}
 
 ${isThanhLevel ? `- QUY TẮC RIÊNG CẤP THÀNH PHỐ:
-  Đối với cấp Thành phố, phần Ngoại ngữ gồm 02 lớp điều kiện:
+  Đối với cấp Thành phố, phần Ngoại ngữ gồm 02 chi Hội điều kiện:
   (A) Điều kiện ngoại ngữ cơ bản: chứng chỉ ngoại ngữ B1 trở lên hoặc điểm học phần ngoại ngữ đạt ngưỡng theo quy chế.
   (B) Điều kiện bổ sung ngoại ngữ: sinh viên phải đạt thêm 01 trong 02 tiêu chí sau:
       (1) Có giấy chứng nhận tham gia ít nhất 01 hoạt động giao lưu quốc tế, hội nghị/hội thảo quốc tế, chương trình gặp gỡ/giao lưu/hợp tác với thanh niên, sinh viên quốc tế trong và ngoài nước.
@@ -47,14 +47,14 @@ NHÓM 2 - KỸ NĂNG, subCriteria = "kyNang":
 Cấp Trường:
 - Hoàn thành ít nhất 01 khóa trang bị kỹ năng thực hành xã hội.
 - Đạt giải trong cuộc thi kỹ năng từ cấp Khoa trở lên.
-- Là báo cáo viên lớp kỹ năng từ cấp Khoa hoặc tương đương trở lên.
+- Là báo cáo viên chi Hội kỹ năng từ cấp Khoa hoặc tương đương trở lên.
 - Được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng về thành tích xuất sắc trong công tác Đoàn/Hội hoặc phong trào sinh viên.
 - Tham gia và vào vòng Chung kết cuộc thi thủ lĩnh sinh viên cấp Trường trở lên.
 
 Cấp ĐHQG-HCM:
 - Hoàn thành ít nhất 01 khóa trang bị kỹ năng thực hành xã hội.
 - Đạt giải trong cuộc thi kỹ năng từ cấp Trường trở lên.
-- Là báo cáo viên lớp kỹ năng từ cấp Trường trở lên.
+- Là báo cáo viên chi Hội kỹ năng từ cấp Trường trở lên.
 - Được Đoàn Thanh niên - Hội Sinh viên từ cấp Trường trở lên khen thưởng về thành tích xuất sắc trong công tác Đoàn/Hội hoặc phong trào sinh viên.
 
 Cấp Thành phố:
@@ -65,8 +65,8 @@ Nếu tài liệu là minh chứng kỹ năng, trả thêm kyNangEvidenceType:
 - "skill_course" nếu là giấy chứng nhận hoàn thành khóa kỹ năng.
 - "skill_competition_award_khoa_or_above" nếu là giải cuộc thi kỹ năng từ cấp Khoa trở lên.
 - "skill_competition_award_truong_or_above" nếu là giải cuộc thi kỹ năng từ cấp Trường trở lên.
-- "skill_reporter_khoa_or_above" nếu là báo cáo viên lớp kỹ năng từ cấp Khoa/tương đương trở lên.
-- "skill_reporter_truong_or_above" nếu là báo cáo viên lớp kỹ năng từ cấp Trường trở lên.
+- "skill_reporter_khoa_or_above" nếu là báo cáo viên chi Hội kỹ năng từ cấp Khoa/tương đương trở lên.
+- "skill_reporter_truong_or_above" nếu là báo cáo viên chi Hội kỹ năng từ cấp Trường trở lên.
 - "union_association_award_truong_or_above" nếu là khen thưởng Đoàn/Hội từ cấp Trường trở lên.
 - "student_leader_competition_finalist_truong_or_above" nếu là vào chung kết cuộc thi thủ lĩnh sinh viên cấp Trường trở lên.
 - "unknown" nếu không xác định được.

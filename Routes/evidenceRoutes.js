@@ -237,7 +237,7 @@ const officialCriteria = {
       minhChung: [
         "Giấy chứng nhận hoàn thành ít nhất 1 khóa kỹ năng thực hành xã hội",
         "Giải thưởng cuộc thi về kỹ năng từ cấp Khoa trở lên",
-        "Xác nhận là báo cáo viên lớp kỹ năng từ cấp Khoa"
+        "Xác nhận là báo cáo viên chi Hội kỹ năng từ cấp Khoa"
       ]
     },
 

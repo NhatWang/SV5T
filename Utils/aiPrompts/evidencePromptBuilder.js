@@ -11,7 +11,7 @@ function buildStudentContextBlock(studentContext = {}) {
 THÔNG TIN SINH VIÊN ĐANG UPLOAD:
 - Họ tên: ${studentContext.fullName || "Không rõ"}
 - MSSV: ${studentContext.studentId || "Không rõ"}
-- Lớp: ${studentContext.className || "Không rõ"}
+- chi Hội: ${studentContext.className || "Không rõ"}
 - Khoa: ${studentContext.faculty || "Khoa Hóa học"}
 - Trường: ${studentContext.university || "Trường Đại học Khoa học tự nhiên, ĐHQG-HCM"}
 

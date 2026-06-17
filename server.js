@@ -93,6 +93,15 @@ const resetPasswordLimiter = rateLimit({
   message: { success: false, message: "Yêu cầu đặt lại mật khẩu quá nhiều lần. Vui lòng thử lại sau 1 tiếng." }
 });
 
+// Volunteer checkin — tránh spam scan
+const volunteerCheckinLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Quá nhiều yêu cầu. Vui lòng thử lại sau." }
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
 
@@ -212,6 +221,7 @@ const pushRoutes = require("./Routes/pushRoutes");
 const chatbotRoutes = require("./Routes/chatbotRoutes");
 // FIX #1: Thêm activityRoutes (trước đây bị thiếu, khiến /api/activity/* trả 404)
 const activityRoutes = require("./Routes/activityRoutes");
+const checkinPublicRoutes = require("./Routes/checkinPublicRoutes");
 
 const { maintenanceMiddleware, getMaintenanceStatus } = require("./Middlewares/maintenanceMiddleware");
 const SystemSettings = require("./Models/SystemSettings");
@@ -234,6 +244,7 @@ app.use("/api/evidence", maintenanceMiddleware, evidenceRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
 app.use("/api/activity", activityRoutes);
+app.use("/api/checkin", volunteerCheckinLimiter, checkinPublicRoutes);
 
 // ─────────────────────────────────────────
 // CENTRALIZED ERROR HANDLER — phải đặt sau tất cả routes

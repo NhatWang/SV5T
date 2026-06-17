@@ -196,7 +196,7 @@ async function loadClassSelectorForSuperAdmin() {
 
   if (!select) return;
 
-  select.innerHTML = `<option value="">Chọn lớp cần xem</option>`;
+  select.innerHTML = `<option value="">Chọn chi Hội cần xem</option>`;
 
   try {
     const res = await fetch("/api/admin-dashboard/classes/summary", {
@@ -209,7 +209,7 @@ async function loadClassSelectorForSuperAdmin() {
       if (table) {
         table.innerHTML = `
           <tr>
-            <td colspan="5">Không thể tải danh sách lớp.</td>
+            <td colspan="5">Không thể tải danh sách chi Hội.</td>
           </tr>
         `;
       }
@@ -230,7 +230,7 @@ async function loadClassSelectorForSuperAdmin() {
     if (table) {
       table.innerHTML = `
         <tr>
-          <td colspan="6">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
+          <td colspan="6">Vui lòng chọn chi Hội để xem danh sách sinh viên.</td>
         </tr>
       `;
     }
@@ -240,7 +240,7 @@ async function loadClassSelectorForSuperAdmin() {
     if (table) {
       table.innerHTML = `
         <tr>
-          <td colspan="6">Không thể kết nối server khi tải danh sách lớp.</td>
+          <td colspan="6">Không thể kết nối server khi tải danh sách chi Hội.</td>
         </tr>
       `;
     }
@@ -258,7 +258,7 @@ function handleSuperAdminClassChange() {
     if (table) {
       table.innerHTML = `
         <tr>
-          <td colspan="6">Vui lòng chọn lớp để xem danh sách sinh viên.</td>
+          <td colspan="6">Vui lòng chọn chi Hội để xem danh sách sinh viên.</td>
         </tr>
       `;
     }
@@ -297,7 +297,7 @@ function initAdminDashboard() {
     adminInfo.textContent =
       adminRole === "super_admin"
         ? `Super Admin: ${adminUsername}`
-        : `Admin lớp: ${adminClassName}`;
+        : `Admin chi Hội: ${adminClassName}`;
   }
 
   const adminClassUploadNote = document.getElementById("adminClassUploadNote");
@@ -342,10 +342,10 @@ function initAdminDashboard() {
     }
 
     document.getElementById("overviewTitle").textContent =
-      `Quản lý lớp ${adminClassName}`;
+      `Quản lý chi Hội ${adminClassName}`;
 
     document.getElementById("overviewDescription").textContent =
-      "Bạn có thể xem tiến độ sinh viên, duyệt minh chứng, upload hoạt động và cập nhật đánh giá Chi Hội của lớp mình.";
+      "Bạn có thể xem tiến độ sinh viên, duyệt minh chứng, upload hoạt động và cập nhật đánh giá Chi Hội của chi Hội mình.";
 
     loadClassStudents(adminClassName);
     loadCollectiveProgress(adminClassName);
@@ -359,7 +359,7 @@ function initAdminDashboard() {
       "Tổng quan Liên chi Hội";
 
     document.getElementById("overviewDescription").textContent =
-      "Bạn có thể xem tiến độ tập thể các lớp, duyệt minh chứng toàn khoa, upload sinh viên và upload hoạt động.";
+      "Bạn có thể xem tiến độ tập thể các chi Hội, duyệt minh chứng toàn khoa, upload sinh viên và upload hoạt động.";
 
     const fixSection = document.getElementById("fixActivatedSection");
     if (fixSection) fixSection.classList.remove("hidden");
@@ -425,7 +425,7 @@ async function loadClassStudents(className) {
     }
 
     if (!data.success || data.students.length === 0) {
-      table.innerHTML = `<tr><td colspan="6">Chưa có sinh viên trong lớp này.</td></tr>`;
+      table.innerHTML = `<tr><td colspan="6">Chưa có sinh viên trong chi Hội này.</td></tr>`;
       return;
     }
 
@@ -478,7 +478,7 @@ async function loadCollectiveProgress(className) {
     const collective = data.collectiveProgress;
 
     document.getElementById("collectiveClassName").textContent =
-      `Lớp ${data.className}`;
+      `chi Hội ${data.className}`;
 
     document.getElementById("collectiveProgressFill").style.width =
       `${data.completedPercent}%`;
@@ -590,7 +590,7 @@ async function loadAllCollectiveProgress() {
     if (!data.success) return;
 
     document.getElementById("collectiveClassName").textContent =
-      "Tiến độ tập thể tất cả các lớp";
+      "Tiến độ tập thể tất cả các chi Hội";
 
     const totalClasses = data.summaries.length;
 
@@ -612,7 +612,7 @@ async function loadAllCollectiveProgress() {
 
     document.getElementById("collectiveProgressText").innerHTML = `
       <strong>Kết quả tập thể:</strong>
-      ${achievedClasses}/${totalClasses} lớp đạt danh hiệu tập thể Chi Hội
+      ${achievedClasses}/${totalClasses} chi Hội đạt danh hiệu tập thể Chi Hội
       <br>
 
       <strong>Tiến độ trung bình:</strong>
@@ -804,11 +804,11 @@ function formatKyNangEvidenceType(value) {
   }
 
   if (value === "skill_reporter_khoa_or_above") {
-    return "Báo cáo viên lớp kỹ năng từ cấp Khoa trở lên";
+    return "Báo cáo viên chi Hội kỹ năng từ cấp Khoa trở lên";
   }
 
   if (value === "skill_reporter_truong_or_above") {
-    return "Báo cáo viên lớp kỹ năng từ cấp Trường trở lên";
+    return "Báo cáo viên chi Hội kỹ năng từ cấp Trường trở lên";
   }
 
   if (value === "union_association_award_truong_or_above") {
@@ -871,8 +871,8 @@ function renderManualEvidenceFields(evidence) {
           <option value="skill_course">Khóa kỹ năng thực hành xã hội</option>
           <option value="skill_competition_award_khoa_or_above">Giải cuộc thi kỹ năng từ cấp Khoa trở lên</option>
           <option value="skill_competition_award_truong_or_above">Giải cuộc thi kỹ năng từ cấp Trường trở lên</option>
-          <option value="skill_reporter_khoa_or_above">Báo cáo viên lớp kỹ năng từ cấp Khoa trở lên</option>
-          <option value="skill_reporter_truong_or_above">Báo cáo viên lớp kỹ năng từ cấp Trường trở lên</option>
+          <option value="skill_reporter_khoa_or_above">Báo cáo viên chi Hội kỹ năng từ cấp Khoa trở lên</option>
+          <option value="skill_reporter_truong_or_above">Báo cáo viên chi Hội kỹ năng từ cấp Trường trở lên</option>
           <option value="union_association_award_truong_or_above">Khen thưởng Đoàn/Hội từ cấp Trường trở lên</option>
           <option value="student_leader_competition_finalist_truong_or_above">Chung kết thủ lĩnh sinh viên cấp Trường trở lên</option>
         </select>
@@ -1191,7 +1191,7 @@ async function updateCollectiveEvaluation() {
   message.className = "";
 
   if (!className) {
-    message.textContent = "Vui lòng nhập tên lớp / Chi Hội";
+    message.textContent = "Vui lòng nhập tên chi Hội / Chi Hội";
     message.className = "msg-error";
     return;
   }
@@ -1515,7 +1515,7 @@ async function generateStudentResetCode() {
       <div class="reset-student-info">
         <p><strong>Sinh viên:</strong> ${data.student.fullName}</p>
         <p><strong>MSSV:</strong> ${data.student.studentId}</p>
-        <p><strong>Lớp:</strong> ${data.student.className || "Chưa cập nhật"}</p>
+        <p><strong>chi Hội:</strong> ${data.student.className || "Chưa cập nhật"}</p>
       </div>
 
       <div class="reset-code-display">
@@ -1583,7 +1583,7 @@ async function uploadClassSupportExcel() {
     fileInput.value = "";
 
     message.innerHTML = `
-      Upload thông tin hỗ trợ lớp thành công.
+      Upload thông tin hỗ trợ chi Hội thành công.
       <br>
       Đã cập nhật: <strong>${data.updatedCount || 0}</strong> /
       ${data.totalRows || 0} dòng.
@@ -1923,7 +1923,7 @@ function renderStudentDetailModal(data) {
 
   if (subtitle) {
     subtitle.textContent =
-      `MSSV: ${student.studentId || ""} • Lớp: ${student.className || "Chưa cập nhật"} • Tiến độ cấp Trường: ${data.completedCount || 0}/5 (${data.progressPercent || 0}%)`;
+      `MSSV: ${student.studentId || ""} • chi Hội: ${student.className || "Chưa cập nhật"} • Tiến độ cấp Trường: ${data.completedCount || 0}/5 (${data.progressPercent || 0}%)`;
   }
 
   if (!body) return;
@@ -3063,10 +3063,11 @@ async function loadCheckinSessions() {
     }
 
     list.innerHTML = data.sessions.map((s) => `
-      <div class="checkin-session-item ${s._id === activeCheckinSessionId ? "active" : ""}" onclick="selectCheckinSession('${s._id}', ${JSON.stringify(s.title).replace(/"/g, '&quot;')}, ${JSON.stringify(s.description || "").replace(/"/g, '&quot;')})">
+      <div class="checkin-session-item ${s._id === activeCheckinSessionId ? "active" : ""}" onclick="selectCheckinSession('${s._id}', ${JSON.stringify(s.title).replace(/"/g, '&quot;')}, ${JSON.stringify(s.description || "").replace(/"/g, '&quot;')}, '${s.securityCode || ""}')">
         <div style="font-weight:600;font-size:0.9rem;">${s.title}</div>
         ${s.description ? `<div style="font-size:0.8rem;color:var(--gray-500);">${s.description}</div>` : ""}
         <div style="font-size:0.78rem;color:var(--gray-400);margin-top:2px;">${new Date(s.createdAt).toLocaleString("vi-VN")}</div>
+        ${s.securityCode ? `<div style="font-family:monospace;font-size:0.82rem;font-weight:700;color:var(--blue-mid);margin-top:3px;letter-spacing:.1em;">🔑 ${s.securityCode}</div>` : ""}
       </div>
     `).join("");
   } catch (error) {
@@ -3109,7 +3110,7 @@ async function createCheckinSession() {
     msg.classList.add("checkin-msg-success");
 
     await loadCheckinSessions();
-    selectCheckinSession(data.session._id, data.session.title, data.session.description || "");
+    selectCheckinSession(data.session._id, data.session.title, data.session.description || "", data.session.securityCode || "");
   } catch (error) {
     console.error("Create checkin session error:", error);
     msg.textContent = "Lỗi kết nối.";
@@ -3117,18 +3118,57 @@ async function createCheckinSession() {
   }
 }
 
-async function selectCheckinSession(id, title, description) {
+async function selectCheckinSession(id, title, description, securityCode) {
   stopCheckinScanner();
   activeCheckinSessionId = id;
 
   document.getElementById("checkinActiveTitle").textContent = title;
   document.getElementById("checkinActiveDesc").textContent = description;
+  document.getElementById("checkinSecurityCode").textContent = securityCode || "------";
   document.getElementById("checkinActivePanel").classList.remove("hidden");
   document.getElementById("checkinNoSession").classList.add("hidden");
   document.getElementById("checkinScanMsg").textContent = "";
 
   await loadCheckinSessions();
   await loadCheckinRecords();
+}
+
+function copySecurityCode() {
+  const code = document.getElementById("checkinSecurityCode").textContent;
+  if (!code || code === "------") return;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = "Đã sao chép!";
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+let _volunteerQRInstance = null;
+
+function showVolunteerQRModal() {
+  const code = document.getElementById("checkinSecurityCode").textContent;
+  if (!code || code === "------") return;
+
+  const url = `${window.location.origin}/checkin-volunteer.html?code=${code}`;
+  const canvas = document.getElementById("volunteerQRCanvas");
+  canvas.innerHTML = "";
+
+  _volunteerQRInstance = new QRCode(canvas, {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: "#1a365d",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  document.getElementById("volunteerQRCode").textContent = code;
+  document.getElementById("volunteerQRModal").classList.remove("hidden");
+}
+
+function closeVolunteerQRModal() {
+  document.getElementById("volunteerQRModal").classList.add("hidden");
 }
 
 async function loadCheckinRecords() {

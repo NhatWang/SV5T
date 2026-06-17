@@ -78,7 +78,7 @@ function requireSuperAdmin(req, res, next) {
   next();
 }
 
-// Admin lớp chỉ được xem lớp của mình, super_admin được xem tất cả
+// Admin chi Hội chỉ được xem chi Hội của mình, super_admin được xem tất cả
 function requireClassPermission(req, res, next) {
   const { className } = req.params;
 
@@ -99,7 +99,7 @@ function requireClassPermission(req, res, next) {
 
   return res.status(403).json({
     success: false,
-    message: "Bạn không có quyền xem lớp này"
+    message: "Bạn không có quyền xem chi Hội này"
   });
 }
 

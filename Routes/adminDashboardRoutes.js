@@ -3,6 +3,13 @@ const multer = require("multer");
 const xlsx = require("xlsx");
 const fs = require("fs");
 
+function generateSecurityCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
 const Student = require("../Models/Student");
 const Activity = require("../Models/Activity");
 const Evidence = require("../Models/Evidence");
@@ -992,7 +999,7 @@ function normalizeHoiNhapEvidenceType(value) {
 }
 
 // ===============================
-// 1. ADMIN: XEM SINH VIÊN TRONG LỚP
+// 1. ADMIN: XEM SINH VIÊN TRONG chi Hội
 // ===============================
 
 router.get(
@@ -1004,7 +1011,7 @@ router.get(
       if (req.admin.role === "admin" && req.admin.className !== className) {
   return res.status(403).json({
     success: false,
-    message: "Bạn chỉ được xem danh sách sinh viên của lớp mình."
+    message: "Bạn chỉ được xem danh sách sinh viên của chi Hội mình."
   });
 }
 
@@ -1033,14 +1040,14 @@ router.get(
 
       res.status(500).json({
         success: false,
-        message: "Lỗi server khi lấy danh sách sinh viên trong lớp"
+        message: "Lỗi server khi lấy danh sách sinh viên trong chi Hội"
       });
     }
   }
 );
 
 // ===============================
-// 2. ADMIN: XEM TIẾN ĐỘ TẬP THỂ CỦA LỚP
+// 2. ADMIN: XEM TIẾN ĐỘ TẬP THỂ CỦA chi Hội
 // ===============================
 
 router.get(
@@ -1283,7 +1290,7 @@ router.get(
       ) {
         return res.status(403).json({
           success: false,
-          message: "Bạn không có quyền xem sinh viên ngoài lớp mình."
+          message: "Bạn không có quyền xem sinh viên ngoài chi Hội mình."
         });
       }
 
@@ -1517,7 +1524,7 @@ router.get(
 
 
 // ===============================
-// 3. SUPER ADMIN: XEM TIẾN ĐỘ TẤT CẢ LỚP
+// 3. SUPER ADMIN: XEM TIẾN ĐỘ TẤT CẢ chi Hội
 // ===============================
 
 router.get(
@@ -1612,7 +1619,7 @@ router.get(
 
       res.status(500).json({
         success: false,
-        message: "Lỗi server khi lấy tiến độ tổng các lớp"
+        message: "Lỗi server khi lấy tiến độ tổng các chi Hội"
       });
     }
   }
@@ -1632,14 +1639,14 @@ router.post(
       if (req.admin.role === "admin" && className !== req.admin.className) {
         return res.status(403).json({
           success: false,
-          message: "Bạn chỉ được cập nhật đánh giá Chi Hội của lớp mình"
+          message: "Bạn chỉ được cập nhật đánh giá Chi Hội của chi Hội mình"
         });
       }
 
       if (req.admin.role !== "admin") {
         return res.status(403).json({
           success: false,
-          message: "Chỉ admin lớp được cập nhật đánh giá Chi Hội"
+          message: "Chỉ admin chi Hội được cập nhật đánh giá Chi Hội"
         });
       }
 
@@ -1745,7 +1752,7 @@ router.post(
         if (req.admin.role === "admin" && className !== req.admin.className) {
           errors.push({
             row,
-            reason: `Admin lớp ${req.admin.className} không được upload sinh viên lớp ${className}`
+            reason: `Admin chi Hội ${req.admin.className} không được upload sinh viên chi Hội ${className}`
           });
           continue;
         }
@@ -1779,7 +1786,7 @@ router.post(
         const blockedClasses = existingClasses.map((c) => c._id);
         return res.status(400).json({
           success: false,
-          message: `Các lớp sau đã có danh sách sinh viên: ${blockedClasses.join(", ")}. Không thể upload lại.`,
+          message: `Các chi Hội sau đã có danh sách sinh viên: ${blockedClasses.join(", ")}. Không thể upload lại.`,
           blockedClasses
         });
       }
@@ -1961,7 +1968,7 @@ router.post(
         if (req.admin.role === "admin" && className !== req.admin.className) {
           errors.push({
             row,
-            reason: `Admin lớp ${req.admin.className} không được upload hoạt động cho lớp ${className}`
+            reason: `Admin chi Hội ${req.admin.className} không được upload hoạt động cho chi Hội ${className}`
           });
           continue;
         }
@@ -1969,7 +1976,7 @@ router.post(
         if (req.admin.role === "admin" && organizerLevel !== "chi_hoi") {
           errors.push({
             row,
-            reason: `Admin lớp chỉ được upload hoạt động cấp Chi Hội. Hoạt động "${title}" có cấp "${organizerLevel || organizerLevelRaw}" không hợp lệ.`
+            reason: `Admin chi Hội chỉ được upload hoạt động cấp Chi Hội. Hoạt động "${title}" có cấp "${organizerLevel || organizerLevelRaw}" không hợp lệ.`
           });
           continue;
         }
@@ -2309,7 +2316,7 @@ router.patch(
       ) {
         return res.status(403).json({
           success: false,
-          message: "Bạn chỉ được duyệt minh chứng của sinh viên lớp mình"
+          message: "Bạn chỉ được duyệt minh chứng của sinh viên chi Hội mình"
         });
       }
 
@@ -2832,7 +2839,7 @@ router.post(
       ) {
         return res.status(403).json({
           success: false,
-          message: `Admin lớp ${req.admin.className} không được tạo mã reset cho sinh viên lớp ${student.className}`
+          message: `Admin chi Hội ${req.admin.className} không được tạo mã reset cho sinh viên chi Hội ${student.className}`
         });
       }
 
@@ -2867,7 +2874,7 @@ router.post(
 );
 
 // ===============================
-// 12. ADMIN: XEM THÔNG TIN HỖ TRỢ CỦA LỚP
+// 12. ADMIN: XEM THÔNG TIN HỖ TRỢ CỦA chi Hội
 // ===============================
 
 router.get("/class-support/:className", requireAdminAuth, async (req, res) => {
@@ -2880,7 +2887,7 @@ router.get("/class-support/:className", requireAdminAuth, async (req, res) => {
     ) {
       return res.status(403).json({
         success: false,
-        message: "Admin lớp chỉ được xem thông tin hỗ trợ của lớp mình"
+        message: "Admin chi Hội chỉ được xem thông tin hỗ trợ của chi Hội mình"
       });
     }
 
@@ -2897,13 +2904,13 @@ router.get("/class-support/:className", requireAdminAuth, async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Lỗi server khi lấy thông tin hỗ trợ lớp"
+      message: "Lỗi server khi lấy thông tin hỗ trợ chi Hội"
     });
   }
 });
 
 // ===============================
-// 13. ADMIN: CẬP NHẬT THÔNG TIN HỖ TRỢ CỦA LỚP
+// 13. ADMIN: CẬP NHẬT THÔNG TIN HỖ TRỢ CỦA chi Hội
 // ===============================
 
 router.put("/class-support/:className", requireAdminAuth, async (req, res) => {
@@ -2916,7 +2923,7 @@ router.put("/class-support/:className", requireAdminAuth, async (req, res) => {
     ) {
       return res.status(403).json({
         success: false,
-        message: "Admin lớp chỉ được cập nhật thông tin hỗ trợ của lớp mình"
+        message: "Admin chi Hội chỉ được cập nhật thông tin hỗ trợ của chi Hội mình"
       });
     }
 
@@ -2942,7 +2949,7 @@ router.put("/class-support/:className", requireAdminAuth, async (req, res) => {
     if (cleanUyVienBCHList.length < 2 || cleanUyVienBCHList.length > 3) {
       return res.status(400).json({
         success: false,
-        message: "Mỗi lớp cần có từ 2 đến 3 Ủy viên BCH"
+        message: "Mỗi chi Hội cần có từ 2 đến 3 Ủy viên BCH"
       });
     }
 
@@ -2979,7 +2986,7 @@ router.put("/class-support/:className", requireAdminAuth, async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Cập nhật thông tin hỗ trợ lớp thành công",
+      message: "Cập nhật thông tin hỗ trợ chi Hội thành công",
       classSupport
     });
   } catch (error) {
@@ -2987,13 +2994,13 @@ router.put("/class-support/:className", requireAdminAuth, async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Lỗi server khi cập nhật thông tin hỗ trợ lớp"
+      message: "Lỗi server khi cập nhật thông tin hỗ trợ chi Hội"
     });
   }
 });
 
 // ===============================
-// 14. ADMIN: UPLOAD DANH SÁCH HỖ TRỢ CỦA LỚP BẰNG EXCEL
+// 14. ADMIN: UPLOAD DANH SÁCH HỖ TRỢ CỦA chi Hội BẰNG EXCEL
 // ===============================
 
 router.post(
@@ -3032,7 +3039,7 @@ router.post(
         if (req.admin.role === "admin" && className !== req.admin.className) {
           errors.push({
             row,
-            reason: `Admin lớp ${req.admin.className} không được upload thông tin lớp ${className}`
+            reason: `Admin chi Hội ${req.admin.className} không được upload thông tin chi Hội ${className}`
           });
           continue;
         }
@@ -3086,7 +3093,7 @@ router.post(
         if (uyVienBCHList.length < 2 || uyVienBCHList.length > 3) {
           errors.push({
             row,
-            reason: "Mỗi lớp cần có từ 2 đến 3 Ủy viên BCH"
+            reason: "Mỗi chi Hội cần có từ 2 đến 3 Ủy viên BCH"
           });
           continue;
         }
@@ -3123,7 +3130,7 @@ router.post(
         success: errors.length === 0,
         message:
           errors.length === 0
-            ? "Upload thông tin hỗ trợ lớp thành công"
+            ? "Upload thông tin hỗ trợ chi Hội thành công"
             : "Upload hoàn tất nhưng có một số dòng lỗi",
         updatedCount,
         totalRows: rows.length,
@@ -3134,7 +3141,7 @@ router.post(
 
       return res.status(500).json({
         success: false,
-        message: "Lỗi server khi upload thông tin hỗ trợ lớp"
+        message: "Lỗi server khi upload thông tin hỗ trợ chi Hội"
       });
     } finally {
       cleanupTempFile(tempFilePath);
@@ -3166,7 +3173,7 @@ router.get(
       ) {
         return res.status(403).json({
           success: false,
-          message: "Admin lớp chỉ được xem sinh viên thuộc lớp mình"
+          message: "Admin chi Hội chỉ được xem sinh viên thuộc chi Hội mình"
         });
       }
 
@@ -3229,7 +3236,7 @@ router.put(
       ) {
         return res.status(403).json({
           success: false,
-          message: "Admin lớp chỉ được cập nhật sinh viên thuộc lớp mình"
+          message: "Admin chi Hội chỉ được cập nhật sinh viên thuộc chi Hội mình"
         });
       }
 
@@ -3407,7 +3414,7 @@ router.get("/central-evidences", requireAdminAuth, async (req, res) => {
 });
 
 // ===============================
-// SUPER ADMIN: XEM THÔNG TIN BAN CHỈ HỘI TẤT CẢ LỚP
+// SUPER ADMIN: XEM THÔNG TIN BAN CHỈ HỘI TẤT CẢ chi Hội
 // ===============================
 
 router.get(
@@ -3502,7 +3509,7 @@ router.delete(
       if (req.admin.role === "admin" && req.admin.className !== student.className) {
         return res.status(403).json({
           success: false,
-          message: "Bạn chỉ được xóa sinh viên thuộc lớp mình quản lý"
+          message: "Bạn chỉ được xóa sinh viên thuộc chi Hội mình quản lý"
         });
       }
 
@@ -3525,7 +3532,7 @@ router.delete(
 );
 
 // ===============================
-// SUPER ADMIN: ĐẾM SINH VIÊN THEO LỚP
+// SUPER ADMIN: ĐẾM SINH VIÊN THEO chi Hội
 // ===============================
 
 router.get(
@@ -3558,7 +3565,7 @@ router.get(
 );
 
 // ===============================
-// OVERVIEW STATS — trả về breakdown trạng thái + tiêu chí cho 1 lớp
+// OVERVIEW STATS — trả về breakdown trạng thái + tiêu chí cho 1 chi Hội
 // ===============================
 router.get(
   "/class/:className/overview-stats",
@@ -3570,7 +3577,7 @@ router.get(
       if (req.admin.role === "admin" && req.admin.className !== className) {
         return res.status(403).json({
           success: false,
-          message: "Bạn chỉ được xem thống kê lớp mình."
+          message: "Bạn chỉ được xem thống kê chi Hội mình."
         });
       }
 
@@ -3804,9 +3811,19 @@ router.post(
         return res.status(400).json({ success: false, message: "Vui lòng nhập tên phiên check-in" });
       }
 
+      let securityCode;
+      let attempts = 0;
+      while (attempts < 10) {
+        securityCode = generateSecurityCode();
+        const exists = await CheckinSession.exists({ securityCode });
+        if (!exists) break;
+        attempts++;
+      }
+
       const session = new CheckinSession({
         title: title.trim(),
         description: description?.trim() || "",
+        securityCode,
         createdBy: req.admin.username
       });
 
@@ -3933,13 +3950,13 @@ router.get(
         STT: i + 1,
         MSSV: c.studentId,
         "Họ và tên": c.fullName,
-        Lớp: c.className,
+        "chi Hội": c.className,
         "Thời gian check-in": new Date(c.checkinAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
       }));
 
       const wb = xlsx.utils.book_new();
       const ws = xlsx.utils.json_to_sheet(rows, {
-        header: ["STT", "MSSV", "Họ và tên", "Lớp", "Thời gian check-in"]
+        header: ["STT", "MSSV", "Họ và tên", "chi Hội", "Thời gian check-in"]
       });
 
       ws["!cols"] = [{ wch: 5 }, { wch: 14 }, { wch: 30 }, { wch: 16 }, { wch: 22 }];

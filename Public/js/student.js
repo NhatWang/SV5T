@@ -248,7 +248,7 @@ function showResetForm() {
 
   if (resetMessage) {
     resetMessage.textContent =
-      "Vui lòng nhập mã reset do admin lớp cung cấp.";
+      "Vui lòng nhập mã reset do admin chi Hội cung cấp.";
     resetMessage.className = "";
   }
 
