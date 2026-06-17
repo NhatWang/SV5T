@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 
 const Admin = require("../Models/Admin");
 
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGO_URL;
 
 const classes = [
   "25HOH_TN",

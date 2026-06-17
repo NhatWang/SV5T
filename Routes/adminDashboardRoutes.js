@@ -1775,81 +1775,42 @@ router.post(
         });
       }
 
-      const classNamesInFile = [...new Set(validStudents.map((item) => item.className))];
-
-      const existingClasses = await Student.aggregate([
-        { $match: { className: { $in: classNamesInFile } } },
-        { $group: { _id: "$className" } }
-      ]);
-
-      if (existingClasses.length > 0) {
-        const blockedClasses = existingClasses.map((c) => c._id);
-        return res.status(400).json({
-          success: false,
-          message: `Các chi Hội sau đã có danh sách sinh viên: ${blockedClasses.join(", ")}. Không thể upload lại.`,
-          blockedClasses
-        });
-      }
-
       const studentIds = validStudents.map((item) => item.studentId);
 
       const existingStudents = await Student.find({
-        studentId: {
-          $in: studentIds
-        }
-      })
-        .select("studentId")
-        .lean();
+        studentId: { $in: studentIds }
+      }).select("studentId").lean();
 
-      const existingStudentIdSet = new Set(
-        existingStudents.map((item) => item.studentId)
-      );
+      if (existingStudents.length > 0) {
+        const duplicateIds = existingStudents.map((s) => s.studentId);
+        return res.status(400).json({
+          success: false,
+          message: `${duplicateIds.length} MSSV đã tồn tại trong hệ thống: ${duplicateIds.join(", ")}`,
+          duplicateIds
+        });
+      }
 
-      let inserted = 0;
-      let updated = 0;
+      const operations = validStudents.map((item) => ({
+        insertOne: { document: {
+          studentId:              item.studentId,
+          fullName:               item.fullName,
+          className:              item.className,
+          isActivated:            false,
+          password:               null,
+          sv5tStatus:             "not_started",
+          sv5tProgress:           {},
+          totalCompletedCriteria: 0,
+          progressPercent:        0,
+          createdAt:              new Date()
+        }}
+      }));
 
-      const operations = validStudents.map((item) => {
-        if (existingStudentIdSet.has(item.studentId)) {
-          updated += 1;
-        } else {
-          inserted += 1;
-        }
-
-        return {
-          updateOne: {
-            filter: {
-              studentId: item.studentId
-            },
-            update: {
-              $set: {
-                fullName: item.fullName,
-                className: item.className
-              },
-              $setOnInsert: {
-                studentId: item.studentId,
-                isActivated: false,
-                password: null,
-                sv5tStatus: "not_started",
-                sv5tProgress: {},
-                totalCompletedCriteria: 0,
-                progressPercent: 0,
-                createdAt: new Date()
-              }
-            },
-            upsert: true
-          }
-        };
-      });
-
-      await Student.bulkWrite(operations, {
-        ordered: false
-      });
+      await Student.bulkWrite(operations, { ordered: false });
 
       return res.json({
         success: true,
         message: "Upload danh sách sinh viên thành công",
-        inserted,
-        updated,
+        inserted: validStudents.length,
         totalRows: rows.length,
         validRows: validStudents.length,
         errors
@@ -2185,6 +2146,41 @@ router.post(
     }
   }
 );
+
+// ===============================
+// PENDING EVIDENCE COUNT (for sidebar badge)
+// ===============================
+
+router.get("/evidences/pending-count", requireAdminAuth, async (req, res) => {
+  try {
+    let schoolPending = 0;
+
+    if (req.admin.role === "admin") {
+      const classStudents = await Student.find({ className: req.admin.className }).select("studentId").lean();
+      const ids = classStudents.map((s) => s.studentId);
+      schoolPending = await Evidence.countDocuments({
+        studentId: { $in: ids },
+        status: "pending",
+        awardLevel: { $ne: "trung_uong" }
+      });
+    } else {
+      schoolPending = await Evidence.countDocuments({
+        status: "pending",
+        awardLevel: { $ne: "trung_uong" }
+      });
+    }
+
+    const centralPending = await Evidence.countDocuments({
+      status: "pending",
+      awardLevel: "trung_uong"
+    });
+
+    res.json({ success: true, schoolPending, centralPending });
+  } catch (err) {
+    console.error("Pending count error:", err);
+    res.status(500).json({ success: false, schoolPending: 0, centralPending: 0 });
+  }
+});
 
 // ===============================
 // 7. ADMIN / SUPER ADMIN: XEM TOÀN BỘ MINH CHỨNG

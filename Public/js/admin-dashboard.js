@@ -315,7 +315,7 @@ function initAdminDashboard() {
     const evidenceTabBtn = document.getElementById("evidenceTabBtn");
 
     if (evidenceTabBtn) {
-      evidenceTabBtn.style.display = "block";
+      evidenceTabBtn.style.display = "flex";
     }
 
     const collectiveEvaluationTabBtn = document.getElementById(
@@ -352,6 +352,8 @@ function initAdminDashboard() {
     loadAllEvidences();
     loadUploadedActivities();
     loadOverviewStats();
+    fetchPendingBadge();
+    setInterval(fetchPendingBadge, 60000);
   }
 
   if (adminRole === "super_admin") {
@@ -398,7 +400,30 @@ function initAdminDashboard() {
     loadAllCollectiveProgress();
     loadUploadedActivities();
     loadOverviewStats();
+    fetchPendingBadge();
+    setInterval(fetchPendingBadge, 60000);
   }
+}
+
+async function fetchPendingBadge() {
+  try {
+    const res = await fetch("/api/admin/evidences/pending-count", { credentials: "include" });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    const schoolBadge = document.getElementById("evidencePendingBadge");
+    const centralBadge = document.getElementById("centralEvidencePendingBadge");
+
+    if (schoolBadge) {
+      schoolBadge.textContent = data.schoolPending;
+      schoolBadge.classList.toggle("hidden", data.schoolPending === 0);
+    }
+    if (centralBadge) {
+      centralBadge.textContent = data.centralPending;
+      centralBadge.classList.toggle("hidden", data.centralPending === 0);
+    }
+  } catch {}
 }
 
 async function loadClassStudents(className) {
@@ -1024,6 +1049,7 @@ manualReview: {
     }
 
     updateEvidenceRowAfterReview(buttonElement, status);
+    fetchPendingBadge();
 
     if (adminRole === "admin" && adminClassName) {
       loadClassStudents(adminClassName);
@@ -1096,8 +1122,7 @@ async function uploadStudentsExcel() {
       return;
     }
 
-    message.textContent =
-      `${data.message}. Thêm mới: ${data.inserted || 0}, cập nhật: ${data.updated || 0}`;
+    message.textContent = `${data.message}. Thêm mới: ${data.inserted || 0}`;
 
     if (data.success) {
       fileInput.value = "";
@@ -1710,6 +1735,7 @@ async function reviewCentralEvidence(evidenceId, action, buttonElement) {
     }
 
     updateCentralEvidenceRowAfterReview(buttonElement, action);
+    fetchPendingBadge();
   } catch (error) {
     console.error("Review central evidence error:", error);
     alert("Không thể kết nối server.");
