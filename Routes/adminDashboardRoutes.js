@@ -3972,12 +3972,161 @@ router.get(
   }
 );
 
+// ===============================
+// UPLOAD EXCEL BỔ SUNG PARTICIPANTS CHO HOẠT ĐỘNG
+// ===============================
+
+router.post(
+  "/activities/:activityId/add-participants",
+  requireAdminAuth,
+  upload.single("file"),
+  async (req, res) => {
+    const tempFilePath = req.file?.path;
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: "Vui lòng chọn file Excel" });
+      }
+
+      const activity = await Activity.findById(req.params.activityId);
+      if (!activity) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy hoạt động" });
+      }
+
+      if (req.admin.role === "admin") {
+        const hasClassParticipant = (activity.participants || []).some(
+          (p) => p.className === req.admin.className
+        );
+        if (!hasClassParticipant && activity.uploadedBy !== req.admin.username) {
+          return res.status(403).json({ success: false, message: "Bạn không có quyền sửa hoạt động này" });
+        }
+      }
+
+      const workbook = xlsx.readFile(req.file.path);
+      const sheetName = workbook.SheetNames[0];
+      const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+      const errors = [];
+      const newParticipants = [];
+      const existingIds = new Set((activity.participants || []).map((p) => p.studentId));
+
+      for (const row of rows) {
+        const studentId = getCellValue(row, "studentId");
+        const fullName = getCellValue(row, "fullName");
+        const className = getCellValue(row, "className");
+
+        if (!studentId || !fullName || !className) {
+          errors.push({ row, reason: "Thiếu studentId, fullName hoặc className" });
+          continue;
+        }
+
+        if (req.admin.role === "admin" && className !== req.admin.className) {
+          errors.push({ row, reason: `Admin chi Hội ${req.admin.className} không được thêm sinh viên chi Hội ${className}` });
+          continue;
+        }
+
+        if (existingIds.has(studentId)) {
+          errors.push({ row, reason: `MSSV ${studentId} đã có trong hoạt động này` });
+          continue;
+        }
+
+        existingIds.add(studentId);
+
+        const volunteerDays = Number(row.volunteerDays || 0);
+        const subCriteria = getCellValue(row, "subCriteria") || activity.subCriteria || "";
+        const academicEvidenceType = getCellValue(row, "academicEvidenceType") || activity.academicEvidenceType || "";
+        const kyNangEvidenceType = normalizeKyNangEvidenceType(
+          row.kyNangEvidenceType || row["Loại minh chứng kỹ năng"] || ""
+        ) || activity.kyNangEvidenceType || "";
+        const hoiNhapEvidenceType = normalizeHoiNhapEvidenceType(
+          row.hoiNhapEvidenceType || row["Loại minh chứng hội nhập"] || ""
+        ) || activity.hoiNhapEvidenceType || "";
+        const isVolunteerAward = parseBooleanCell(
+          row.isVolunteerAward || row["Khen thưởng tình nguyện"] || false
+        );
+
+        newParticipants.push({
+          studentId,
+          fullName,
+          className,
+          subCriteria,
+          academicEvidenceType,
+          kyNangEvidenceType,
+          hoiNhapEvidenceType,
+          volunteerDays,
+          isVolunteerAward
+        });
+      }
+
+      if (newParticipants.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Không có sinh viên mới hợp lệ để thêm",
+          errors
+        });
+      }
+
+      activity.participants.push(...newParticipants);
+      await activity.save();
+
+      const affectedStudentIds = newParticipants.map((p) => p.studentId);
+
+      for (const studentId of affectedStudentIds) {
+        if ((activity.eligibleAwardLevels || []).includes("truong")) {
+          if (activity.category === "hocTapTot") {
+            await recomputeHocTapProgress(studentId);
+          } else if (activity.category === "tinhNguyenTot") {
+            await recomputeTinhNguyenProgress(studentId);
+          } else if (activity.category === "hoiNhapTot") {
+            await recomputeHoiNhapProgress(studentId);
+          } else {
+            const student = await Student.findOne({ studentId });
+            if (student) {
+              if (!student.sv5tProgress) student.sv5tProgress = {};
+              if (!student.sv5tProgress[activity.category]) student.sv5tProgress[activity.category] = {};
+              student.sv5tProgress[activity.category].isCompleted = true;
+              student.sv5tProgress[activity.category].completedBy = "activity";
+              student.sv5tProgress[activity.category].completedAt = new Date();
+              updateStudentProgressSummary(student);
+              await student.save();
+            }
+          }
+        }
+        if ((activity.eligibleAwardLevels || []).includes("dhqg")) {
+          await recomputeHigherLevelProgressForStudent(studentId, "dhqg");
+        }
+        if ((activity.eligibleAwardLevels || []).includes("thanh")) {
+          await recomputeHigherLevelProgressForStudent(studentId, "thanh");
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: `Đã thêm ${newParticipants.length} sinh viên vào hoạt động`,
+        added: newParticipants.length,
+        totalParticipants: activity.participants.length,
+        errors
+      });
+    } catch (error) {
+      console.error("Add participants error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server khi thêm sinh viên" });
+    } finally {
+      cleanupTempFile(tempFilePath);
+    }
+  }
+);
+
 router.delete(
   "/checkin/sessions/:id",
   requireAdminAuth,
-  requireSuperAdmin,
   async (req, res) => {
     try {
+      const session = await CheckinSession.findById(req.params.id);
+      if (!session) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy phiên check-in" });
+      }
+      if (req.admin.role !== "super_admin" && session.createdBy !== req.admin.username) {
+        return res.status(403).json({ success: false, message: "Bạn chỉ được xóa phiên do mình tạo" });
+      }
       await CheckinSession.findByIdAndDelete(req.params.id);
       return res.json({ success: true, message: "Đã xóa phiên check-in" });
     } catch (error) {

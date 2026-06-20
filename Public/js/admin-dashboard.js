@@ -2975,6 +2975,11 @@ function openEditActivityModal(activity) {
 
   document.getElementById("editActivityEligibleInfo").classList.add("hidden");
 
+  const addFile = document.getElementById("editActivityAddParticipantsFile");
+  if (addFile) addFile.value = "";
+  const addMsg = document.getElementById("editActivityAddParticipantsMsg");
+  if (addMsg) addMsg.textContent = "";
+
   onEditCategoryChange();
 
   document.getElementById("editActivityModal").classList.remove("hidden");
@@ -3061,6 +3066,85 @@ async function saveEditActivity() {
   }
 }
 
+async function uploadAdditionalParticipants() {
+  const activityId = document.getElementById("editActivityId").value;
+  const fileInput = document.getElementById("editActivityAddParticipantsFile");
+  const msg = document.getElementById("editActivityAddParticipantsMsg");
+
+  msg.textContent = "";
+  msg.style.color = "";
+
+  if (!fileInput.files || !fileInput.files[0]) {
+    msg.textContent = "Vui lòng chọn file Excel.";
+    msg.style.color = "var(--red,#dc2626)";
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  const btn = document.querySelector("#editActivityModal .btn-secondary[onclick*='uploadAdditionalParticipants']") ||
+    [...document.querySelectorAll("#editActivityModal button")].find(b => b.textContent.includes("Thêm sinh viên"));
+  if (btn) { btn.disabled = true; btn.textContent = "Đang upload..."; }
+
+  try {
+    const res = await fetch(`/api/admin-dashboard/activities/${activityId}/add-participants`, {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      msg.style.color = "var(--green,#16a34a)";
+      msg.textContent = data.message;
+      if (data.errors && data.errors.length > 0) {
+        msg.textContent += ` (${data.errors.length} dòng lỗi bị bỏ qua)`;
+      }
+      fileInput.value = "";
+      await loadUploadedActivities();
+    } else {
+      msg.style.color = "var(--red,#dc2626)";
+      msg.textContent = data.message || "Upload thất bại.";
+    }
+  } catch (err) {
+    console.error("Upload additional participants error:", err);
+    msg.style.color = "var(--red,#dc2626)";
+    msg.textContent = "Lỗi kết nối.";
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Thêm sinh viên"; }
+  }
+}
+
+async function deleteCheckinSession(id, title) {
+  if (!confirm(`Xóa phiên "${title}"? Toàn bộ dữ liệu check-in của phiên này sẽ bị xóa vĩnh viễn.`)) return;
+
+  try {
+    const res = await fetch(`/api/admin-dashboard/checkin/sessions/${id}`, {
+      method: "DELETE",
+      credentials: "include"
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      if (activeCheckinSessionId === id) {
+        activeCheckinSessionId = null;
+        stopCheckinScanner();
+        document.getElementById("checkinActivePanel").classList.add("hidden");
+        document.getElementById("checkinNoSession").classList.remove("hidden");
+      }
+      await loadCheckinSessions();
+    } else {
+      alert(data.message || "Xóa phiên thất bại.");
+    }
+  } catch (err) {
+    console.error("Delete checkin session error:", err);
+    alert("Lỗi kết nối khi xóa phiên.");
+  }
+}
+
+window.uploadAdditionalParticipants = uploadAdditionalParticipants;
+window.deleteCheckinSession = deleteCheckinSession;
 window.openEditActivityModal = openEditActivityModal;
 window.closeEditActivityModal = closeEditActivityModal;
 window.onEditCategoryChange = onEditCategoryChange;
@@ -3090,10 +3174,15 @@ async function loadCheckinSessions() {
 
     list.innerHTML = data.sessions.map((s) => `
       <div class="checkin-session-item ${s._id === activeCheckinSessionId ? "active" : ""}" onclick="selectCheckinSession('${s._id}', ${JSON.stringify(s.title).replace(/"/g, '&quot;')}, ${JSON.stringify(s.description || "").replace(/"/g, '&quot;')}, '${s.securityCode || ""}')">
-        <div style="font-weight:600;font-size:0.9rem;">${s.title}</div>
-        ${s.description ? `<div style="font-size:0.8rem;color:var(--gray-500);">${s.description}</div>` : ""}
-        <div style="font-size:0.78rem;color:var(--gray-400);margin-top:2px;">${new Date(s.createdAt).toLocaleString("vi-VN")}</div>
-        ${s.securityCode ? `<div style="font-family:monospace;font-size:0.82rem;font-weight:700;color:var(--blue-mid);margin-top:3px;letter-spacing:.1em;">🔑 ${s.securityCode}</div>` : ""}
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div style="min-width:0;">
+            <div style="font-weight:600;font-size:0.9rem;">${s.title}</div>
+            ${s.description ? `<div style="font-size:0.8rem;color:var(--gray-500);">${s.description}</div>` : ""}
+            <div style="font-size:0.78rem;color:var(--gray-400);margin-top:2px;">${new Date(s.createdAt).toLocaleString("vi-VN")}</div>
+            ${s.securityCode ? `<div style="font-family:monospace;font-size:0.82rem;font-weight:700;color:var(--blue-mid);margin-top:3px;letter-spacing:.1em;">🔑 ${s.securityCode}</div>` : ""}
+          </div>
+          ${(adminRole === "super_admin" || s.createdBy === adminUsername) ? `<button class="danger-btn" style="font-size:0.75rem;padding:3px 8px;flex-shrink:0;" onclick="event.stopPropagation();deleteCheckinSession('${s._id}', ${JSON.stringify(s.title).replace(/"/g, '&quot;')})">Xóa</button>` : ""}
+        </div>
       </div>
     `).join("");
   } catch (error) {
