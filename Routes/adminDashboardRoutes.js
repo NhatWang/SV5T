@@ -1025,7 +1025,9 @@ router.get(
           sv5tProgress: student.sv5tProgress,
           totalCompletedCriteria: student.totalCompletedCriteria,
           progressPercent: student.progressPercent,
-          sv5tStatus: student.sv5tStatus
+          sv5tStatus: student.sv5tStatus,
+          higherLevelStatus: student.higherLevelStatus || {},
+          centralSummary: student.centralSummary || {}
         };
       });
 
@@ -1042,6 +1044,39 @@ router.get(
         success: false,
         message: "Lỗi server khi lấy danh sách sinh viên trong chi Hội"
       });
+    }
+  }
+);
+
+// ===============================
+// 1b. SUPER_ADMIN: XEM TẤT CẢ SINH VIÊN
+// ===============================
+
+router.get(
+  "/all-students",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const students = await Student.find()
+        .select("-password")
+        .sort({ studentId: 1 });
+
+      const result = students.map((student) => ({
+        studentId: student.studentId,
+        fullName: student.fullName,
+        className: student.className,
+        totalCompletedCriteria: student.totalCompletedCriteria,
+        progressPercent: student.progressPercent,
+        sv5tStatus: student.sv5tStatus,
+        higherLevelStatus: student.higherLevelStatus || {},
+        centralSummary: student.centralSummary || {}
+      }));
+
+      res.json({ success: true, totalStudents: result.length, students: result });
+    } catch (error) {
+      console.error("Get all students error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server" });
     }
   }
 );

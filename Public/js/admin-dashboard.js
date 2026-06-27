@@ -196,7 +196,7 @@ async function loadClassSelectorForSuperAdmin() {
 
   if (!select) return;
 
-  select.innerHTML = `<option value="">Chọn chi Hội cần xem</option>`;
+  select.innerHTML = `<option value="ALL">Tất cả chi Hội</option>`;
 
   try {
     const res = await fetch("/api/admin-dashboard/classes/summary", {
@@ -207,11 +207,7 @@ async function loadClassSelectorForSuperAdmin() {
 
     if (!data.success) {
       if (table) {
-        table.innerHTML = `
-          <tr>
-            <td colspan="5">Không thể tải danh sách chi Hội.</td>
-          </tr>
-        `;
+        table.innerHTML = `<tr><td colspan="7">Không thể tải danh sách chi Hội.</td></tr>`;
       }
       return;
     }
@@ -227,49 +223,58 @@ async function loadClassSelectorForSuperAdmin() {
       select.appendChild(option);
     });
 
-    if (table) {
-      table.innerHTML = `
-        <tr>
-          <td colspan="6">Vui lòng chọn chi Hội để xem danh sách sinh viên.</td>
-        </tr>
-      `;
-    }
+    loadAllStudents();
   } catch (error) {
     console.error("Load class selector error:", error);
 
     if (table) {
-      table.innerHTML = `
-        <tr>
-          <td colspan="6">Không thể kết nối server khi tải danh sách chi Hội.</td>
-        </tr>
-      `;
+      table.innerHTML = `<tr><td colspan="7">Không thể kết nối server khi tải danh sách chi Hội.</td></tr>`;
     }
   }
 }
 
 function handleSuperAdminClassChange() {
   const select = document.getElementById("superAdminClassSelect");
+  const val = select?.value;
 
-  if (!select || !select.value) {
-    const table = document.getElementById("studentsTable");
-    const countLabel = document.getElementById("studentsCountLabel");
-    if (countLabel) countLabel.textContent = "";
-
-    if (table) {
-      table.innerHTML = `
-        <tr>
-          <td colspan="6">Vui lòng chọn chi Hội để xem danh sách sinh viên.</td>
-        </tr>
-      `;
-    }
-
+  if (!val || val === "ALL") {
+    loadAllStudents();
     return;
   }
 
-  loadClassStudents(select.value);
+  loadClassStudents(val);
 }
 
 window.handleSuperAdminClassChange = handleSuperAdminClassChange;
+window.sortAndRenderStudents = sortAndRenderStudents;
+
+async function loadAllStudents() {
+  try {
+    const res = await fetch("/api/admin-dashboard/all-students", { credentials: "include" });
+    const data = await res.json();
+    const table = document.getElementById("studentsTable");
+    if (!table) return;
+
+    const countLabel = document.getElementById("studentsCountLabel");
+    if (countLabel) countLabel.textContent = `Tổng số sinh viên: ${data.totalStudents || 0}`;
+
+    const sortSelect = document.getElementById("studentSortSelect");
+    if (sortSelect) sortSelect.value = "";
+
+    if (!data.success || !data.students.length) {
+      table.innerHTML = `<tr><td colspan="7">Chưa có sinh viên nào.</td></tr>`;
+      currentClassStudentsList = [];
+      renderStudentsCompletionSummary([]);
+      return;
+    }
+
+    currentClassStudentsList = data.students;
+    renderStudentsCompletionSummary(data.students);
+    renderStudentsTable(data.students);
+  } catch (error) {
+    console.error("Load all students error:", error);
+  }
+}
 
 function setupSuperAdminView() {
   const studentsTabBtn = document.getElementById("studentsTabBtn");
@@ -291,6 +296,11 @@ function setupSuperAdminView() {
 }
 
 function initAdminDashboard() {
+  const sortSelect = document.getElementById("studentSortSelect");
+  if (sortSelect) {
+    sortSelect.addEventListener("change", sortAndRenderStudents);
+  }
+
   const adminInfo = document.getElementById("adminInfo");
 
   if (adminInfo) {
@@ -426,20 +436,19 @@ async function fetchPendingBadge() {
   } catch {}
 }
 
+let currentClassStudentsList = [];
+
 async function loadClassStudents(className) {
   if (!className) return;
 
   try {
     const res = await fetch(
       `/api/admin-dashboard/class/${encodeURIComponent(className)}/students`,
-      {
-        credentials: "include"
-      }
+      { credentials: "include" }
     );
 
     const data = await res.json();
     const table = document.getElementById("studentsTable");
-
     if (!table) return;
 
     table.innerHTML = "";
@@ -449,40 +458,162 @@ async function loadClassStudents(className) {
       countLabel.textContent = `Tổng số sinh viên: ${data.totalStudents || 0}`;
     }
 
+    const sortSelect = document.getElementById("studentSortSelect");
+    if (sortSelect) sortSelect.value = "";
+
     if (!data.success || data.students.length === 0) {
-      table.innerHTML = `<tr><td colspan="6">Chưa có sinh viên trong chi Hội này.</td></tr>`;
+      table.innerHTML = `<tr><td colspan="7">Chưa có sinh viên trong chi Hội này.</td></tr>`;
+      currentClassStudentsList = [];
+      renderStudentsCompletionSummary([]);
       return;
     }
 
-    data.students.forEach((student) => {
-      const row = document.createElement("tr");
+    currentClassStudentsList = data.students;
+    renderStudentsCompletionSummary(data.students);
+    renderStudentsTable(data.students);
+  } catch (error) {
+    console.error("Load class students error:", error);
+  }
+}
 
-      row.innerHTML = `
+function isCompletedTruong(s) {
+  return s.totalCompletedCriteria === 5;
+}
+function isCompletedDhqg(s) {
+  return s.higherLevelStatus?.dhqg?.isCompleted === true;
+}
+function isCompletedThanh(s) {
+  return s.higherLevelStatus?.thanh?.isCompleted === true;
+}
+function isCompletedTrungUong(s) {
+  return s.centralSummary?.isCentralQualified === true;
+}
+
+function renderStudentsCompletionSummary(students) {
+  const el = document.getElementById("studentsCompletionSummary");
+  if (!el) return;
+
+  if (!students || students.length === 0) {
+    el.style.display = "none";
+    el.innerHTML = "";
+    return;
+  }
+
+  const cTruong = students.filter(isCompletedTruong).length;
+  const cDhqg = students.filter(isCompletedDhqg).length;
+  const cThanh = students.filter(isCompletedThanh).length;
+  const cTrungUong = students.filter(isCompletedTrungUong).length;
+  const total = students.length;
+
+  el.style.display = "";
+  el.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px 14px;background:var(--bg-card,#f9fafb);border:1px solid var(--border);border-radius:8px;font-size:0.88rem;">
+      <span style="font-weight:700;color:var(--text);margin-right:4px;align-self:center;">Nhận xét tổng:</span>
+      <span style="padding:4px 10px;border-radius:20px;background:#dbeafe;color:#1d4ed8;font-weight:600;">
+        Cấp Trường: <strong>${cTruong}/${total}</strong>
+      </span>
+      <span style="padding:4px 10px;border-radius:20px;background:#ede9fe;color:#6d28d9;font-weight:600;">
+        Cấp ĐHQG: <strong>${cDhqg}/${total}</strong>
+      </span>
+      <span style="padding:4px 10px;border-radius:20px;background:#dcfce7;color:#15803d;font-weight:600;">
+        Cấp Thành phố: <strong>${cThanh}/${total}</strong>
+      </span>
+      <span style="padding:4px 10px;border-radius:20px;background:#fef3c7;color:#b45309;font-weight:600;">
+        Cấp Trung ương: <strong>${cTrungUong}/${total}</strong>
+      </span>
+    </div>
+  `;
+}
+
+function sortAndRenderStudents() {
+  const sortKey = document.getElementById("studentSortSelect")?.value || "";
+  if (!currentClassStudentsList.length) {
+    console.warn("[sort] currentClassStudentsList trống, không có dữ liệu để sort.");
+    return;
+  }
+  renderStudentsTable(currentClassStudentsList, sortKey);
+}
+
+function getProgressForLevel(student, level) {
+  if (level === "truong") return student.totalCompletedCriteria || 0;
+  if (level === "dhqg") return student.higherLevelStatus?.dhqg?.completedCount || 0;
+  if (level === "thanh") return student.higherLevelStatus?.thanh?.completedCount || 0;
+  if (level === "trungUong") return student.centralSummary?.mandatoryCompletedCount || 0;
+  return 0;
+}
+
+function renderStudentsTable(students, sortKey = "") {
+  const table = document.getElementById("studentsTable");
+  if (!table) return;
+
+  let list = [...students];
+
+  if (sortKey === "truong") {
+    list.sort((a, b) => {
+      const diff = Number(isCompletedTruong(b)) - Number(isCompletedTruong(a));
+      if (diff !== 0) return diff;
+      const progDiff = getProgressForLevel(b, "truong") - getProgressForLevel(a, "truong");
+      if (progDiff !== 0) return progDiff;
+      return (a.fullName || "").localeCompare(b.fullName || "", "vi");
+    });
+  } else if (sortKey === "dhqg") {
+    list.sort((a, b) => {
+      const diff = Number(isCompletedDhqg(b)) - Number(isCompletedDhqg(a));
+      if (diff !== 0) return diff;
+      const progDiff = getProgressForLevel(b, "dhqg") - getProgressForLevel(a, "dhqg");
+      if (progDiff !== 0) return progDiff;
+      return (a.fullName || "").localeCompare(b.fullName || "", "vi");
+    });
+  } else if (sortKey === "thanh") {
+    list.sort((a, b) => {
+      const diff = Number(isCompletedThanh(b)) - Number(isCompletedThanh(a));
+      if (diff !== 0) return diff;
+      const progDiff = getProgressForLevel(b, "thanh") - getProgressForLevel(a, "thanh");
+      if (progDiff !== 0) return progDiff;
+      return (a.fullName || "").localeCompare(b.fullName || "", "vi");
+    });
+  } else if (sortKey === "trungUong") {
+    list.sort((a, b) => {
+      const diff = Number(isCompletedTrungUong(b)) - Number(isCompletedTrungUong(a));
+      if (diff !== 0) return diff;
+      const progDiff = getProgressForLevel(b, "trungUong") - getProgressForLevel(a, "trungUong");
+      if (progDiff !== 0) return progDiff;
+      return (a.fullName || "").localeCompare(b.fullName || "", "vi");
+    });
+  }
+
+  table.innerHTML = "";
+  list.forEach((student) => {
+    const completedTruong = isCompletedTruong(student);
+    const completedDhqg = isCompletedDhqg(student);
+    const completedThanh = isCompletedThanh(student);
+    const completedTrungUong = isCompletedTrungUong(student);
+
+    const levelBadges = [
+      completedTruong ? `<span style="display:inline-block;padding:3px 8px;border-radius:12px;background:#dbeafe;color:#1d4ed8;font-size:0.75rem;font-weight:600;white-space:nowrap;">Đã hoàn thành cấp Trường</span>` : "",
+      completedDhqg ? `<span style="display:inline-block;padding:3px 8px;border-radius:12px;background:#ede9fe;color:#6d28d9;font-size:0.75rem;font-weight:600;white-space:nowrap;">Đã hoàn thành cấp ĐHQG</span>` : "",
+      completedThanh ? `<span style="display:inline-block;padding:3px 8px;border-radius:12px;background:#dcfce7;color:#15803d;font-size:0.75rem;font-weight:600;white-space:nowrap;">Đã hoàn thành cấp Thành phố</span>` : "",
+      completedTrungUong ? `<span style="display:inline-block;padding:3px 8px;border-radius:12px;background:#fef3c7;color:#b45309;font-size:0.75rem;font-weight:600;white-space:nowrap;">Đã hoàn thành cấp Trung ương</span>` : ""
+    ].filter(Boolean).join("<br>");
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
   <td>${escapeHtml(student.studentId)}</td>
   <td>
-    <button
-      class="student-detail-link"
-      onclick="openStudentDetail('${escapeHtml(student.studentId)}')"
-    >
+    <button class="student-detail-link" onclick="openStudentDetail('${escapeHtml(student.studentId)}')">
       ${escapeHtml(student.fullName)}
     </button>
   </td>
   <td>${escapeHtml(student.className)}</td>
   <td>${student.totalCompletedCriteria}/5 (${student.progressPercent}%)</td>
   <td>${formatSv5tStatus(student.sv5tStatus)}</td>
+  <td style="min-width:160px;">${levelBadges}</td>
   <td>
-    <button
-      class="danger-btn"
-      onclick="deleteStudent('${escapeHtml(student.studentId)}', '${escapeHtml(student.className)}')"
-    >Xóa</button>
+    <button class="danger-btn" onclick="deleteStudent('${escapeHtml(student.studentId)}', '${escapeHtml(student.className)}')">Xóa</button>
   </td>
 `;
-
-      table.appendChild(row);
-    });
-  } catch (error) {
-    console.error("Load class students error:", error);
-  }
+    table.appendChild(row);
+  });
 }
 
 async function loadCollectiveProgress(className) {
