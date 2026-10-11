@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bản xem trước: Cổng thông tin Sinh viên 5 tốt - Khoa Hóa học | HCMUS</title>
+  <link rel="icon" type="image/png" href="./images/Logo 2.png" />
+  <link rel="stylesheet" href="./css/student-dashboard-style.css" />
+  <style>
+    /* Demo floating switcher banner */
+    .demo-ribbon {
+      background: linear-gradient(90deg, #002447, #0052cc);
+      color: #fff;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13.5px;
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      z-index: 2000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .demo-ribbon strong {
+      color: #fde68a;
+    }
+    .demo-badges {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .demo-badge-tag {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Demo Top Ribbon -->
+  <div class="demo-ribbon">
+    <div>
+      ✨ <strong>BẢN XEM TRƯỚC GIAO DIỆN CẤP TRƯỜNG</strong> — Trường ĐH Khoa học Tự nhiên, ĐHQG-HCM (Dữ liệu mẫu: Huỳnh Minh Dũng - 24147014)
+    </div>
+    <div class="demo-badges">
+      <span class="demo-badge-tag">🎨 Modern EdTech</span>
+      <span class="demo-badge-tag">⚡ Live Interactivity</span>
+    </div>
+  </div>
+
+  <div class="dashboard-layout">
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Main Navigation Sidebar -->
+    <aside class="sidebar" id="mainSidebar">
+      <!-- Brand Header -->
+      <div class="sidebar-brand">
+        <img src="./images/Logo 2.png" alt="Logo SV5T" class="sidebar-brand-logo" onerror="this.style.display='none'" />
+        <div class="sidebar-brand-text">
+          <h2>SV5T HCMUS</h2>
+          <p>KHOA HÓA HỌC</p>
+          <span class="sidebar-level-pill">★ CẤP TRƯỜNG</span>
+        </div>
+        <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Đóng menu">✕</button>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-menu">
+        <span class="sidebar-menu-heading">Bảng điều khiển</span>
+        <button class="tab-btn active" onclick="showTab('overview', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </span>
+          Tổng Quan
+        </button>
+
+        <span class="sidebar-menu-heading">5 Tiêu chuẩn danh hiệu</span>
+        <button class="tab-btn" onclick="showTab('daoDucTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </span>
+          1. Đạo đức tốt
+        </button>
+
+        <button class="tab-btn" onclick="showTab('hocTapTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+          </span>
+          2. Học tập tốt
+        </button>
+
+        <button class="tab-btn" onclick="showTab('theLucTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </span>
+          3. Thể lực tốt
+        </button>
+
+        <button class="tab-btn" onclick="showTab('tinhNguyenTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          </span>
+          4. Tình nguyện tốt
+        </button>
+
+        <button class="tab-btn" onclick="showTab('hoiNhapTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          </span>
+          5. Hội nhập tốt
+        </button>
+
+        <button class="tab-btn" onclick="showTab('khac', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </span>
+          Tiêu chí Khác
+        </button>
+
+        <span class="sidebar-menu-heading">Hồ sơ & Hỗ trợ</span>
+        <button class="tab-btn" onclick="showTab('storage', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+          </span>
+          Kho minh chứng
+        </button>
+
+        <button class="tab-btn" onclick="showTab('support', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </span>
+          Hỗ trợ sinh viên
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="alert('Demo: Đăng xuất')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          Đăng xuất
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Modern Topbar -->
+      <header class="dashboard-topbar">
+        <div class="topbar-left">
+          <button class="hamburger-btn" onclick="openSidebar()" aria-label="Mở menu">☰</button>
+          <div class="topbar-title-box">
+            <h1>Cổng thông tin Sinh viên 5 tốt</h1>
+            <p>Trường ĐH Khoa học Tự nhiên, ĐHQG-HCM • Năm học 2025 – 2026</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <span class="topbar-badge-level">
+            <span class="dot"></span>
+            Cấp Trường (HCMUS)
+          </span>
+          <button class="topbar-higher-btn" onclick="alert('Đã đủ 4/5 tiêu chí Cấp Trường! Khi đạt trọn vẹn 5/5, nút này sẽ đưa bạn sang trang xét cấp ĐHQG-HCM.')">
+            Xét cấp cao hơn ★
+          </button>
+        </div>
+      </header>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 1: TỔNG QUAN (OVERVIEW)
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="overview" class="tab-content active">
+        <!-- Hàng 1: Thẻ Sinh Viên Điện Tử & Thẻ Tiến Độ -->
+        <div class="overview-hero-grid">
+
+          <!-- Thẻ Sinh Viên Điện Tử (Student ID Card Mockup) -->
+          <div class="student-id-card">
+            <div class="id-card-header">
+              <div class="id-card-school-brand">
+                <h4>Trường ĐH Khoa học Tự nhiên, ĐHQG-HCM</h4>
+                <p>Liên Chi Hội Khoa Hóa học • Hội Sinh viên</p>
+              </div>
+              <span class="id-card-badge">SV5T 2025 - 2026</span>
+            </div>
+
+            <div class="id-card-body">
+              <div class="id-card-student-info">
+                <div class="id-card-avatar" id="avatarBox">HD</div>
+                <div class="id-card-details">
+                  <h2 id="studentName">Huỳnh Minh Dũng</h2>
+                  <p>MSSV: <strong id="studentIdText">24147014</strong></p>
+                  <p>Chi Hội: <strong id="classNameText">24HOH_CLC2</strong></p>
+                  <p>Khoa: <strong>Hóa học</strong></p>
+                </div>
+              </div>
+
+              <!-- Barcode CODE128 -->
+              <div class="id-card-barcode-wrap" onclick="openBarcodeModal()" title="Nhấn để phóng to toàn màn hình">
+                <!-- Inline SVG Barcode for 24147014 -->
+                <svg id="studentBarcode" width="220" height="52" viewBox="0 0 220 52">
+                  <rect x="0" y="0" width="220" height="52" fill="#ffffff" rx="4"/>
+                  <g fill="#0f172a">
+                    <!-- Code128 pattern simulation for 24147014 -->
+                    <rect x="12" y="6" width="3" height="30"/>
+                    <rect x="17" y="6" width="2" height="30"/>
+                    <rect x="22" y="6" width="4" height="30"/>
+                    <rect x="28" y="6" width="2" height="30"/>
+                    <rect x="33" y="6" width="3" height="30"/>
+                    <rect x="38" y="6" width="2" height="30"/>
+                    <rect x="42" y="6" width="5" height="30"/>
+                    <rect x="50" y="6" width="2" height="30"/>
+                    <rect x="54" y="6" width="4" height="30"/>
+                    <rect x="61" y="6" width="3" height="30"/>
+                    <rect x="66" y="6" width="2" height="30"/>
+                    <rect x="71" y="6" width="5" height="30"/>
+                    <rect x="78" y="6" width="2" height="30"/>
+                    <rect x="83" y="6" width="3" height="30"/>
+                    <rect x="89" y="6" width="4" height="30"/>
+                    <rect x="96" y="6" width="2" height="30"/>
+                    <rect x="101" y="6" width="3" height="30"/>
+                    <rect x="107" y="6" width="5" height="30"/>
+                    <rect x="114" y="6" width="2" height="30"/>
+                    <rect x="119" y="6" width="4" height="30"/>
+                    <rect x="125" y="6" width="3" height="30"/>
+                    <rect x="131" y="6" width="2" height="30"/>
+                    <rect x="136" y="6" width="4" height="30"/>
+                    <rect x="143" y="6" width="3" height="30"/>
+                    <rect x="148" y="6" width="2" height="30"/>
+                    <rect x="153" y="6" width="5" height="30"/>
+                    <rect x="160" y="6" width="3" height="30"/>
+                    <rect x="166" y="6" width="2" height="30"/>
+                    <rect x="171" y="6" width="4" height="30"/>
+                    <rect x="178" y="6" width="3" height="30"/>
+                    <rect x="184" y="6" width="2" height="30"/>
+                    <rect x="189" y="6" width="4" height="30"/>
+                    <rect x="196" y="6" width="3" height="30"/>
+                    <rect x="202" y="6" width="5" height="30"/>
+                  </g>
+                  <text x="110" y="46" font-size="11" font-family="monospace" text-anchor="middle" font-weight="700" fill="#334155">24147014</text>
+                </svg>
+                <span class="id-card-barcode-hint">🔍 Chạm để quét</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Thẻ Tiến Độ Tổng Thể (Overall Progress Card) -->
+          <div class="progress-card">
+            <div class="progress-card-header">
+              <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--hcmus-primary);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                Tiến độ xét Cấp Trường
+              </h3>
+              <span id="progressStatusChip" class="progress-status-chip">4/5 Đạt (80%)</span>
+            </div>
+
+            <div class="progress-bar-container">
+              <div class="progress-bar">
+                <div id="progressFill" style="width: 80%;"></div>
+              </div>
+            </div>
+
+            <p id="progressText" style="font-weight: 700; color: var(--hcmus-navy); font-size: 14.5px;">
+              4/5 tiêu chí đã đạt (80%)
+            </p>
+
+            <div class="progress-stats-grid">
+              <div class="progress-stat-box">
+                <span class="stat-label">Tiêu chí đã đạt</span>
+                <div class="stat-val" id="statCompletedCount" style="color: var(--success);">4/5</div>
+              </div>
+
+              <div class="progress-stat-box">
+                <span class="stat-label">Cần hoàn thành</span>
+                <div class="stat-val" id="statMissingCount" style="color: var(--warning);">1</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Hàng 2: Bộ đo 5 Tiêu chuẩn trực quan (Criteria Grid) -->
+        <div class="section-heading-row">
+          <div>
+            <h2>⭐ 5 Tiêu chuẩn Sinh viên 5 tốt Cấp Trường</h2>
+            <p>Trường ĐH Khoa học Tự nhiên quy định 5 tiêu chuẩn cốt lõi để xét trao danh hiệu</p>
+          </div>
+        </div>
+
+        <div class="criteria-cards-grid" id="overviewCriteriaGrid">
+          <!-- 1. Đạo đức tốt -->
+          <div class="criterion-card-preview" onclick="showTab('daoDucTot')">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-dao-duc">🛡️</div>
+              <span class="preview-status-pill completed" id="pill-daoDucTot">Đạt (88đ)</span>
+            </div>
+            <h4>Đạo đức tốt</h4>
+            <p id="desc-daoDucTot">ĐRL 88/100, Hoàn thành xuất sắc nhiệm vụ Đoàn - Hội, không vi phạm kỷ luật.</p>
+            <button class="preview-action-btn" type="button">
+              Xem chi tiết tiêu chuẩn →
+            </button>
+          </div>
+
+          <!-- 2. Học tập tốt -->
+          <div class="criterion-card-preview" onclick="showTab('hocTapTot')">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-hoc-tap">🎓</div>
+              <span class="preview-status-pill completed" id="pill-hocTapTot">Đạt (3.42)</span>
+            </div>
+            <h4>Học tập tốt</h4>
+            <p id="desc-hocTapTot">GPA 3.42/4.0 (Giỏi), Giải Ba NCKH Sinh viên Cấp Trường, không nợ môn.</p>
+            <button class="preview-action-btn" type="button">
+              Xem chi tiết tiêu chuẩn →
+            </button>
+          </div>
+
+          <!-- 3. Thể lực tốt -->
+          <div class="criterion-card-preview" onclick="showTab('theLucTot')">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-the-luc">⚡</div>
+              <span class="preview-status-pill completed" id="pill-theLucTot">Đạt</span>
+            </div>
+            <h4>Thể lực tốt</h4>
+            <p id="desc-theLucTot">Đạt chứng nhận Thanh niên khỏe cấp Trường năm học 2025 - 2026.</p>
+            <button class="preview-action-btn" type="button">
+              Xem chi tiết tiêu chuẩn →
+            </button>
+          </div>
+
+          <!-- 4. Tình nguyện tốt -->
+          <div class="criterion-card-preview" onclick="showTab('tinhNguyenTot')">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-tinh-nguyen">🤝</div>
+              <span class="preview-status-pill completed" id="pill-tinhNguyenTot">Đạt (15 ngày)</span>
+            </div>
+            <h4>Tình nguyện tốt</h4>
+            <p id="desc-tinhNguyenTot">Tham gia Chiến dịch Mùa hè xanh (15 ngày) & Hiến máu tình nguyện.</p>
+            <button class="preview-action-btn" type="button">
+              Xem chi tiết tiêu chuẩn →
+            </button>
+          </div>
+
+          <!-- 5. Hội nhập tốt -->
+          <div class="criterion-card-preview" onclick="showTab('hoiNhapTot')">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-hoi-nhap">🌐</div>
+              <span class="preview-status-pill missing" id="pill-hoiNhapTot">Chưa đạt</span>
+            </div>
+            <h4>Hội nhập tốt</h4>
+            <p id="desc-hoiNhapTot">Đã đạt Kỹ năng & Hoạt động giao lưu. Cần nộp bổ sung chứng chỉ Ngoại ngữ (B1/IELTS).</p>
+            <button class="preview-action-btn" type="button">
+              Nộp minh chứng Ngoại ngữ →
+            </button>
+          </div>
+        </div>
+
+        <!-- Khung Gợi ý AI Thông minh -->
+        <div class="ai-card">
+          <div class="ai-card-header">
+            <div class="ai-sparkle-icon">✨</div>
+            <h3>Gợi ý hoàn thiện hồ sơ từ AI</h3>
+            <span class="ai-tag">Cố vấn học tập & rèn luyện</span>
+          </div>
+          <ul id="aiSuggestions">
+            <li>🎯 <strong>Bạn chỉ còn thiếu 01 tiêu chuẩn Hội nhập tốt:</strong> Bạn đã có chứng nhận Kỹ năng hội nhập và Hoạt động giao lưu, hãy upload minh chứng điểm học phần Anh văn 2 hoặc Chứng chỉ IELTS/TOEIC/VSTEP để đạt trọn vẹn danh hiệu Cấp Trường!</li>
+            <li>🏆 <strong>Đủ điều kiện xét Cấp Cao Hơn:</strong> Điểm rèn luyện của bạn (88đ) và GPA (3.42) đều đã vượt chuẩn sàn của cấp ĐHQG-HCM (≥ 80đ và ≥ 3.2). Sau khi bổ sung ngoại ngữ, bạn sẽ đủ điều kiện chuyển hồ sơ sang cấp ĐHQG-HCM!</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 2: ĐẠO ĐỨC TỐT
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="daoDucTot" class="tab-content">
+        <div class="tab-header-banner">
+          <div class="tab-header-banner-left">
+            <h1>Tiêu chuẩn 1: Đạo đức tốt</h1>
+            <p>Đánh giá qua Điểm rèn luyện, ý thức chấp hành pháp luật, nội quy và kết quả đánh giá Đoàn viên/Hội viên</p>
+          </div>
+          <div>
+            <span class="preview-status-pill completed" style="font-size: 13.5px; padding: 6px 14px;">✓ Đã đạt tiêu chuẩn</span>
+          </div>
+        </div>
+
+        <div class="criterion-card">
+          <div class="criterion-header">
+            <h2>Kết quả tự khai & Đối chiếu Điểm rèn luyện</h2>
+            <span class="status-badge" style="background:#ecfdf5;color:#059669;font-weight:700;padding:4px 10px;border-radius:6px;">Hợp lệ</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 16px 0;">
+            <div style="background: var(--surface-alt); padding: 14px; border-radius: 10px;">
+              <small style="color: var(--text-muted);">Điểm rèn luyện cả năm</small>
+              <div style="font-size: 24px; font-weight: 800; color: var(--hcmus-primary); margin-top: 4px;">88 / 100</div>
+              <small style="color: var(--success); font-weight: 600;">Đạt yêu cầu Cấp Trường (≥ 70)</small>
+            </div>
+            <div style="background: var(--surface-alt); padding: 14px; border-radius: 10px;">
+              <small style="color: var(--text-muted);">Phân loại Đoàn viên / Hội viên</small>
+              <div style="font-size: 16px; font-weight: 700; color: var(--hcmus-navy); margin-top: 8px;">Hoàn thành xuất sắc</div>
+              <small style="color: var(--success); font-weight: 600;">Đạt chuẩn phân loại</small>
+            </div>
+            <div style="background: var(--surface-alt); padding: 14px; border-radius: 10px;">
+              <small style="color: var(--text-muted);">Kỷ luật & Nội quy</small>
+              <div style="font-size: 16px; font-weight: 700; color: var(--success); margin-top: 8px;">Không vi phạm</div>
+              <small style="color: var(--text-muted);">Đã cam kết hợp lệ</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 3: HỌC TẬP TỐT
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="hocTapTot" class="tab-content">
+        <div class="tab-header-banner">
+          <div class="tab-header-banner-left">
+            <h1>Tiêu chuẩn 2: Học tập tốt</h1>
+            <p>Gồm Tiêu chuẩn bắt buộc (GPA, không nợ môn, không gian lận) và Tiêu chuẩn học thuật (NCKH, bài báo, hoạt động học thuật)</p>
+          </div>
+          <div>
+            <span class="preview-status-pill completed" style="font-size: 13.5px; padding: 6px 14px;">✓ Đã đạt tiêu chuẩn</span>
+          </div>
+        </div>
+
+        <div class="criterion-card">
+          <div class="criterion-header">
+            <h2>Kết quả học tập & Điểm trung bình tích lũy (GPA)</h2>
+            <span class="status-badge" style="background:#ecfdf5;color:#059669;font-weight:700;padding:4px 10px;border-radius:6px;">GPA: 3.42 / 4.0</span>
+          </div>
+          <p>Thành tích học thuật ghi nhận: <strong>Giải Ba Nghiên cứu Khoa học Sinh viên Khoa Hóa học 2025</strong>.</p>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 4: THỂ LỰC TỐT
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="theLucTot" class="tab-content">
+        <div class="tab-header-banner">
+          <div class="tab-header-banner-left">
+            <h1>Tiêu chuẩn 3: Thể lực tốt</h1>
+            <p>Chứng nhận Thanh niên khỏe, giải thể thao các cấp hoặc tham gia tập luyện thể thao thường xuyên</p>
+          </div>
+          <div>
+            <span class="preview-status-pill completed" style="font-size: 13.5px; padding: 6px 14px;">✓ Đã đạt tiêu chuẩn</span>
+          </div>
+        </div>
+
+        <div class="criterion-card">
+          <h3>Minh chứng thể lực đã thẩm định</h3>
+          <div class="evidence-item" style="margin-top: 12px;">
+            📄 <strong>Giay_chung_nhan_Thanh_nien_khoe_HCMUS_2025.pdf</strong>
+            <br>
+            <small>Trạng thái: <strong style="color: var(--success);">Hợp lệ / Đã duyệt</strong></small>
+            <br>
+            <small>Ghi chú AI: Minh chứng hợp lệ, có mộc đỏ Hội Sinh viên Trường ĐH Khoa học Tự nhiên và ngày cấp trong năm học.</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 5: TÌNH NGUYỆN TỐT
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="tinhNguyenTot" class="tab-content">
+        <div class="tab-header-banner">
+          <div class="tab-header-banner-left">
+            <h1>Tiêu chuẩn 4: Tình nguyện tốt</h1>
+            <p>Tích lũy tối thiểu 05 ngày tình nguyện trong năm học hoặc có Giấy khen khen thưởng tình nguyện từ cấp Trường trở lên</p>
+          </div>
+          <div>
+            <span class="preview-status-pill completed" style="font-size: 13.5px; padding: 6px 14px;">✓ Đã đạt tiêu chuẩn</span>
+          </div>
+        </div>
+
+        <div class="criterion-card">
+          <h3>Hoạt động tình nguyện đã tích lũy</h3>
+          <div class="activity-item">✅ Chiến dịch Tình nguyện Mùa hè xanh năm 2025 (Khoa Hóa học) - <small>15 ngày</small></div>
+          <div class="activity-item">✅ Ngày hội Hiến máu tình nguyện Đợt 1 năm học 2025 - 2026 - <small>1 ngày</small></div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 6: HỘI NHẬP TỐT (DEMO DROPZONE UPLOAD)
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="hoiNhapTot" class="tab-content">
+        <div class="tab-header-banner">
+          <div class="tab-header-banner-left">
+            <h1>Tiêu chuẩn 5: Hội nhập tốt</h1>
+            <p>Đạt chuẩn 3 phương diện: Ngoại ngữ (Chứng chỉ quốc tế hoặc điểm học phần), Kỹ năng thực hành xã hội, và Hoạt động giao lưu hội nhập</p>
+          </div>
+          <div>
+            <span class="preview-status-pill missing" style="font-size: 13.5px; padding: 6px 14px;">⚡ Cần bổ sung Ngoại ngữ</span>
+          </div>
+        </div>
+
+        <div class="criterion-card">
+          <div class="criterion-header">
+            <h2>Khu vực Tải lên minh chứng (Kéo thả thông minh)</h2>
+          </div>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 14px;">
+            Hãy kéo thả file chứng chỉ Ngoại ngữ (IELTS, TOEIC, VSTEP) hoặc Bảng điểm học phần Anh văn vào khung bên dưới:
+          </p>
+
+          <div
+            class="dropzone-box"
+            id="dropzone-demo"
+            onclick="document.getElementById('demo-file-input').click()"
+            ondragover="demoDragOver(event)"
+            ondragleave="demoDragLeave(event)"
+            ondrop="demoDrop(event)"
+          >
+            <div class="dropzone-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </div>
+            <div class="dropzone-text">
+              <h4>Kéo thả file minh chứng vào đây hoặc click để chọn</h4>
+              <p>Hỗ trợ định dạng PDF, JPG, PNG, DOCX (Dung lượng tối đa 2MB)</p>
+            </div>
+            <div id="demo-file-info" class="dropzone-file-info"></div>
+            <input
+              type="file"
+              id="demo-file-input"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              style="display: none;"
+              onchange="demoFileSelected(this)"
+            />
+          </div>
+
+          <button class="btn-primary" onclick="demoUploadClick()">
+            🚀 Tải lên & Phân tích bằng AI
+          </button>
+
+          <p id="demo-upload-msg" class="upload-message" style="margin-top: 10px; font-weight: 600;"></p>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 7: KHO MINH CHỨNG (STORAGE WITH FILTER)
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="storage" class="tab-content">
+        <div class="tab-header-banner">
+          <div class="tab-header-banner-left">
+            <h1>Kho lưu trữ minh chứng</h1>
+            <p>Tra cứu danh sách toàn bộ tài liệu minh chứng đã nộp, trạng thái thẩm định từ AI và phản hồi của Ban thẩm định</p>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="storage-toolbar">
+          <div class="storage-search-box">
+            <span class="storage-search-icon">🔍</span>
+            <input
+              type="text"
+              id="storageSearchInput"
+              placeholder="Tìm kiếm theo tên file minh chứng..."
+              oninput="filterStorageTable()"
+            />
+          </div>
+
+          <select id="storageCategoryFilter" class="storage-filter-select" onchange="filterStorageTable()">
+            <option value="all">Tất cả tiêu chuẩn</option>
+            <option value="hocTapTot">Học tập tốt</option>
+            <option value="theLucTot">Thể lực tốt</option>
+            <option value="tinhNguyenTot">Tình nguyện tốt</option>
+            <option value="hoiNhapTot">Hội nhập tốt</option>
+            <option value="khac">Khác (Năm trước)</option>
+          </select>
+
+          <select id="storageStatusFilter" class="storage-filter-select" onchange="filterStorageTable()">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="approved">Đã duyệt / Hợp lệ</option>
+            <option value="pending">Đang xử lý / Chờ xem xét</option>
+            <option value="rejected">Chưa hợp lệ</option>
+          </select>
+        </div>
+
+        <!-- Table Card -->
+        <div class="storage-table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Tên file minh chứng</th>
+                <th>Tiêu chuẩn áp dụng</th>
+                <th>Trạng thái thẩm định</th>
+                <th>Thời gian nộp</th>
+                <th style="text-align: right;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="storageTableBody">
+              <tr data-cat="hocTapTot" data-status="approved">
+                <td>
+                  <strong>Chung_nhan_NCKH_Sinh_vien_Khoa_Hoa_2025.pdf</strong>
+                  <br><small style="color: var(--text-muted);">AI: Nhận diện thành tích NCKH Giải Ba, hợp lệ tiêu chuẩn học thuật.</small>
+                </td>
+                <td><span class="table-badge-cat">Học tập tốt</span></td>
+                <td><span class="status-approved">✓ Hợp lệ</span></td>
+                <td>15/09/2025 14:30</td>
+                <td style="text-align: right;"><button class="btn-table-action" onclick="alert('Xem file: Chung_nhan_NCKH_Sinh_vien_Khoa_Hoa_2025.pdf')">Xem file</button></td>
+              </tr>
+              <tr data-cat="theLucTot" data-status="approved">
+                <td>
+                  <strong>Giay_chung_nhan_Thanh_nien_khoe_HCMUS_2025.pdf</strong>
+                  <br><small style="color: var(--text-muted);">AI: Chứng nhận đạt danh hiệu Thanh niên khỏe cấp Trường.</small>
+                </td>
+                <td><span class="table-badge-cat">Thể lực tốt</span></td>
+                <td><span class="status-approved">✓ Hợp lệ</span></td>
+                <td>18/09/2025 09:15</td>
+                <td style="text-align: right;"><button class="btn-table-action" onclick="alert('Xem file: Giay_chung_nhan_Thanh_nien_khoe_HCMUS_2025.pdf')">Xem file</button></td>
+              </tr>
+              <tr data-cat="tinhNguyenTot" data-status="approved">
+                <td>
+                  <strong>Chung_nhan_Mua_he_xanh_2025_Khoa_Hoa.pdf</strong>
+                  <br><small style="color: var(--text-muted);">Admin: Đã đối chiếu danh sách tình nguyện cấp Khoa.</small>
+                </td>
+                <td><span class="table-badge-cat">Tình nguyện tốt</span></td>
+                <td><span class="status-approved">✓ Hợp lệ</span></td>
+                <td>20/09/2025 16:45</td>
+                <td style="text-align: right;"><button class="btn-table-action" onclick="alert('Xem file: Chung_nhan_Mua_he_xanh_2025_Khoa_Hoa.pdf')">Xem file</button></td>
+              </tr>
+              <tr data-cat="hoiNhapTot" data-status="pending">
+                <td>
+                  <strong>Chung_chi_Tieng_Anh_IELTS_6.0.png</strong>
+                  <br><small style="color: var(--text-muted);">AI: Điểm Overall 6.0 đạt chuẩn B2 (vượt chuẩn B1 cấp Trường), đang chờ BCH đối chiếu gốc.</small>
+                </td>
+                <td><span class="table-badge-cat">Hội nhập tốt</span></td>
+                <td><span class="status-pending">⏳ Chờ duyệt</span></td>
+                <td>Hôm nay 10:20</td>
+                <td style="text-align: right;"><button class="btn-table-action" onclick="alert('Xem file: Chung_chi_Tieng_Anh_IELTS_6.0.png')">Xem file</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 8: HỖ TRỢ SINH VIÊN (SUPPORT)
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="support" class="tab-content">
+        <div class="tab-header-banner">
+          <div class="tab-header-banner-left">
+            <h1>Trung tâm Hỗ trợ sinh viên</h1>
+            <p>Liên hệ Cán bộ Chi Hội và Ban Chấp hành Liên Chi Hội Khoa Hóa học khi cần giải đáp thắc mắc</p>
+          </div>
+        </div>
+
+        <div class="support-grid">
+          <div class="support-card">
+            <h2>Admin Chi Hội 24HOH_CLC2</h2>
+            <div style="font-size: 14px; line-height: 1.8; color: var(--text-secondary); margin-top: 10px;">
+              <p>👤 <strong>Cán bộ phụ trách:</strong> Nguyễn Văn An (Bí thư Chi Đoàn)</p>
+              <p>📧 <strong>Email:</strong> nvan.chem@hcmus.edu.vn</p>
+              <p>📱 <strong>Zalo liên hệ:</strong> 0912 345 678</p>
+            </div>
+          </div>
+
+          <div class="support-card">
+            <h2>Liên Chi Hội Khoa Hóa học - HCMUS</h2>
+            <div style="font-size: 14px; line-height: 1.8; color: var(--text-secondary); margin-top: 10px;">
+              <p>🏛️ <strong>Văn phòng:</strong> Dãy F, Trường ĐH Khoa học Tự nhiên (Cơ sở 227 Nguyễn Văn Cừ, Q.5)</p>
+              <p>📧 <strong>Email tiếp nhận:</strong> lch.hoahoc@hcmus.edu.vn</p>
+              <p>🌐 <strong>Fanpage:</strong> Liên Chi Hội Khoa Hóa học - HCMUS</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="dashboard-footer">
+        <p>© 2026 SV5T Khoa Hóa học - <strong>Trường ĐH Khoa học Tự nhiên, ĐHQG-HCM</strong>.</p>
+        <p>Hệ thống số hóa quy trình theo dõi & xét chọn danh hiệu Sinh viên 5 tốt các cấp.</p>
+      </footer>
+    </main>
+
+  </div>
+
+  <!-- Barcode Fullscreen Zoom Modal -->
+  <div id="barcodeModal" class="barcode-modal-overlay hidden" onclick="closeBarcodeModal()">
+    <div class="barcode-modal-box" onclick="event.stopPropagation()">
+      <button class="barcode-modal-close" onclick="closeBarcodeModal()" aria-label="Đóng">✕</button>
+      <div style="margin-bottom: 12px; font-weight: 800; color: var(--hcmus-navy); font-size: 16px;">
+        MÃ VẠCH ĐIỂM DANH SINH VIÊN
+      </div>
+      <!-- Zoomed Barcode -->
+      <svg width="340" height="90" viewBox="0 0 220 52" style="background:#fff; padding: 10px; border-radius: 8px;">
+        <rect x="0" y="0" width="220" height="52" fill="#ffffff" rx="4"/>
+        <g fill="#0f172a">
+          <rect x="12" y="6" width="3" height="30"/>
+          <rect x="17" y="6" width="2" height="30"/>
+          <rect x="22" y="6" width="4" height="30"/>
+          <rect x="28" y="6" width="2" height="30"/>
+          <rect x="33" y="6" width="3" height="30"/>
+          <rect x="38" y="6" width="2" height="30"/>
+          <rect x="42" y="6" width="5" height="30"/>
+          <rect x="50" y="6" width="2" height="30"/>
+          <rect x="54" y="6" width="4" height="30"/>
+          <rect x="61" y="6" width="3" height="30"/>
+          <rect x="66" y="6" width="2" height="30"/>
+          <rect x="71" y="6" width="5" height="30"/>
+          <rect x="78" y="6" width="2" height="30"/>
+          <rect x="83" y="6" width="3" height="30"/>
+          <rect x="89" y="6" width="4" height="30"/>
+          <rect x="96" y="6" width="2" height="30"/>
+          <rect x="101" y="6" width="3" height="30"/>
+          <rect x="107" y="6" width="5" height="30"/>
+          <rect x="114" y="6" width="2" height="30"/>
+          <rect x="119" y="6" width="4" height="30"/>
+          <rect x="125" y="6" width="3" height="30"/>
+          <rect x="131" y="6" width="2" height="30"/>
+          <rect x="136" y="6" width="4" height="30"/>
+          <rect x="143" y="6" width="3" height="30"/>
+          <rect x="148" y="6" width="2" height="30"/>
+          <rect x="153" y="6" width="5" height="30"/>
+          <rect x="160" y="6" width="3" height="30"/>
+          <rect x="166" y="6" width="2" height="30"/>
+          <rect x="171" y="6" width="4" height="30"/>
+          <rect x="178" y="6" width="3" height="30"/>
+          <rect x="184" y="6" width="2" height="30"/>
+          <rect x="189" y="6" width="4" height="30"/>
+          <rect x="196" y="6" width="3" height="30"/>
+          <rect x="202" y="6" width="5" height="30"/>
+        </g>
+        <text x="110" y="46" font-size="11" font-family="monospace" text-anchor="middle" font-weight="700" fill="#334155">24147014</text>
+      </svg>
+      <p class="barcode-modal-hint">Đưa mã vạch này cho Ban tổ chức quét mã khi tham gia các hoạt động Đoàn - Hội</p>
+    </div>
+  </div>
+
+  <!-- Interactive JavaScript for Demo -->
+  <script>
+    function showTab(tabId, button) {
+      document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      const selectedTab = document.getElementById(tabId);
+      if (selectedTab) selectedTab.classList.add("active");
+
+      if (button) {
+        button.classList.add("active");
+      } else {
+        const matchingBtn = document.querySelector(`.tab-btn[onclick*="'${tabId}'"]`);
+        if (matchingBtn) matchingBtn.classList.add("active");
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (window.innerWidth <= 768) closeSidebar();
+    }
+
+    function openSidebar() {
+      document.getElementById("mainSidebar")?.classList.add("active");
+      document.getElementById("sidebarOverlay")?.classList.add("active");
+    }
+
+    function closeSidebar() {
+      document.getElementById("mainSidebar")?.classList.remove("active");
+      document.getElementById("sidebarOverlay")?.classList.remove("active");
+    }
+
+    function openBarcodeModal() {
+      document.getElementById("barcodeModal")?.classList.remove("hidden");
+    }
+
+    function closeBarcodeModal() {
+      document.getElementById("barcodeModal")?.classList.add("hidden");
+    }
+
+    // Dropzone Demo
+    function demoDragOver(e) {
+      e.preventDefault();
+      document.getElementById("dropzone-demo")?.classList.add("dragover");
+    }
+    function demoDragLeave(e) {
+      e.preventDefault();
+      document.getElementById("dropzone-demo")?.classList.remove("dragover");
+    }
+    function demoDrop(e) {
+      e.preventDefault();
+      document.getElementById("dropzone-demo")?.classList.remove("dragover");
+      const files = e.dataTransfer.files;
+      if (files && files[0]) {
+        updateDemoFileInfo(files[0].name, files[0].size);
+      }
+    }
+    function demoFileSelected(input) {
+      if (input.files && input.files[0]) {
+        updateDemoFileInfo(input.files[0].name, input.files[0].size);
+      }
+    }
+    function updateDemoFileInfo(name, size) {
+      const info = document.getElementById("demo-file-info");
+      const kb = (size / 1024).toFixed(1);
+      info.innerHTML = `📄 <strong>${name}</strong> (${kb} KB) - Sẵn sàng tải lên!`;
+      info.classList.add("active");
+      document.getElementById("demo-upload-msg").textContent = "";
+    }
+    function demoUploadClick() {
+      const info = document.getElementById("demo-file-info");
+      const msg = document.getElementById("demo-upload-msg");
+      if (!info.classList.contains("active")) {
+        msg.textContent = "Vui lòng chọn hoặc kéo thả file minh chứng trước khi bấm Tải lên.";
+        msg.style.color = "var(--danger)";
+        return;
+      }
+      msg.textContent = "🚀 Đang mô phỏng tải lên và AI kiểm tra thẩm định chứng chỉ...";
+      msg.style.color = "var(--info)";
+      setTimeout(() => {
+        msg.textContent = "✓ Mô phỏng thành công: AI xác định chứng chỉ hợp lệ và đã lưu vào Kho minh chứng!";
+        msg.style.color = "var(--success)";
+        info.innerHTML = "";
+        info.classList.remove("active");
+      }, 1500);
+    }
+
+    // Filter Storage Table
+    function filterStorageTable() {
+      const q = (document.getElementById("storageSearchInput")?.value || "").toLowerCase().trim();
+      const cat = document.getElementById("storageCategoryFilter")?.value || "all";
+      const status = document.getElementById("storageStatusFilter")?.value || "all";
+
+      const rows = document.querySelectorAll("#storageTableBody tr");
+      rows.forEach(row => {
+        const rowText = row.textContent.toLowerCase();
+        const rowCat = row.getAttribute("data-cat");
+        const rowStatus = row.getAttribute("data-status");
+
+        const matchQuery = !q || rowText.includes(q);
+        const matchCat = cat === "all" || rowCat === cat;
+        const matchStatus = status === "all" || rowStatus === status;
+
+        if (matchQuery && matchCat && matchStatus) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
+

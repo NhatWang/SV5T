@@ -1,6 +1,6 @@
-const { getAiAwardLevelContext } = require("./context");
+const { getAiAwardLevelContext, USER_DOCUMENT_NOTE } = require("./context");
 
-function buildTheLucPrompt(contentDescription, awardLevel = "truong") {
+function buildTheLucPrompt(awardLevel = "truong") {
   const context = getAiAwardLevelContext(awardLevel);
 
   return `Đây là minh chứng cho tiêu chí "Thể lực tốt" trong chương trình Sinh viên 5 tốt ${context.label}.
@@ -25,7 +25,7 @@ Quy tắc riêng cho AI:
 - Không tự suy đoán cấp tổ chức hoặc thời lượng tập luyện nếu tài liệu không nêu rõ.
 - Với cấp cao hơn, nếu minh chứng chỉ thể hiện hoạt động nội bộ cấp thấp và không đủ căn cứ theo quy chế, trả isValid = null hoặc false và yêu cầu admin kiểm tra.
 
-${contentDescription}
+${USER_DOCUMENT_NOTE}
 
 Trả lời đúng JSON, không thêm markdown:
 {

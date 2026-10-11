@@ -4,8 +4,13 @@ const path = require("path");
 const {
   S3Client,
   PutObjectCommand,
-  DeleteObjectCommand
+  DeleteObjectCommand,
+  GetObjectCommand
 } = require("@aws-sdk/client-s3");
+
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+
+const PRESIGNED_URL_EXPIRES_IN_SECONDS = 900; // 15 phút
 
 function assertR2Config() {
   const required = [
@@ -49,12 +54,28 @@ async function uploadBufferToR2({ buffer, key, contentType }) {
 
   await r2Client.send(command);
 
-  const publicBaseUrl = process.env.R2_PUBLIC_URL;
-
+  // Bucket R2 không còn ở chế độ Public — không trả về URL công khai nữa.
+  // Người xem file phải qua getPresignedFileUrl() để được cấp URL có thời hạn.
   return {
     key,
-    url: publicBaseUrl ? `${publicBaseUrl}/${key}` : ""
+    url: ""
   };
+}
+
+/**
+ * Sinh URL có thời hạn (mặc định 15 phút) để xem/tải file trên R2.
+ * Backend phải tự kiểm tra quyền sở hữu/quyền admin phụ trách trước khi gọi hàm này.
+ */
+async function getPresignedFileUrl(key, expiresIn = PRESIGNED_URL_EXPIRES_IN_SECONDS) {
+  if (!key) return "";
+  assertR2Config();
+
+  const command = new GetObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: key
+  });
+
+  return getSignedUrl(r2Client, command, { expiresIn });
 }
 
 async function uploadLocalFileToR2({ localPath, key, contentType }) {
@@ -83,10 +104,32 @@ async function deleteFromR2(key) {
   await r2Client.send(command);
 }
 
+/**
+ * Trả về URL xem file cho một Evidence: presigned URL có thời hạn nếu file
+ * đã được archive lên R2, ngược lại trả về fileUrl cũ (nếu có) hoặc rỗng.
+ * Route gọi hàm này phải tự kiểm tra quyền xem trước (chủ sở hữu hoặc admin phụ trách).
+ */
+async function getEvidenceFileUrl(evidence) {
+  if (!evidence) return "";
+
+  if (evidence.storageStatus === "r2_archived" && evidence.fileKey) {
+    try {
+      return await getPresignedFileUrl(evidence.fileKey);
+    } catch (error) {
+      console.error("getEvidenceFileUrl error:", error.message);
+      return "";
+    }
+  }
+
+  return evidence.fileUrl || "";
+}
+
 module.exports = {
   buildEvidenceKey,
   uploadBufferToR2,
   uploadLocalFileToR2,
   deleteFromR2,
-  assertR2Config
+  assertR2Config,
+  getPresignedFileUrl,
+  getEvidenceFileUrl
 };

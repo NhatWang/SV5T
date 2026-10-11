@@ -131,7 +131,6 @@ QUY TẮC RA QUYẾT ĐỊNH:
 
 function buildEvidencePrompt({
   category,
-  contentDescription,
   awardLevel = "truong",
   studentContext = {}
 }) {
@@ -139,23 +138,23 @@ function buildEvidencePrompt({
 
   switch (category) {
     case "hocTapTot":
-      basePrompt = buildHocTapPrompt(contentDescription, awardLevel);
+      basePrompt = buildHocTapPrompt(awardLevel);
       break;
 
     case "theLucTot":
-      basePrompt = buildTheLucPrompt(contentDescription, awardLevel);
+      basePrompt = buildTheLucPrompt(awardLevel);
       break;
 
     case "tinhNguyenTot":
-      basePrompt = buildTinhNguyenPrompt(contentDescription, awardLevel);
+      basePrompt = buildTinhNguyenPrompt(awardLevel);
       break;
 
     case "hoiNhapTot":
-      basePrompt = buildHoiNhapPrompt(contentDescription, awardLevel);
+      basePrompt = buildHoiNhapPrompt(awardLevel);
       break;
 
     case "khac":
-      basePrompt = buildKhacPrompt(contentDescription, awardLevel);
+      basePrompt = buildKhacPrompt();
       break;
 
     default:

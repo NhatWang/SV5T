@@ -11,7 +11,8 @@ const fs = require("fs");
 
 const {
   buildEvidenceKey,
-  uploadLocalFileToR2
+  uploadLocalFileToR2,
+  getEvidenceFileUrl
 } = require("../Utils/r2Client");
 
 const { normalizeAwardLevel } = require("../Utils/sv5tLevels");
@@ -589,12 +590,19 @@ router.get("/me/dashboard", requireStudentAuth, async (req, res) => {
       date: -1
     });
 
-    const evidences = await Evidence.find({
+    const rawEvidencesForCurrentLevel = await Evidence.find({
       studentId,
       awardLevel: CURRENT_AWARD_LEVEL
     }).sort({
       createdAt: -1
     });
+
+    const evidences = await Promise.all(
+      rawEvidencesForCurrentLevel.map(async (evidence) => ({
+        ...evidence.toObject(),
+        fileUrl: await getEvidenceFileUrl(evidence)
+      }))
+    );
 
     const rawSelfDeclarations = student.selfDeclarations;
 
@@ -915,7 +923,7 @@ const ngoaiNguCourseScoreHigherResult = schoolNgoaiNguCourseScoreDeclaration
       "hoiNhapTot"
     ];
 
-    const evidences = await Evidence.find({
+    const rawEvidencesForHigherLevel = await Evidence.find({
       studentId,
       $or: [
         {
@@ -932,6 +940,13 @@ const ngoaiNguCourseScoreHigherResult = schoolNgoaiNguCourseScoreDeclaration
     }).sort({
       createdAt: -1
     });
+
+    const evidences = await Promise.all(
+      rawEvidencesForHigherLevel.map(async (evidence) => ({
+        ...evidence.toObject(),
+        fileUrl: await getEvidenceFileUrl(evidence)
+      }))
+    );
 
     const progress = {};
     let completedCount = 0;
@@ -1729,7 +1744,7 @@ const previousActivities = await Activity.find({
   date: -1
 });
 
-const previousEvidences = await Evidence.find({
+const rawPreviousEvidences = await Evidence.find({
   studentId,
   awardLevel: {
     $in: ["truong", "dhqg", "thanh"]
@@ -1740,6 +1755,13 @@ const previousEvidences = await Evidence.find({
 }).sort({
   createdAt: -1
 });
+
+const previousEvidences = await Promise.all(
+  rawPreviousEvidences.map(async (evidence) => ({
+    ...evidence.toObject(),
+    fileUrl: await getEvidenceFileUrl(evidence)
+  }))
+);
 
 const canAccessCentral =
   thanhStatus.isCompleted === true ||
@@ -1781,12 +1803,19 @@ const canAccessCentral =
   };
 });
 
-    const centralEvidences = await Evidence.find({
+    const rawCentralEvidences = await Evidence.find({
   studentId,
   awardLevel: "trung_uong"
 }).sort({
   createdAt: -1
 });
+
+const centralEvidences = await Promise.all(
+  rawCentralEvidences.map(async (evidence) => ({
+    ...evidence.toObject(),
+    fileUrl: await getEvidenceFileUrl(evidence)
+  }))
+);
 
 const approvedAdditionalKeys = new Set();
 
@@ -2278,7 +2307,10 @@ const schoolNgoaiNguCourseScoreDeclaration = selfDeclarations.find((item) => {
         success: true,
         message:
           "Nộp minh chứng cấp Trung ương thành công. Minh chứng sẽ chờ admin duyệt thủ công.",
-        evidence
+        evidence: {
+          ...evidence.toObject(),
+          fileUrl: await getEvidenceFileUrl(evidence)
+        }
       });
     } catch (error) {
       console.error("Upload central evidence error:", error);

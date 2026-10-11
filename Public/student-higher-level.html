@@ -3,235 +3,614 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Xét danh hiệu Sinh viên 5 tốt cấp cao hơn</title>
-
+  <title>Xét danh hiệu Sinh viên 5 tốt cấp cao hơn | ĐHQG-HCM</title>
+  <link rel="icon" type="image/png" href="./images/Logo 2.png" />
   <link rel="stylesheet" href="./css/student-higher-level-style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 </head>
-
 <body class="higher-award-theme">
   <div class="dashboard-layout">
 
+    <!-- Mobile Sidebar Backdrop Overlay -->
     <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 
+    <!-- Main Navigation Sidebar -->
     <aside class="sidebar" id="mainSidebar">
-      <div class="sidebar-header">
-        <h2>SV5T+</h2>
+      <!-- Brand Header -->
+      <div class="sidebar-brand">
+        <img src="./images/Logo 2.png" alt="Logo SV5T" class="sidebar-brand-logo" onerror="this.style.display='none'" />
+        <div class="sidebar-brand-text">
+          <h2>SV5T<span>+</span></h2>
+          <p>ĐHQG-HCM INNOVATION</p>
+          <span class="sidebar-level-pill" id="sidebarLevelPill">★ CẤP ĐHQG-HCM</span>
+        </div>
         <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Đóng menu">✕</button>
       </div>
 
-      <button class="tab-btn active" onclick="showTab('overview', this)">
-        Tổng Quan
-      </button>
+      <!-- Navigation Menu -->
+      <nav class="sidebar-menu">
+        <span class="sidebar-menu-heading">Bảng điều khiển</span>
+        <button class="tab-btn active" onclick="showTab('overview', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </span>
+          Tổng Quan Cấp Cao
+        </button>
 
-      <button class="tab-btn" onclick="showTab('daoDucTot', this)">
-        Đạo đức tốt
-      </button>
+        <span class="sidebar-menu-heading">5 Tiêu chuẩn ĐHQG-HCM</span>
+        <button class="tab-btn" onclick="showTab('daoDucTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </span>
+          1. Đạo đức tốt
+        </button>
 
-      <button class="tab-btn" onclick="showTab('hocTapTot', this)">
-        Học tập tốt
-      </button>
+        <button class="tab-btn" onclick="showTab('hocTapTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+          </span>
+          2. Học tập tốt (NCKH)
+        </button>
 
-      <button class="tab-btn" onclick="showTab('theLucTot', this)">
-        Thể lực tốt
-      </button>
+        <button class="tab-btn" onclick="showTab('theLucTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </span>
+          3. Thể lực tốt
+        </button>
 
-      <button class="tab-btn" onclick="showTab('tinhNguyenTot', this)">
-        Tình nguyện tốt
-      </button>
+        <button class="tab-btn" onclick="showTab('tinhNguyenTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          </span>
+          4. Tình nguyện tốt
+        </button>
 
-      <button class="tab-btn" onclick="showTab('hoiNhapTot', this)">
-        Hội nhập tốt
-      </button>
+        <button class="tab-btn" onclick="showTab('hoiNhapTot', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          </span>
+          5. Hội nhập tốt
+        </button>
 
-      <button class="tab-btn" onclick="showTab('storage', this)">
-        Kho minh chứng
-      </button>
+        <span class="sidebar-menu-heading">Hồ sơ & Thẩm định</span>
+        <button class="tab-btn" onclick="showTab('storage', this)">
+          <span class="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+          </span>
+          Kho minh chứng cấp xét
+        </button>
 
-      <button onclick="goBackToSchoolLevel()">
-        Quay lại cấp Trường
-      </button>
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+          <button class="sidebar-action-btn btn-return-school" onclick="goBackToSchoolLevel()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Quay lại cấp Trường
+          </button>
+        </div>
+      </nav>
 
-      <button onclick="logoutStudent()">
-        Đăng xuất
-      </button>
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logoutStudent()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          Đăng xuất
+        </button>
+      </div>
     </aside>
 
+    <!-- Main Content Area -->
     <main class="main-content">
+      <!-- Mobile Topbar -->
       <div class="mobile-topbar">
         <button class="hamburger-btn" onclick="openSidebar()" aria-label="Mở menu">&#9776;</button>
-        <span class="mobile-topbar-title">SV5T+</span>
+        <span class="mobile-topbar-title">SV5T+ ĐHQG-HCM</span>
       </div>
 
-      <!-- TAB TỔNG QUAN -->
-      <section id="overview" class="tab-content active">
-        <h1 id="higherLevelTitle">Xét danh hiệu Sinh viên 5 tốt cấp cao hơn</h1>
-
-        <div class="profile-card higher-hero-card">
-          <div class="higher-level-badge">
-            Danh hiệu cấp cao hơn
-          </div>
-
-          <h2 id="studentName">Đang tải...</h2>
-          <p>MSSV: <span id="studentIdText"></span></p>
-          <p>chi Hội: <span id="classNameText"></span></p>
-
-          <div class="higher-award-note">
-            Trang này dùng lại dữ liệu đã khai và kết quả đã đạt ở cấp Trường.
-            Riêng phần Đạo đức tốt và Học tập tốt sẽ lấy điểm rèn luyện/GPA sinh viên đã khai ở cấp Trường,
-            sau đó hệ thống tự so với điều kiện của cấp ĐHQG-HCM hoặc cấp Thành phố.
+      <!-- Modern Dashboard Topbar (Academic Innovation Style) -->
+      <header class="dashboard-topbar">
+        <div class="topbar-left">
+          <button class="hamburger-btn" onclick="openSidebar()" aria-label="Mở menu">☰</button>
+          <div class="topbar-title-box">
+            <h1 id="topbarMainTitle">Cổng thông tin Sinh viên 5 tốt Cấp Cao Hơn</h1>
+            <p id="topbarSubtitle">Đại học Quốc gia TP. Hồ Chí Minh • Hệ thống thẩm định hồ sơ NCKH & Đổi mới sáng tạo</p>
           </div>
         </div>
 
-        <div class="higher-summary-grid">
-          <div class="higher-summary-card">
-            <h3>Điều kiện nền tảng</h3>
-            <p id="schoolLevelStatus">Đang kiểm tra điều kiện cấp Trường...</p>
+        <div class="topbar-right">
+          <!-- Level Switcher: ĐHQG-HCM vs Thành phố -->
+          <div class="level-switcher">
+            <button id="levelBtnDhqg" class="level-switch-btn active" onclick="switchHigherLevel('dhqg')">
+              Cấp ĐHQG-HCM
+            </button>
+            <button id="levelBtnThanh" class="level-switch-btn" onclick="switchHigherLevel('thanh')">
+              Cấp Thành phố
+            </button>
           </div>
 
-          <div class="higher-summary-card">
-            <h3 id="higherProgressTitle">Tiến độ xét cấp cao hơn</h3>
+          <button class="topbar-return-btn" onclick="goBackToSchoolLevel()">
+            ← Về Cấp Trường
+          </button>
+        </div>
+      </header>
 
-            <div class="progress-bar">
-              <div id="progressFill"></div>
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 1: TỔNG QUAN CẤP CAO (OVERVIEW)
+      ═══════════════════════════════════════════════════════════════ -->
+      <section id="overview" class="tab-content active">
+        <div class="tab-header-banner" style="margin-bottom: 20px;">
+          <div>
+            <h1 id="higherLevelTitle">Xét danh hiệu Sinh viên 5 tốt Cấp ĐHQG-HCM</h1>
+            <p>Hệ thống tự động đồng bộ dữ liệu đã đạt tại Cấp Trường và đối chiếu với khung chuẩn năng lực Cấp Cao Hơn</p>
+          </div>
+        </div>
+
+        <!-- Banner Tự hào Thành phố mang tên Bác (Chợ Bến Thành • Bến Nhà Rồng • Sông Sài Gòn • Bitexco) -->
+        <div id="saigonHeritageBanner" style="display: none; margin-bottom: 24px;">
+          <!-- Panorama Skyline TP.HCM & Sông Sài Gòn -->
+          <div class="saigon-skyline-hero">
+            <img src="./images/tphcm.jpeg" alt="Skyline Thành phố Hồ Chí Minh và Dòng Sông Sài Gòn" class="skyline-hero-img" onerror="this.style.display='none'" />
+            <div class="skyline-hero-overlay">
+              <span class="skyline-hero-badge">🏛️ TP. HỒ CHÍ MINH — THÀNH PHỐ RẠNG RỠ TÊN VÀNG</span>
+              <h2>Khát Vọng Tuổi Trẻ Thành Phố Mang Tên Bác</h2>
+              <p>Năng động, tiên phong đổi mới sáng tạo, vững bước hội nhập quốc tế từ dòng sông lịch sử vươn ra biển lớn</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Hàng 1: Thẻ Ứng Viên ĐHQG-HCM & Thẻ Tiến Độ -->
+        <div class="overview-hero-grid">
+
+          <!-- Thẻ Ứng viên SV5T (Candidate Pass Mockup) -->
+          <div class="candidate-id-card">
+            <!-- Watermark chìm Biểu trưng -->
+            <div class="id-card-watermark"></div>
+
+            <!-- 1. Header: Cơ quan cấp & Huy hiệu -->
+            <div class="id-card-header">
+              <div class="id-card-school-brand">
+                <h4 id="candidateOrgName">Đại học Quốc gia TP. Hồ Chí Minh</h4>
+                <p>Hồ sơ Ứng viên Sinh viên 5 tốt • Năm học 2025 – 2026</p>
+              </div>
+              <span class="id-card-badge" id="candidateLevelBadge">ỨNG VIÊN ĐHQG-HCM</span>
             </div>
 
-            <p id="progressText">0/5 tiêu chí đã đạt</p>
+            <!-- 2. Thông tin Sinh viên -->
+            <div class="id-card-student-info">
+              <div class="id-card-avatar" id="avatarBox">SV</div>
+              <div class="id-card-details">
+                <h2 id="studentName">Đang tải...</h2>
+                <p>MSSV: <strong id="studentIdText">...</strong> • Chi hội: <strong id="classNameText">...</strong></p>
+                <p>Đơn vị: <strong>Trường ĐH Khoa học Tự nhiên, ĐHQG-HCM</strong></p>
+              </div>
+            </div>
+
+            <!-- 3. Bảng Chỉ số Nổi bật (Lấp đầy khoảng trống với thông tin thẩm định) -->
+            <div class="id-card-metrics-grid">
+              <div class="id-card-metric-pill">
+                <span class="id-card-metric-icon">🛡️</span>
+                <div class="id-card-metric-text">
+                  <span class="id-card-metric-label">Điểm rèn luyện</span>
+                  <span class="id-card-metric-val" id="idCardDrlText">Xuất sắc</span>
+                </div>
+              </div>
+
+              <div class="id-card-metric-pill">
+                <span class="id-card-metric-icon">🎓</span>
+                <div class="id-card-metric-text">
+                  <span class="id-card-metric-label">Điểm học tập</span>
+                  <span class="id-card-metric-val" id="idCardGpaText">GPA Tích lũy</span>
+                </div>
+              </div>
+
+              <div class="id-card-metric-pill">
+                <span class="id-card-metric-icon">🔬</span>
+                <div class="id-card-metric-text">
+                  <span class="id-card-metric-label">NCKH / Đổi mới</span>
+                  <span class="id-card-metric-val" id="idCardNckhText">Công trình SV5T</span>
+                </div>
+              </div>
+
+              <div class="id-card-metric-pill">
+                <span class="id-card-metric-icon">🤝</span>
+                <div class="id-card-metric-text">
+                  <span class="id-card-metric-label">Hoạt động Cấp Cao</span>
+                  <span class="id-card-metric-val" id="idCardVolText">Tình nguyện & Hội nhập</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Barcode Code128 Điểm danh số -->
+            <div class="id-card-barcode-wrap" onclick="openBarcodeModal()" title="Nhấn để phóng to toàn màn hình">
+              <svg id="studentBarcode"></svg>
+              <span class="id-card-barcode-hint">🔍 Chạm quét mã</span>
+            </div>
+          </div>
+
+          <!-- Thẻ Tiến Độ Tổng Thể Cấp Cao -->
+          <div class="progress-card">
+            <div class="progress-card-header">
+              <h3 id="higherProgressTitle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--tech-cyan);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                Tiến độ xét cấp cao hơn
+              </h3>
+              <span id="progressStatusChip" class="progress-status-chip">Đang kiểm tra...</span>
+            </div>
+
+            <div class="progress-bar-container">
+              <div class="progress-bar">
+                <div id="progressFill"></div>
+              </div>
+            </div>
+
+            <p id="progressText" style="font-weight: 700; color: var(--tech-navy); font-size: 14.5px;">
+              0/5 tiêu chí đã đạt (0%)
+            </p>
+
+            <div class="progress-stats-grid">
+              <div class="progress-stat-box">
+                <span class="stat-label">Tiêu chí đã đạt</span>
+                <div class="stat-val" id="statCompletedCount" style="color: var(--success);">0/5</div>
+              </div>
+
+              <div class="progress-stat-box">
+                <span class="stat-label">Cần hoàn thiện</span>
+                <div class="stat-val" id="statMissingCount" style="color: var(--warning);">5</div>
+              </div>
+            </div>
+
+            <!-- Tình trạng điều kiện nền tảng cấp Trường -->
+            <div class="school-foundation-banner" style="background: var(--surface-alt); margin-top: 14px;">
+              <span>🏛️</span>
+              <div>
+                <strong style="color: var(--tech-deep);">Điều kiện nền tảng:</strong>
+                <span id="schoolLevelStatus">Đang kiểm tra điều kiện cấp Trường...</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Hàng 2: Bảng Ma trận Đối chiếu Khoa học (Benchmark Comparison Matrix) -->
+        <div class="benchmark-matrix-card">
+          <div class="benchmark-matrix-header">
+            <h3>
+              <span>🔬</span> Ma trận Đối chiếu Tiêu chuẩn: Cấp Trường vs. Chuẩn ĐHQG-HCM
+            </h3>
+            <span class="benchmark-tag dhqg">Auto-Derived Matrix</span>
+          </div>
+
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Tiêu chuẩn danh hiệu</th>
+                <th>Chuẩn Cấp Trường (HCMUS)</th>
+                <th>Chuẩn ĐHQG-HCM / Thành phố</th>
+                <th>Cơ chế thẩm định hệ thống</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Đạo đức tốt</strong></td>
+                <td><span class="benchmark-tag school">ĐRL ≥ 70</span></td>
+                <td><span class="benchmark-tag dhqg">ĐHQG ≥ 80 / Thành phố ≥ 90</span></td>
+                <td><span class="benchmark-match-badge matched">⚡ Tự động so sánh từ ĐRL Cấp Trường</span></td>
+              </tr>
+              <tr>
+                <td><strong>2. Học tập tốt</strong></td>
+                <td><span class="benchmark-tag school">GPA ≥ 2.8</span></td>
+                <td><span class="benchmark-tag dhqg">ĐHQG GPA ≥ 3.2 + Minh chứng NCKH</span></td>
+                <td><span class="benchmark-match-badge matched">⚡ GPA tự động + Nộp minh chứng NCKH</span></td>
+              </tr>
+              <tr>
+                <td><strong>3. Thể lực tốt</strong></td>
+                <td><span class="benchmark-tag school">Thanh niên khỏe Cấp Trường</span></td>
+                <td><span class="benchmark-tag dhqg">Chuẩn ĐHQG-HCM / Giải thể thao cấp cao</span></td>
+                <td><span class="benchmark-match-badge missing">📄 Thẩm định minh chứng bổ sung</span></td>
+              </tr>
+              <tr>
+                <td><strong>4. Tình nguyện tốt</strong></td>
+                <td><span class="benchmark-tag school">≥ 5 ngày tình nguyện</span></td>
+                <td><span class="benchmark-tag dhqg">≥ 5 ngày + Khen thưởng cấp Trường trở lên</span></td>
+                <td><span class="benchmark-match-badge missing">📄 Thẩm định hoạt động & khen thưởng</span></td>
+              </tr>
+              <tr>
+                <td><strong>5. Hội nhập tốt</strong></td>
+                <td><span class="benchmark-tag school">Ngoại ngữ B1 / Học phần</span></td>
+                <td><span class="benchmark-tag dhqg">Chuẩn B2 / Quốc tế (IELTS, TOEIC...) & Giao lưu</span></td>
+                <td><span class="benchmark-match-badge missing">📄 Thẩm định chứng chỉ & hoạt động hội nhập</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Hàng 3: Lưới 5 Tiêu chuẩn ĐHQG-HCM trực quan -->
+        <div class="section-heading-row">
+          <div>
+            <h2>⭐ 5 Tiêu chuẩn Sinh viên 5 tốt Cấp Cao Hơn</h2>
+            <p>Nhấp vào từng tiêu chuẩn để xem chi tiết đối chiếu và nộp minh chứng bổ sung</p>
           </div>
         </div>
 
+        <div class="criteria-cards-grid" id="overviewCriteriaGrid">
+          <!-- 1. Đạo đức tốt -->
+          <div class="criterion-card-preview" onclick="showTab('daoDucTot', document.querySelectorAll('.tab-btn')[1])">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-dao-duc">🛡️</div>
+              <span class="preview-status-pill missing" id="pill-daoDucTot">Chưa đạt</span>
+            </div>
+            <h4>1. Đạo đức tốt</h4>
+            <p id="desc-daoDucTot">Lấy ĐRL từ cấp Trường, tự so sánh với ngưỡng ĐHQG-HCM (≥ 80đ) hoặc Thành phố (≥ 90đ).</p>
+            <button class="preview-action-btn" type="button">
+              Xem kết quả đối chiếu →
+            </button>
+          </div>
+
+          <!-- 2. Học tập tốt -->
+          <div class="criterion-card-preview" onclick="showTab('hocTapTot', document.querySelectorAll('.tab-btn')[2])">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-hoc-tap">🎓</div>
+              <span class="preview-status-pill missing" id="pill-hocTapTot">Chưa đạt</span>
+            </div>
+            <h4>2. Học tập tốt</h4>
+            <p id="desc-hocTapTot">GPA tự đối chiếu từ cấp Trường (≥ 3.2). Yêu cầu bổ sung đề tài NCKH hoặc bài báo khoa học.</p>
+            <button class="preview-action-btn" type="button">
+              Nộp minh chứng NCKH →
+            </button>
+          </div>
+
+          <!-- 3. Thể lực tốt -->
+          <div class="criterion-card-preview" onclick="showTab('theLucTot', document.querySelectorAll('.tab-btn')[3])">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-the-luc">⚡</div>
+              <span class="preview-status-pill missing" id="pill-theLucTot">Chưa đạt</span>
+            </div>
+            <h4>3. Thể lực tốt</h4>
+            <p id="desc-theLucTot">Chứng nhận Thanh niên khỏe hoặc giải thể thao đáp ứng quy định cấp ĐHQG-HCM / Thành phố.</p>
+            <button class="preview-action-btn" type="button">
+              Kiểm tra & Nộp file →
+            </button>
+          </div>
+
+          <!-- 4. Tình nguyện tốt -->
+          <div class="criterion-card-preview" onclick="showTab('tinhNguyenTot', document.querySelectorAll('.tab-btn')[4])">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-tinh-nguyen">🤝</div>
+              <span class="preview-status-pill missing" id="pill-tinhNguyenTot">Chưa đạt</span>
+            </div>
+            <h4>4. Tình nguyện tốt</h4>
+            <p id="desc-tinhNguyenTot">Tối thiểu 5 ngày tình nguyện và giấy khen khen thưởng tình nguyện từ cấp Trường trở lên.</p>
+            <button class="preview-action-btn" type="button">
+              Kiểm tra & Nộp file →
+            </button>
+          </div>
+
+          <!-- 5. Hội nhập tốt -->
+          <div class="criterion-card-preview" onclick="showTab('hoiNhapTot', document.querySelectorAll('.tab-btn')[5])">
+            <div class="preview-top">
+              <div class="preview-icon-circle icon-hoi-nhap">🌐</div>
+              <span class="preview-status-pill missing" id="pill-hoiNhapTot">Chưa đạt</span>
+            </div>
+            <h4>5. Hội nhập tốt</h4>
+            <p id="desc-hoiNhapTot">Chứng chỉ ngoại ngữ quốc tế (B2/IELTS/TOEIC), khóa kỹ năng và hoạt động giao lưu quốc tế.</p>
+            <button class="preview-action-btn" type="button">
+              Kiểm tra & Nộp file →
+            </button>
+          </div>
+        </div>
+
+        <!-- Khung Điều kiện đề xuất xét Cấp Trung ương (chỉ hiển thị ở cấp Thành phố) -->
         <div id="centralPrerequisiteCard" class="higher-summary-card hidden">
-        <h3>Điều kiện đề xuất xét cấp Trung ương</h3>
-
-        <p class="school-data-note">
+          <h3>Điều kiện đề xuất xét cấp Trung ương</h3>
+          <p class="school-data-note">
             Phần này chỉ hiển thị điều kiện đầu vào để tiếp tục chuẩn bị hồ sơ xét danh hiệu
-            Sinh viên 5 tốt cấp Trung ương.
-        </p>
-
-        <div id="centralPrerequisiteContent">
-            Đang tải dữ liệu...
+            Sinh viên 5 tốt cấp Trung ương khi bạn hoàn tất hồ sơ cấp Thành phố.
+          </p>
+          <div id="centralPrerequisiteContent">
+            Đang tải dữ liệu điều kiện Trung ương...
+          </div>
         </div>
-        </div>
 
+        <!-- Khung Gợi ý AI Thông minh -->
         <div class="ai-card">
-          <h3>Gợi ý hoàn thiện hồ sơ</h3>
-          <ul id="aiSuggestions"></ul>
+          <div class="ai-card-header">
+            <div class="ai-sparkle-icon">✨</div>
+            <h3>Gợi ý hoàn thiện hồ sơ từ AI</h3>
+            <span class="ai-tag">Cố vấn NCKH & ĐHQG-HCM</span>
+          </div>
+          <ul id="aiSuggestions">
+            <li>Đang tải gợi ý từ AI...</li>
+          </ul>
         </div>
       </section>
 
-      <!-- TAB ĐẠO ĐỨC TỐT -->
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 2: ĐẠO ĐỨC TỐT
+      ═══════════════════════════════════════════════════════════════ -->
       <section id="daoDucTot" class="tab-content">
-        <h1>Đạo đức tốt</h1>
+        <div class="tab-header-banner">
+          <div>
+            <h1>Tiêu chuẩn 1: Đạo đức tốt (Cấp Cao Hơn)</h1>
+            <p>Hệ thống tự động đối chiếu dữ liệu điểm rèn luyện và cam kết đạo đức đã khai ở Cấp Trường</p>
+          </div>
+        </div>
 
         <div class="school-data-note">
-          Phần này không cho khai lại. Hệ thống sẽ lấy điểm rèn luyện và thông tin đạo đức đã khai ở cấp Trường,
-          sau đó tự so với chuẩn của cấp xét hiện tại.
+          <strong>Cơ chế tự động:</strong> Phần này không cho khai lại. Hệ thống sẽ lấy điểm rèn luyện và thông tin đạo đức đã khai ở cấp Trường, sau đó tự so với chuẩn của cấp ĐHQG-HCM (≥ 80 điểm) hoặc cấp Thành phố (≥ 90 điểm).
         </div>
 
         <div id="daoDucTotContent"></div>
       </section>
 
-      <!-- TAB HỌC TẬP TỐT -->
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 3: HỌC TẬP TỐT (NCKH & ĐỔI MỚI SÁNG TẠO)
+      ═══════════════════════════════════════════════════════════════ -->
       <section id="hocTapTot" class="tab-content">
-        <h1>Học tập tốt</h1>
+        <div class="tab-header-banner">
+          <div>
+            <h1>Tiêu chuẩn 2: Học tập tốt & Nghiên cứu Khoa học</h1>
+            <p>GPA tự động đồng bộ từ cấp Trường. Cần bổ sung ít nhất 01 minh chứng thành tích học thuật / NCKH theo quy chế</p>
+          </div>
+        </div>
+
         <div class="upload-file-note">
-  <strong>Lưu ý khi đặt tên file:</strong>
-  Vui lòng đặt tên file theo thành tích thể hiện trong chứng nhận.
-  Ví dụ: nếu bạn đạt <strong>Thanh niên khỏe cấp Thành</strong>,
-  hãy đặt tên file là
-  <code>Thanh nien khoe cap Thanh</code>
-  hoặc
-  <code>Thanh_nien_khoe_cap_Thanh</code>.
-</div>
+          <strong>💡 Hướng dẫn đặt tên file minh chứng:</strong>
+          Vui lòng đặt tên file theo thành tích học thuật thể hiện trong chứng nhận.
+          Ví dụ: <code>Bai_bao_khoa_hoc_Scopus_2025.pdf</code> hoặc <code>De_tai_NCKH_Sinh_vien_cap_DHQG.pdf</code>.
+        </div>
 
         <div class="school-data-note">
-          Phần GPA không cho khai lại. Hệ thống sẽ lấy GPA đã khai ở cấp Trường để so với chuẩn cấp ĐHQG-HCM hoặc cấp Thành phố.
-          Để hoàn thành Học tập tốt ở cấp cao hơn, sinh viên vẫn cần đạt thêm tiêu chuẩn học thuật khác theo quy chế cấp đó.
+          <strong>Cơ chế GPA:</strong> Hệ thống lấy GPA đã khai ở cấp Trường để so với chuẩn cấp ĐHQG-HCM (≥ 3.2/4.0) hoặc cấp Thành phố. Để hoàn thành tiêu chuẩn Học tập tốt ở cấp cao hơn, sinh viên cần tải lên minh chứng NCKH, bài báo hoặc giải thưởng học thuật.
         </div>
 
         <div id="hocTapTotContent"></div>
       </section>
 
-      <!-- TAB THỂ LỰC TỐT -->
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 4: THỂ LỰC TỐT
+      ═══════════════════════════════════════════════════════════════ -->
       <section id="theLucTot" class="tab-content">
-        <h1>Thể lực tốt</h1>
+        <div class="tab-header-banner">
+          <div>
+            <h1>Tiêu chuẩn 3: Thể lực tốt (Cấp Cao Hơn)</h1>
+            <p>Chứng nhận Thanh niên khỏe hoặc giải thể thao các cấp đáp ứng quy chế cấp ĐHQG-HCM / Thành phố</p>
+          </div>
+        </div>
+
         <div class="upload-file-note">
-  <strong>Lưu ý khi đặt tên file:</strong>
-  Vui lòng đặt tên file theo thành tích thể hiện trong chứng nhận.
-  Ví dụ: nếu bạn đạt <strong>Thanh niên khỏe cấp Thành</strong>,
-  hãy đặt tên file là
-  <code>Thanh nien khoe cap Thanh</code>
-  hoặc
-  <code>Thanh_nien_khoe_cap_Thanh</code>.
-</div>
+          <strong>💡 Hướng dẫn đặt tên file:</strong>
+          Ví dụ: <code>Thanh_nien_khoe_cap_Thanh.pdf</code> hoặc <code>Huy_chuong_Giai_the_thao_DHQG.png</code>.
+        </div>
+
         <div id="theLucTotContent"></div>
       </section>
 
-      <!-- TAB TÌNH NGUYỆN TỐT -->
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 5: TÌNH NGUYỆN TỐT
+      ═══════════════════════════════════════════════════════════════ -->
       <section id="tinhNguyenTot" class="tab-content">
-        <h1>Tình nguyện tốt</h1>
+        <div class="tab-header-banner">
+          <div>
+            <h1>Tiêu chuẩn 4: Tình nguyện tốt (Cấp Cao Hơn)</h1>
+            <p>Tích lũy tối thiểu 05 ngày tình nguyện và có Khen thưởng tình nguyện từ cấp Trường trở lên</p>
+          </div>
+        </div>
+
         <div class="upload-file-note">
-  <strong>Lưu ý khi đặt tên file:</strong>
-  Vui lòng đặt tên file theo thành tích thể hiện trong chứng nhận.
-  Ví dụ: nếu bạn đạt <strong>Thanh niên khỏe cấp Thành</strong>,
-  hãy đặt tên file là
-  <code>Thanh nien khoe cap Thanh</code>
-  hoặc
-  <code>Thanh_nien_khoe_cap_Thanh</code>.
-</div>
+          <strong>💡 Hướng dẫn đặt tên file:</strong>
+          Ví dụ: <code>Giay_khen_tinh_nguyen_Mua_he_xanh_DHQG.pdf</code>.
+        </div>
+
         <div id="tinhNguyenTotContent"></div>
       </section>
 
-      <!-- TAB HỘI NHẬP TỐT -->
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 6: HỘI NHẬP TỐT
+      ═══════════════════════════════════════════════════════════════ -->
       <section id="hoiNhapTot" class="tab-content">
-        <h1>Hội nhập tốt</h1>
+        <div class="tab-header-banner">
+          <div>
+            <h1>Tiêu chuẩn 5: Hội nhập tốt (Cấp Cao Hơn)</h1>
+            <p>Chứng chỉ Ngoại ngữ chuẩn quốc tế (B2/IELTS/TOEIC/VSTEP), Kỹ năng thực hành xã hội và Hoạt động giao lưu quốc tế</p>
+          </div>
+        </div>
+
         <div class="upload-file-note">
-  <strong>Lưu ý khi đặt tên file:</strong>
-  Vui lòng đặt tên file theo thành tích thể hiện trong chứng nhận.
-  Ví dụ: nếu bạn đạt <strong>Thanh niên khỏe cấp Thành</strong>,
-  hãy đặt tên file là
-  <code>Thanh nien khoe cap Thanh</code>
-  hoặc
-  <code>Thanh_nien_khoe_cap_Thanh</code>.
-</div>
+          <strong>💡 Hướng dẫn đặt tên file:</strong>
+          Ví dụ: <code>Chung_chi_IELTS_6.5.png</code> hoặc <code>Chung_nhan_Giao_luu_quoc_te_ASEAN.pdf</code>.
+        </div>
+
         <div id="hoiNhapTotContent"></div>
       </section>
 
-      <!-- KHO MINH CHỨNG -->
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 7: KHO MINH CHỨNG CẤP CAO (STORAGE)
+      ═══════════════════════════════════════════════════════════════ -->
       <section id="storage" class="tab-content">
-        <h1>Kho minh chứng cấp xét hiện tại</h1>
-
-        <div class="school-data-note">
-          Khu vực này chỉ hiển thị minh chứng thuộc cấp xét hiện tại.
-          Minh chứng cấp Trường sẽ được dùng làm nền, nhưng minh chứng bổ sung cho cấp cao hơn cần được upload theo đúng cấp xét.
+        <div class="tab-header-banner">
+          <div>
+            <h1>Kho lưu trữ minh chứng Cấp Cao Hơn</h1>
+            <p>Danh sách tài liệu minh chứng đã nộp riêng cho cấp xét hiện tại và phản hồi thẩm định từ Ban Chấp hành</p>
+          </div>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Tên file</th>
-              <th>Tiêu chí</th>
-              <th>Trạng thái</th>
-              <th>Ngày upload</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
+        <div class="school-data-note">
+          Khu vực này chỉ hiển thị minh chứng upload riêng cho cấp xét hiện tại. Minh chứng cấp Trường đã được dùng làm nền tảng.
+        </div>
 
-          <tbody id="storageTable"></tbody>
-        </table>
+        <!-- Filter & Search Toolbar -->
+        <div class="storage-toolbar">
+          <div class="storage-search-box">
+            <span class="storage-search-icon">🔍</span>
+            <input
+              type="text"
+              id="storageSearchInput"
+              placeholder="Tìm kiếm file minh chứng cấp cao..."
+              oninput="handleHigherStorageFilter()"
+            />
+          </div>
+
+          <select id="storageCategoryFilter" class="storage-filter-select" onchange="handleHigherStorageFilter()">
+            <option value="all">Tất cả tiêu chuẩn</option>
+            <option value="hocTapTot">Học tập tốt (NCKH)</option>
+            <option value="theLucTot">Thể lực tốt</option>
+            <option value="tinhNguyenTot">Tình nguyện tốt</option>
+            <option value="hoiNhapTot">Hội nhập tốt</option>
+          </select>
+
+          <select id="storageStatusFilter" class="storage-filter-select" onchange="handleHigherStorageFilter()">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="approved">Đã duyệt / Hợp lệ</option>
+            <option value="pending">Đang xử lý / Chờ xem xét</option>
+            <option value="rejected">Chưa hợp lệ</option>
+          </select>
+        </div>
+
+        <!-- Table Card -->
+        <div class="storage-table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Tên file minh chứng</th>
+                <th>Tiêu chuẩn</th>
+                <th>Trạng thái thẩm định</th>
+                <th>Ngày upload</th>
+                <th style="text-align: right;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="storageTable">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                  Đang tải danh sách minh chứng cấp cao...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
+      <!-- Footer -->
+      <footer class="dashboard-footer">
+        <p>© 2026 SV5T ĐHQG-HCM - <strong>Trường ĐH Khoa học Tự nhiên, ĐHQG-HCM</strong>.</p>
+        <p>Hệ thống số hóa quy trình theo dõi & xét thưởng Sinh viên 5 tốt các cấp.</p>
+      </footer>
     </main>
+
   </div>
 
-    <footer class="site-footer dashboard-footer">
-    <p>
-      © 2026 SV5T Khoa Hóa học. Liên Chi Hội Khoa Hóa học. 
-    </p>
-    <p>
-      Phát triển nhằm hỗ trợ quá trình theo dõi và xét thưởng Sinh viên 5 tốt.
-    </p>
-  </footer>
+  <!-- Barcode Zoom Modal -->
+  <div id="barcodeModal" class="barcode-modal-overlay hidden" onclick="closeBarcodeModal()">
+    <div class="barcode-modal-box" onclick="event.stopPropagation()">
+      <button class="barcode-modal-close" onclick="closeBarcodeModal()" aria-label="Đóng">✕</button>
+      <div style="margin-bottom: 12px; font-weight: 800; color: var(--tech-navy); font-size: 16px;">
+        MÃ VẠCH ỨNG VIÊN SV5T+
+      </div>
+      <svg id="studentBarcodeZoom"></svg>
+      <p class="barcode-modal-hint">Đưa mã vạch này cho Ban tổ chức quét mã khi tham gia các hoạt động cấp ĐHQG-HCM</p>
+    </div>
+  </div>
 
+  <!-- Scripts -->
   <script src="/js/chatbot-widget.js"></script>
   <script src="./js/push-notifications.js"></script>
   <script src="./js/maintenance-check.js"></script>

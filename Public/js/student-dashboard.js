@@ -77,7 +77,14 @@ function showTab(tabId, button) {
 
   if (button) {
     button.classList.add("active");
+  } else {
+    const matchingBtn = document.querySelector(`.tab-btn[onclick*="'${tabId}'"]`);
+    if (matchingBtn) {
+      matchingBtn.classList.add("active");
+    }
   }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
   if (window.innerWidth <= 768) closeSidebar();
 }
@@ -114,55 +121,105 @@ function renderOverview(data) {
   document.getElementById("classNameText").textContent =
     student.className || "Chưa cập nhật";
 
+  // Avatar Initials
+  const avatarBox = document.getElementById("avatarBox");
+  if (avatarBox && student.fullName) {
+    const parts = student.fullName.trim().split(/\s+/);
+    const initials = parts.length > 1
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : student.fullName.slice(0, 2).toUpperCase();
+    avatarBox.textContent = initials;
+  }
+
   if (student.studentId && typeof JsBarcode !== "undefined") {
     JsBarcode("#studentBarcode", student.studentId, {
       format: "CODE128",
-      lineColor: "#0b3d91",
-      width: 2,
-      height: 56,
+      lineColor: "#002855",
+      width: 1.8,
+      height: 48,
       displayValue: true,
       fontOptions: "bold",
-      fontSize: 13,
-      margin: 6,
+      fontSize: 12,
+      margin: 4,
       background: "transparent"
     });
 
-    const barcodeWrap = document.querySelector(".profile-barcode");
+    const barcodeWrap = document.querySelector(".id-card-barcode-wrap") || document.querySelector(".profile-barcode");
     if (barcodeWrap) {
       barcodeWrap.style.cursor = "pointer";
-      barcodeWrap.title = "Nhấn để phóng to";
+      barcodeWrap.title = "Nhấn để phóng to toàn màn hình";
       barcodeWrap.onclick = () => openBarcodeModal(student.studentId);
     }
   }
 
-  document.getElementById("progressFill").style.width =
-    `${data.progressPercent || 0}%`;
+  // Progress Bar & KPI Counters
+  const completed = Number(data.completedCount || 0);
+  const percent = Number(data.progressPercent || 0);
+  const missing = Math.max(0, 5 - completed);
 
-  document.getElementById("progressText").textContent =
-    `${data.completedCount || 0}/5 tiêu chí đã đạt (${data.progressPercent || 0}%)`;
+  const progressFill = document.getElementById("progressFill");
+  if (progressFill) progressFill.style.width = `${percent}%`;
+
+  const progressText = document.getElementById("progressText");
+  if (progressText) {
+    progressText.textContent = `${completed}/5 tiêu chí đã đạt (${percent}%)`;
+  }
+
+  const statCompleted = document.getElementById("statCompletedCount");
+  if (statCompleted) statCompleted.textContent = `${completed}/5`;
+
+  const statMissing = document.getElementById("statMissingCount");
+  if (statMissing) statMissing.textContent = `${missing}`;
+
+  const statusChip = document.getElementById("progressStatusChip");
+  if (statusChip) {
+    if (completed >= 5) {
+      statusChip.textContent = "Đã hoàn thành 5/5 ⭐";
+      statusChip.className = "progress-status-chip done";
+    } else if (completed > 0) {
+      statusChip.textContent = `Đang thực hiện (${completed}/5)`;
+      statusChip.className = "progress-status-chip in_progress";
+    } else {
+      statusChip.textContent = "Chưa hoàn thành";
+      statusChip.className = "progress-status-chip";
+    }
+  }
+
+  // Update Overview Criteria Preview Pills
+  if (data.progress) {
+    const list = ["daoDucTot", "hocTapTot", "theLucTot", "tinhNguyenTot", "hoiNhapTot"];
+    list.forEach((cat) => {
+      const pill = document.getElementById(`pill-${cat}`);
+      const item = data.progress[cat];
+      if (pill && item) {
+        if (item.isCompleted) {
+          pill.textContent = "Đã đạt ✅";
+          pill.className = "preview-status-pill done";
+        } else {
+          pill.textContent = "Chưa đạt";
+          pill.className = "preview-status-pill missing";
+        }
+      }
+    });
+  }
 
   const higherLevelCard = document.getElementById("higherLevelCard");
-
-if (higherLevelCard) {
-  const isCompletedSchoolLevel =
-    Number(data.completedCount || 0) >= 5 ||
-    Number(data.progressPercent || 0) >= 100;
-
-  if (isCompletedSchoolLevel) {
-    higherLevelCard.classList.remove("hidden");
-  } else {
-    higherLevelCard.classList.add("hidden");
+  if (higherLevelCard) {
+    const isCompletedSchoolLevel = completed >= 5 || percent >= 100;
+    if (isCompletedSchoolLevel) {
+      higherLevelCard.classList.remove("hidden");
+    } else {
+      higherLevelCard.classList.add("hidden");
+    }
   }
-}
 
   const aiSuggestions = document.getElementById("aiSuggestions");
-
   if (!aiSuggestions) return;
 
   aiSuggestions.innerHTML = "";
 
   if (!data.aiSuggestions || data.aiSuggestions.length === 0) {
-    aiSuggestions.innerHTML = "<li>Bạn chưa có gợi ý AI mới.</li>";
+    aiSuggestions.innerHTML = "<li>Hồ sơ của bạn đang được cập nhật. AI sẽ đưa ra gợi ý khi có thêm dữ liệu.</li>";
     return;
   }
 
@@ -601,16 +658,38 @@ function renderCriterionTabs(data) {
             ? `
               <hr>
 
-              <h3>Upload minh chứng ngoài danh sách</h3>
+              <h3 style="margin-bottom: 6px;">Upload minh chứng ngoài danh sách</h3>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+                Tải lên tài liệu chứng minh cho tiêu chuẩn này để AI thẩm định và Ban Chấp hành đối chiếu.
+              </p>
 
-              <input
-                type="file"
-                id="file-${category}"
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-              />
+              <div
+                class="dropzone-box"
+                id="dropzone-${category}"
+                onclick="document.getElementById('file-${category}').click()"
+                ondragover="handleDragOver(event, '${category}')"
+                ondragleave="handleDragLeave(event, '${category}')"
+                ondrop="handleDrop(event, '${category}')"
+              >
+                <div class="dropzone-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </div>
+                <div class="dropzone-text">
+                  <h4>Kéo thả file minh chứng vào đây hoặc click để chọn</h4>
+                  <p>Hỗ trợ định dạng PDF, JPG, PNG, DOCX (Dung lượng tối đa 2MB)</p>
+                </div>
+                <div id="dropzone-file-info-${category}" class="dropzone-file-info"></div>
+                <input
+                  type="file"
+                  id="file-${category}"
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  style="display: none;"
+                  onchange="handleFileSelected('${category}')"
+                />
+              </div>
 
-              <button onclick="uploadEvidence('${category}')">
-                Gửi minh chứng
+              <button class="btn-primary" onclick="uploadEvidence('${category}')">
+                🚀 Tải lên & Phân tích bằng AI
               </button>
 
               <p id="upload-message-${category}" class="upload-message"></p>
@@ -622,23 +701,125 @@ function renderCriterionTabs(data) {
   });
 }
 
-function renderStorage(evidences) {
-  const table = document.getElementById("storageTable");
+// ─────────────────────────────────────────
+// DRAG & DROP AND FILE SELECTION HELPERS
+// ─────────────────────────────────────────
+function handleDragOver(e, category) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById(`dropzone-${category}`);
+  if (dropzone) dropzone.classList.add("dragover");
+}
 
+function handleDragLeave(e, category) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById(`dropzone-${category}`);
+  if (dropzone) dropzone.classList.remove("dragover");
+}
+
+function handleDrop(e, category) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById(`dropzone-${category}`);
+  if (dropzone) dropzone.classList.remove("dragover");
+
+  const files = e.dataTransfer.files;
+  if (!files || files.length === 0) return;
+
+  const fileInput = document.getElementById(`file-${category}`);
+  if (fileInput) {
+    fileInput.files = files;
+    handleFileSelected(category);
+  }
+}
+
+function handleFileSelected(category) {
+  const fileInput = document.getElementById(`file-${category}`);
+  const info = document.getElementById(`dropzone-file-info-${category}`);
+  if (!fileInput || !info) return;
+
+  const file = fileInput.files[0];
+  if (file) {
+    info.innerHTML = `📄 <strong>${escapeHtml(file.name)}</strong> (${formatFileSize(file.size)})`;
+    info.classList.add("active");
+  } else {
+    info.innerHTML = "";
+    info.classList.remove("active");
+  }
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+// ─────────────────────────────────────────
+// FILTERABLE EVIDENCE STORAGE (KHO MINH CHỨNG)
+// ─────────────────────────────────────────
+let allStorageEvidences = [];
+
+function renderStorage(evidences) {
+  allStorageEvidences = evidences || [];
+  handleStorageFilter();
+}
+
+function handleStorageFilter() {
+  const table = document.getElementById("storageTable");
   if (!table) return;
+
+  const searchInput = document.getElementById("storageSearchInput");
+  const catFilter = document.getElementById("storageCategoryFilter");
+  const statusFilter = document.getElementById("storageStatusFilter");
+
+  const keyword = (searchInput ? searchInput.value : "").trim().toLowerCase();
+  const selectedCat = catFilter ? catFilter.value : "all";
+  const selectedStatus = statusFilter ? statusFilter.value : "all";
+
+  let filtered = allStorageEvidences.filter((item) => {
+    // Search by file name or admin note
+    if (keyword) {
+      const matchName = String(item.fileName || "").toLowerCase().includes(keyword);
+      const matchNote = String(item.adminReview?.note || "").toLowerCase().includes(keyword);
+      if (!matchName && !matchNote) return false;
+    }
+
+    // Category filter
+    if (selectedCat !== "all" && item.category !== selectedCat) {
+      return false;
+    }
+
+    // Status filter
+    if (selectedStatus !== "all") {
+      if (selectedStatus === "approved") {
+        if (!["ai_valid", "approved_by_admin"].includes(item.status)) return false;
+      } else if (selectedStatus === "pending") {
+        if (!["pending", "manual_review", "need_more_info"].includes(item.status)) return false;
+      } else if (selectedStatus === "rejected") {
+        if (!["ai_invalid", "rejected_by_admin"].includes(item.status)) return false;
+      }
+    }
+
+    return true;
+  });
 
   table.innerHTML = "";
 
-  if (!evidences || evidences.length === 0) {
+  if (filtered.length === 0) {
     table.innerHTML = `
       <tr>
-        <td colspan="5">Chưa có file minh chứng nào.</td>
+        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px 18px;">
+          ${allStorageEvidences.length === 0 ? "Chưa có file minh chứng nào được nộp." : "Không tìm thấy minh chứng phù hợp với bộ lọc."}
+        </td>
       </tr>
     `;
     return;
   }
 
-  evidences.forEach((evidence) => {
+  filtered.forEach((evidence) => {
     const row = document.createElement("tr");
 
     const fileUrl = evidence.fileUrl
@@ -648,18 +829,25 @@ function renderStorage(evidences) {
       : "";
 
     row.innerHTML = `
-      <td>${evidence.fileName}</td>
-      <td>${categoryLabels[evidence.category] || evidence.category}</td>
+      <td>
+        <strong style="color: var(--hcmus-navy);">${escapeHtml(evidence.fileName)}</strong>
+        ${evidence.fileSize ? `<br><small style="color: var(--text-muted);">${formatFileSize(evidence.fileSize)}</small>` : ""}
+      </td>
+      <td>
+        <span style="font-weight: 600;">${categoryLabels[evidence.category] || evidence.category}</span>
+      </td>
       <td>
         ${formatStatus(evidence.status)}
-        ${evidence.adminReview && evidence.adminReview.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${evidence.adminReview.note}</small>` : ""}
+        ${evidence.adminReview && evidence.adminReview.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
+        ${evidence.aiResult && evidence.aiResult.reason ? `<br><small style="color: var(--text-muted);">${escapeHtml(evidence.aiResult.reason)}</small>` : ""}
       </td>
       <td>${formatDate(evidence.createdAt)}</td>
-      <td>
+      <td style="text-align: right;">
         ${
           fileUrl && !fileUrl.includes("self-declare")
             ? `
               <a href="${fileUrl}" target="_blank" class="download-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 Xem file
               </a>
             `
@@ -911,6 +1099,11 @@ async function uploadEvidence(category) {
     }
 
     fileInput.value = "";
+    const dropzoneInfo = document.getElementById(`dropzone-file-info-${category}`);
+    if (dropzoneInfo) {
+      dropzoneInfo.innerHTML = "";
+      dropzoneInfo.classList.remove("active");
+    }
 
     message.textContent = "Upload thành công. AI đang kiểm tra minh chứng...";
 
@@ -1368,7 +1561,7 @@ function renderOtherEvidenceTab(container, evidences = []) {
 
       <hr>
 
-      <h3>Nộp minh chứng khác</h3>
+      <h3 style="margin-bottom: 6px;">Nộp minh chứng khác</h3>
 
       <div class="upload-file-note">
         <div>
@@ -1379,11 +1572,34 @@ function renderOtherEvidenceTab(container, evidences = []) {
         </div>
       </div>
 
-      <input
-        type="file"
-        id="file-khac"
-        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-      />
+      <div
+        class="dropzone-box"
+        id="dropzone-khac"
+        onclick="document.getElementById('file-khac').click()"
+        ondragover="handleDragOver(event, 'khac')"
+        ondragleave="handleDragLeave(event, 'khac')"
+        ondrop="handleDrop(event, 'khac')"
+      >
+        <div class="dropzone-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </div>
+        <div class="dropzone-text">
+          <h4>Kéo thả file minh chứng vào đây hoặc click để chọn</h4>
+          <p>Hỗ trợ định dạng PDF, JPG, PNG, DOCX (Dung lượng tối đa 2MB)</p>
+        </div>
+        <div id="dropzone-file-info-khac" class="dropzone-file-info"></div>
+        <input
+          type="file"
+          id="file-khac"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          style="display: none;"
+          onchange="handleFileSelected('khac')"
+        />
+      </div>
+
+      <button class="btn-primary" onclick="uploadEvidence('khac')">
+        🚀 Tải lên & Phân tích bằng AI
+      </button>
 
       <p id="upload-message-khac" class="upload-message"></p>
 

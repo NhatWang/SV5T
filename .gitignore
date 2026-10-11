@@ -3,3 +3,11 @@ node_modules/
 uploads/
 uploads/evidence-temp/
 .DS_Store
+Documents
+Documents.pub
+*-test.js
+*.pubPublic/images/Certificate.pdf
+Public/images/HoangPhuc_CV TCB.pdf
+Public/images/JOBOKO-mau-cv-techcombank.xls
+Public/images/JOBOKO-mau-cv-techcombank.xlsx
+Public/images/CV_form_vi.xlsx

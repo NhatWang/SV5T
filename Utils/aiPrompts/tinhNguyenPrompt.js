@@ -1,6 +1,6 @@
-const { getAiAwardLevelContext } = require("./context");
+const { getAiAwardLevelContext, USER_DOCUMENT_NOTE } = require("./context");
 
-function buildTinhNguyenPrompt(contentDescription, awardLevel = "truong") {
+function buildTinhNguyenPrompt(awardLevel = "truong") {
   const context = getAiAwardLevelContext(awardLevel);
 
   return `Đây là minh chứng cho tiêu chí "Tình nguyện tốt" trong chương trình Sinh viên 5 tốt ${context.label}.
@@ -27,7 +27,7 @@ Quy tắc riêng về số ngày tình nguyện:
 - Không tự đoán số ngày nếu tài liệu không ghi rõ hoặc không thể suy ra chắc chắn.
 - Nếu thiếu ngày, thiếu tên hoạt động, thiếu đơn vị xác nhận hoặc thiếu tên sinh viên, đưa vào missingInfo.
 
-${contentDescription}
+${USER_DOCUMENT_NOTE}
 
 Trả lời đúng JSON, không thêm markdown:
 {

@@ -1,7 +1,7 @@
 const { isHigherAwardLevel } = require("../sv5tLevels");
-const { getAiAwardLevelContext } = require("./context");
+const { getAiAwardLevelContext, USER_DOCUMENT_NOTE } = require("./context");
 
-function buildHocTapPrompt(contentDescription, awardLevel = "truong") {
+function buildHocTapPrompt(awardLevel = "truong") {
   const context = getAiAwardLevelContext(awardLevel);
   const isHigherLevel = isHigherAwardLevel(awardLevel);
 
@@ -37,7 +37,7 @@ Quy tắc riêng cho AI:
 - Nếu thiếu cấp tổ chức, thiếu kết quả giải, thiếu điểm nghiệm thu, thiếu loại xếp loại, thiếu xác nhận hoặc thiếu tên sinh viên thì đưa vào missingInfo.
 - Không tự suy đoán cấp tổ chức hoặc thành tích nếu file không thể hiện rõ.
 
-${contentDescription}
+${USER_DOCUMENT_NOTE}
 
 Trả lời đúng JSON, không thêm markdown:
 {
@@ -87,7 +87,7 @@ Quy tắc riêng cho AI:
 - Nếu tài liệu thuộc nhóm NCKH, sáng tạo, trợ giảng, bài báo, đội tuyển học thuật hoặc minh chứng trực tiếp khác thì trả academicEvidenceType tương ứng và academicActivityCount = 0.
 - Không tự suy đoán cấp tổ chức hoặc thành tích nếu file không thể hiện rõ.
 
-${contentDescription}
+${USER_DOCUMENT_NOTE}
 
 Trả lời đúng JSON, không thêm markdown:
 {

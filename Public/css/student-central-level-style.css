@@ -318,7 +318,9 @@ body::after {
   overflow: hidden;
 }
 
-.sidebar button::before {
+/* Dùng combinator ">" (chỉ con trực tiếp của .sidebar) để không dính vào
+   nút .sidebar-close-btn (✕) nằm bên trong .sidebar-header. */
+.sidebar > button::before {
   content: '›';
   font-size: 20px;
   font-weight: 900;
@@ -327,26 +329,26 @@ body::after {
   transition: opacity var(--ease), transform var(--ease);
 }
 
-.sidebar button:hover {
+.sidebar > button:hover {
   transform: translateX(5px);
   background: rgba(255, 215, 0, 0.14);
   border-color: rgba(255, 215, 0, 0.38);
   color: var(--vang-nhat);
 }
 
-.sidebar button:hover::before {
+.sidebar > button:hover::before {
   opacity: 1;
   transform: translateX(3px);
 }
 
-.sidebar button:last-child {
+.sidebar > button:last-child {
   margin-top: 22px;
   background: rgba(50, 0, 10, 0.50);
   border-color: rgba(255, 80, 80, 0.22);
   color: #ffc5c5;
 }
 
-.sidebar button:last-child::before {
+.sidebar > button:last-child::before {
   content: '⏻';
   font-size: 14px;
 }

@@ -371,6 +371,31 @@ verification: {
       foundPage: { type: Number, default: 0 },
       verifiedAt: { type: Date, default: null },
       error: { type: String, default: "" }
+    },
+
+    // Kết quả phát hiện chỉnh sửa ảnh (ELA + AI thị giác).
+    // Chỉ là tín hiệu cảnh báo cho admin xem xét, không tự động từ chối.
+    forensics: {
+      ranAt: { type: Date, default: null },
+      elaScore: { type: Number, default: 0 },
+      aiForgeryScore: { type: Number, default: 0 },
+      forgeryScore: { type: Number, default: 0 },
+      suspected: { type: Boolean, default: false },
+      signals: {
+        type: [
+          {
+            type: { type: String, default: "" },
+            found: { type: Boolean, default: false },
+            confidence: { type: Number, default: 0 },
+            location: { type: String, default: "" },
+            detail: { type: String, default: "" }
+          }
+        ],
+        default: []
+      },
+      summary: { type: String, default: "" },
+      warningFlags: { type: [String], default: [] },
+      error: { type: String, default: "" }
     }
   },
   {

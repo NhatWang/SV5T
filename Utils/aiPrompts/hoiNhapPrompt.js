@@ -1,6 +1,6 @@
-const { getAiAwardLevelContext } = require("./context");
+const { getAiAwardLevelContext, USER_DOCUMENT_NOTE } = require("./context");
 
-function buildHoiNhapPrompt(contentDescription, awardLevel = "truong") {
+function buildHoiNhapPrompt(awardLevel = "truong") {
   const context = getAiAwardLevelContext(awardLevel);
   const isDhqgLevel = awardLevel === "dhqg";
   const isThanhLevel = awardLevel === "thanh";
@@ -114,7 +114,7 @@ Quy tắc phân loại riêng cho nhóm Ngoại ngữ:
 - Nếu tài liệu là giải thưởng nhưng thiếu hạng giải hoặc cấp tổ chức, thêm thông tin còn thiếu vào missingInfo.
 ${isDhqgLevel ? `- Riêng cấp ĐHQG-HCM: Nếu tài liệu thuộc nhóm Ngoại ngữ nhưng có các cụm như "thi thử", "kỳ thi thử", "mock test", "practice test", "trial test", "placement test thử", "kiểm tra thử", "chứng nhận thử", "kết quả thi thử", thì trả isValid = false, subCriteria = "ngoaiNgu", confidence tối thiểu 80 nếu thông tin rõ, và giải thích rằng cấp ĐHQG-HCM không chấp nhận chứng nhận trong các đợt thi thử.` : ""}
 
-${contentDescription}
+${USER_DOCUMENT_NOTE}
 
 Trả lời đúng JSON, không thêm markdown:
 {

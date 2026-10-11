@@ -1,4 +1,6 @@
-function buildKhacPrompt(contentDescription) {
+const { USER_DOCUMENT_NOTE } = require("./context");
+
+function buildKhacPrompt() {
   return `Đây là minh chứng thuộc tab "Khác" trong hồ sơ Sinh viên 5 tốt cấp Trường.
 
 Nhiệm vụ:
@@ -37,7 +39,7 @@ Quy tắc phân loại:
 - Nếu có "Giám đốc ĐHQG" hoặc "Giám đốc Đại học Quốc gia" và "Sinh viên 5 tốt tiêu biểu", matchedType = "bang_khen_giam_doc_dhqg_sv5t_tieu_bieu", sv5tHistoryLevel = "dhqg".
 - Nếu không thấy rõ cụm "Sinh viên 5 tốt" hoặc không phải giấy chứng nhận/bằng khen SV5T, trả isValid = false, matchedType = "unknown".
 
-${contentDescription}
+${USER_DOCUMENT_NOTE}
 
 Trả lời đúng JSON, không thêm markdown:
 {

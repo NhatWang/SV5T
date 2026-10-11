@@ -23,11 +23,12 @@ const {
   recomputeHoiNhapProgress
 } = require("../Utils/progressRecompute");
 
+const { getEvidenceFileUrl } = require("../Utils/r2Client");
+
 const {
-  buildEvidenceKey,
-  uploadLocalFileToR2,
-  deleteFromR2
-} = require("../Utils/r2Client");
+  archiveEvidenceToR2,
+  deleteEvidenceFile
+} = require("../services/storageService");
 
 const {
   requireAdminAuth,
@@ -174,69 +175,6 @@ function updateStudentProgressSummary(student) {
   } else {
     student.sv5tStatus = "completed";
   }
-}
-
-async function archiveEvidenceToR2FromAdmin(evidence) {
-  if (!evidence) return null;
-
-  if (evidence.storageStatus === "r2_archived" && evidence.fileUrl) {
-    return evidence;
-  }
-
-  if (!evidence.filePath || !fs.existsSync(evidence.filePath)) {
-    return evidence;
-  }
-
-  const fileKey = buildEvidenceKey(evidence.studentId, evidence.fileName);
-
-  const uploadedFile = await uploadLocalFileToR2({
-    localPath: evidence.filePath,
-    key: fileKey,
-    contentType: evidence.fileType
-  });
-
-  evidence.fileKey = uploadedFile.key;
-  evidence.fileUrl = uploadedFile.url;
-  evidence.storageStatus = "r2_archived";
-
-  if (fs.existsSync(evidence.filePath)) {
-    fs.unlinkSync(evidence.filePath);
-  }
-
-  evidence.filePath = "";
-
-  await evidence.save();
-
-  return evidence;
-}
-
-async function deleteTempEvidenceFileFromAdmin(evidence) {
-  if (!evidence) return null;
-
-  if (evidence.storageStatus === "local_temp" && evidence.filePath) {
-    if (fs.existsSync(evidence.filePath)) {
-      fs.unlinkSync(evidence.filePath);
-    }
-
-    evidence.filePath = "";
-    evidence.storageStatus = "deleted";
-    await evidence.save();
-
-    return evidence;
-  }
-
-  if (evidence.storageStatus === "r2_archived" && evidence.fileKey) {
-    await deleteFromR2(evidence.fileKey);
-
-    evidence.fileKey = "";
-    evidence.fileUrl = "";
-    evidence.storageStatus = "deleted";
-    await evidence.save();
-
-    return evidence;
-  }
-
-  return evidence;
 }
 
 function cleanupTempFile(filePath) {
@@ -1335,11 +1273,18 @@ router.get(
         .sort({ date: -1 })
         .lean();
 
-      const evidences = await Evidence.find({
+      const rawEvidences = await Evidence.find({
         studentId
       })
         .sort({ createdAt: -1 })
         .lean();
+
+      const evidences = await Promise.all(
+        rawEvidences.map(async (evidence) => ({
+          ...evidence,
+          fileUrl: await getEvidenceFileUrl(evidence)
+        }))
+      );
 
       const categoryKeys = [
         "daoDucTot",
@@ -1890,6 +1835,24 @@ router.post(
       const errors = [];
       const affectedStudentIds = new Set();
 
+      // Không tin cột className trong file Excel — tra cứu className thật từ DB
+      // để chống admin chi Hội A khai khống className "A" cho sinh viên thực tế thuộc chi Hội B.
+      const rowStudentIds = [
+        ...new Set(
+          rows
+            .map((row) => getCellValue(row, "studentId"))
+            .filter(Boolean)
+        )
+      ];
+
+      const studentsInDb = await Student.find({
+        studentId: { $in: rowStudentIds }
+      }).select("studentId className").lean();
+
+      const actualClassNameByStudentId = new Map(
+        studentsInDb.map((s) => [s.studentId, s.className])
+      );
+
       for (const row of rows) {
         const volunteerDays = Number(row.volunteerDays || 0);
         const academicEvidenceType = getCellValue(row, "academicEvidenceType");
@@ -1961,12 +1924,26 @@ router.post(
           continue;
         }
 
-        if (req.admin.role === "admin" && className !== req.admin.className) {
-          errors.push({
-            row,
-            reason: `Admin chi Hội ${req.admin.className} không được upload hoạt động cho chi Hội ${className}`
-          });
-          continue;
+        if (req.admin.role === "admin") {
+          const actualClassName = actualClassNameByStudentId.has(studentId)
+            ? actualClassNameByStudentId.get(studentId)
+            : null;
+
+          if (actualClassName === null) {
+            errors.push({
+              row,
+              reason: `MSSV ${studentId} không tồn tại trong hệ thống nên không thể xác thực chi Hội`
+            });
+            continue;
+          }
+
+          if (actualClassName !== req.admin.className) {
+            errors.push({
+              row,
+              reason: `Admin chi Hội ${req.admin.className} không được upload hoạt động cho sinh viên MSSV ${studentId} (thực tế thuộc chi Hội ${actualClassName})`
+            });
+            continue;
+          }
         }
 
         if (req.admin.role === "admin" && organizerLevel !== "chi_hoi") {
@@ -2280,6 +2257,13 @@ router.get("/evidences/all", requireAdminAuth, async (req, res) => {
         return true;
       });
 
+    evidences = await Promise.all(
+      evidences.map(async (evidence) => ({
+        ...evidence,
+        fileUrl: await getEvidenceFileUrl(evidence)
+      }))
+    );
+
     res.json({
       success: true,
       total: evidences.length,
@@ -2408,7 +2392,7 @@ router.patch(
       await evidence.save();
 
       if (status === "approved_by_admin") {
-        await archiveEvidenceToR2FromAdmin(evidence);
+        await archiveEvidenceToR2(evidence);
 
         await recomputeSchoolProgressAfterEvidence(evidence);
         await recomputeHigherLevelProgressAfterEvidence(evidence);
@@ -2416,7 +2400,7 @@ router.patch(
       }
 
       if (status === "rejected_by_admin") {
-        await deleteTempEvidenceFileFromAdmin(evidence);
+        await deleteEvidenceFile(evidence);
       }
 
       if (status === "approved_by_admin") {
@@ -2449,12 +2433,17 @@ router.patch(
         });
       }
 
+      const responseEvidence = {
+        ...evidence.toObject(),
+        fileUrl: await getEvidenceFileUrl(evidence)
+      };
+
       if (status === "rejected_by_admin") {
         return res.json({
           success: true,
           message:
             "Đã từ chối minh chứng. File tạm đã được xóa và không lưu vào Cloudflare R2.",
-          evidence
+          evidence: responseEvidence
         });
       }
 
@@ -2462,7 +2451,7 @@ router.patch(
         return res.json({
           success: true,
           message: "Đã yêu cầu sinh viên bổ sung thông tin minh chứng.",
-          evidence
+          evidence: responseEvidence
         });
       }
 
@@ -2472,7 +2461,7 @@ router.patch(
           evidence.awardLevel === "truong"
             ? "Đã duyệt minh chứng hợp lệ. File đã được lưu vào Cloudflare R2 và cập nhật tiến độ cấp Trường."
             : "Đã duyệt minh chứng hợp lệ. File đã được lưu vào Cloudflare R2. Tiến độ cấp cao hơn sẽ được tính tự động khi sinh viên tải lại trang xét cấp tương ứng.",
-        evidence
+        evidence: responseEvidence
       });
     } catch (error) {
       console.error("Review evidence error:", error);
@@ -3373,7 +3362,10 @@ router.patch(
           action === "approve"
             ? "Đã duyệt minh chứng cấp Trung ương."
             : "Đã từ chối minh chứng cấp Trung ương.",
-        evidence
+        evidence: {
+          ...evidence.toObject(),
+          fileUrl: await getEvidenceFileUrl(evidence)
+        }
       });
     } catch (error) {
       console.error("Review central evidence error:", error);
@@ -3415,20 +3407,23 @@ router.get("/central-evidences", requireAdminAuth, async (req, res) => {
       studentMap[student.studentId] = student;
     });
 
-    const evidencesWithStudents = evidences.map((evidence) => {
-      const student = studentMap[evidence.studentId] || {};
+    const evidencesWithStudents = await Promise.all(
+      evidences.map(async (evidence) => {
+        const student = studentMap[evidence.studentId] || {};
 
-      return {
-        ...evidence,
-        student: {
-          studentId: student.studentId || evidence.studentId || "",
-          fullName: student.fullName || "Chưa cập nhật",
-          className: student.className || "Chưa cập nhật"
-        },
-        studentName: student.fullName || "Chưa cập nhật",
-        fullName: student.fullName || "Chưa cập nhật"
-      };
-    });
+        return {
+          ...evidence,
+          fileUrl: await getEvidenceFileUrl(evidence),
+          student: {
+            studentId: student.studentId || evidence.studentId || "",
+            fullName: student.fullName || "Chưa cập nhật",
+            className: student.className || "Chưa cập nhật"
+          },
+          studentName: student.fullName || "Chưa cập nhật",
+          fullName: student.fullName || "Chưa cập nhật"
+        };
+      })
+    );
 
     return res.json({
       success: true,
@@ -3473,6 +3468,7 @@ router.get(
 
 router.post(
   "/admins/:username/generate-reset-code",
+  requireAdminAuth,
   requireSuperAdmin,
   async (req, res) => {
     try {

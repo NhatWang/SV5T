@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SV5T Forensics</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#020818;color:#e2e8f0;font-family:'IBM Plex Mono',monospace;min-height:100vh;padding:28px 20px}
+.wrap{max-width:720px;margin:0 auto}
+/* header */
+.hdr-tag{font-size:10px;color:#ef4444;letter-spacing:3px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.dot{width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px #ef4444}
+h1{font-size:20px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.sub{font-size:11px;color:#475569;margin-bottom:24px}
+/* server bar */
+.sbar{display:flex;gap:8px;margin-bottom:20px}
+.sbar input{flex:1;background:#050e1a;border:1px solid #1e3a5f;border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:12px;font-family:monospace;outline:none}
+.sbar input:focus{border-color:#3b82f6}
+.ping-btn{background:#0d1117;border:1px solid #1e3a5f;border-radius:8px;color:#64748b;padding:0 14px;cursor:pointer;font-size:11px;font-family:monospace;white-space:nowrap}
+.ping-btn:hover{border-color:#3b82f6;color:#93c5fd}
+.ping-ok{color:#22c55e}.ping-err{color:#ef4444}
+/* dropzone */
+.dz{border:2px dashed #1e3a5f;border-radius:12px;padding:36px 20px;text-align:center;cursor:pointer;background:#050e1a;transition:all .2s;margin-bottom:16px;position:relative;overflow:hidden}
+.dz.drag,.dz:hover{border-color:#ef4444;background:#0a0505}
+.dz-grid{position:absolute;inset:0;opacity:.03;pointer-events:none;background-image:repeating-linear-gradient(0deg,#ef4444 0,transparent 1px,transparent 24px),repeating-linear-gradient(90deg,#ef4444 0,transparent 1px,transparent 24px)}
+#preview{max-height:180px;max-width:100%;border-radius:8px;border:1px solid #1e293b;display:none;margin:0 auto 10px}
+.dz-icon{font-size:28px;margin-bottom:8px}
+.dz-hint{font-size:13px;color:#94a3b8}
+.dz-name{font-size:11px;color:#ef4444;margin-top:6px}
+/* analyze btn */
+.analyze-btn{width:100%;padding:12px;background:#1e3a5f;border:none;border-radius:8px;color:#93c5fd;font-size:13px;font-family:monospace;cursor:pointer;margin-bottom:20px;transition:background .2s}
+.analyze-btn:hover:not(:disabled){background:#1e40af}
+.analyze-btn:disabled{opacity:.4;cursor:not-allowed}
+/* spinner */
+.spin-wrap{text-align:center;padding:14px 0;color:#ef4444;font-size:13px;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .9s linear infinite;margin-right:8px}
+/* error */
+.errmsg{background:#1c0a0a;border:1px solid #991b1b;border-radius:8px;padding:14px;color:#fca5a5;font-size:12px;margin-bottom:16px;white-space:pre-wrap;line-height:1.6;display:none}
+/* result */
+#result{display:none}
+.vc-card{border-radius:12px;padding:18px 20px;display:flex;align-items:center;gap:20px;margin-bottom:14px}
+.vc-score{font-size:36px;font-weight:700;line-height:1;flex-shrink:0;width:72px;text-align:center}
+.vc-score span{display:block;font-size:11px;font-weight:400;color:#475569;margin-top:2px}
+.vc-label{font-size:20px;font-weight:700;margin-bottom:6px}
+.vc-summary{font-size:12px;color:#94a3b8;line-height:1.6}
+.rec-pill{display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-top:4px}
+.card{background:#0d0d0d;border:1px solid #1e293b;border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+/* signal rows */
+.sig{border-radius:8px;margin-bottom:8px;overflow:hidden;cursor:pointer}
+.sig-head{display:flex;align-items:center;gap:10px;padding:11px 14px}
+.sig-ico{width:28px;height:28px;border-radius:6px;background:#0d1117;border:1px solid #1e293b;display:flex;align-items:center;justify-content:center;font-size:12px;color:#64748b;flex-shrink:0}
+.sig-name{flex:1;font-size:13px;color:#e2e8f0}
+.sig-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;margin-right:6px}
+.sig-arr{font-size:11px;color:#334155}
+.sig-body{padding:0 14px 12px 52px;display:none}
+.sig-body.open{display:block}
+.sig-loc{font-size:11px;color:#64748b;margin-top:6px;margin-bottom:3px}
+.sig-det{font-size:12px;color:#94a3b8;line-height:1.7}
+/* bars */
+.bar{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #0f172a}
+.bar:last-child{border:none}
+.bar-lbl{font-size:12px;color:#64748b;min-width:160px}
+.bar-tr{flex:1;height:4px;background:#1e293b;border-radius:2px;overflow:hidden}
+.bar-fi{height:100%;border-radius:2px;transition:width 1s ease}
+.bar-v{font-size:13px;font-weight:600;min-width:32px}
+/* raw json */
+details{background:#050e1a;border:1px solid #1e293b;border-radius:8px;margin-bottom:14px}
+summary{padding:10px 14px;font-size:11px;color:#334155;cursor:pointer;list-style:none}
+summary::before{content:"+ "}
+details[open] summary::before{content:"- "}
+pre{margin:0;padding:0 14px 14px;font-size:11px;color:#475569;overflow-x:auto;line-height:1.6}
+.reset-btn{width:100%;background:transparent;border:1px solid #1e293b;border-radius:8px;color:#475569;padding:10px;cursor:pointer;font-family:monospace;font-size:12px}
+.reset-btn:hover{border-color:#334155;color:#64748b}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr-tag"><span class="dot"></span>Forensics Engine &middot; Gemini Vision</div>
+  <h1>Ph&aacute;t hi&#7879;n Minh ch&#7913;ng Gi&#7843; m&#7841;o</h1>
+  <p class="sub">Test UI cho <code>POST /analyze</code> &mdash; ch&#7841;y c&#7915;ng v&#7899;i forensics-server.js</p>
+
+  <!-- Server URL -->
+  <div class="sbar">
+    <input type="text" id="srv" value="http://localhost:4000" placeholder="http://localhost:4000"/>
+    <button class="ping-btn" onclick="ping()">Ping</button>
+    <span id="ping-status" style="font-size:11px;padding:0 8px;line-height:1;display:flex;align-items:center"></span>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
+    <div class="dz-grid"></div>
+    <img id="preview"/>
+    <div class="dz-icon" id="dz-ico">&#128269;</div>
+    <div class="dz-hint" id="dz-hint">K&eacute;o th&#7843; ho&#7863;c click &#273;&#7875; ch&#7885;n file</div>
+    <div class="dz-name" id="dz-name"></div>
+  </div>
+  <input type="file" id="fi" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" style="display:none"/>
+
+  <button class="analyze-btn" id="abtn" onclick="analyze()">&#128269; Ph&acirc;n t&iacute;ch Minh ch&#7913;ng</button>
+
+  <div class="spin-wrap" id="spin"><span class="spin">&#8635;</span><span id="stg">&#272;ang x&#7917; l&yacute;...</span></div>
+  <div class="errmsg" id="err"></div>
+  <div id="result"></div>
+</div>
+
+<script>
+var selectedFile = null;
+
+var SIG = {
+  FONT_INCONSISTENCY: {label:"Font kh&ocirc;ng &#273;&#7891;ng nh&#7845;t", icon:"Aa"},
+  PIXEL_ARTIFACT:     {label:"Pixel artifact / AI inpaint", icon:"&#11041;"},
+  ALIGNMENT:          {label:"C&#259;n ch&#7881;nh b&#7845;t th&#432;&#7901;ng", icon:"&#8801;"},
+  LIGHTING:           {label:"&Aacute;nh s&aacute;ng kh&ocirc;ng &#273;&#7891;ng &#273;&#7873;u", icon:"&#9681;"},
+  CONTENT_LOGIC:      {label:"N&#7897;i dung m&acirc;u thu&#7851;n", icon:"&#9888;"},
+  COMPRESSION:        {label:"V&ugrave;ng n&eacute;n kh&aacute;c m&#7913;c &#273;&#7897;", icon:"&#9638;"}
+};
+var VC = {
+  authentic:        {label:"X&aacute;c th&#7921;c",          c:"#22c55e", bg:"#052e16", bd:"#166534"},
+  likely_authentic: {label:"C&oacute; th&#7875; x&aacute;c th&#7921;c", c:"#86efac", bg:"#052e16", bd:"#166534"},
+  suspicious:       {label:"&#272;&aacute;ng ng&#7901;",         c:"#f59e0b", bg:"#1c1408", bd:"#92400e"},
+  likely_forged:    {label:"C&oacute; th&#7875; gi&#7843; m&#7841;o",  c:"#f97316", bg:"#1c0e04", bd:"#9a3412"},
+  forged:           {label:"Gi&#7843; m&#7841;o",           c:"#ef4444", bg:"#1c0a0a", bd:"#991b1b"}
+};
+function sc(s){return s>=75?"#22c55e":s>=50?"#f59e0b":s>=30?"#f97316":"#ef4444";}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function $(id){return document.getElementById(id);}
+
+// Drag & drop
+var dz=$("dz");
+dz.addEventListener("dragover",function(e){e.preventDefault();dz.classList.add("drag");});
+dz.addEventListener("dragleave",function(){dz.classList.remove("drag");});
+dz.addEventListener("drop",function(e){e.preventDefault();dz.classList.remove("drag");if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0]);});
+$("fi").addEventListener("change",function(e){if(e.target.files[0])setFile(e.target.files[0]);e.target.value="";});
+
+function setFile(f){
+  selectedFile=f;
+  $("dz-name").textContent=f.name+" ("+(f.size/1024).toFixed(1)+" KB)";
+  var prev=$("preview"),ico=$("dz-ico");
+  if(f.type.startsWith("image/")){prev.src=URL.createObjectURL(f);prev.style.display="block";ico.style.display="none";}
+  else{prev.style.display="none";ico.style.display="block";}
+}
+
+async function ping(){
+  var url=$("srv").value.trim();
+  var st=$("ping-status");
+  st.textContent="...";st.className="";
+  try{
+    var r=await fetch(url+"/",{signal:AbortSignal.timeout(3000)});
+    var d=await r.json();
+    st.textContent= d.gemini ? "online + Gemini OK" : "online (GEMINI KEY missing!)";
+    st.className=d.gemini?"ping-ok":"ping-err";
+  }catch(e){
+    st.textContent="offline: "+e.message;
+    st.className="ping-err";
+  }
+}
+
+async function analyze(){
+  if(!selectedFile){showErr("Vui l&ograve;ng ch&#7885;n file tr&#432;&#7899;c!");return;}
+  var url=$("srv").value.trim()+"/analyze";
+
+  $("abtn").disabled=true;
+  $("result").style.display="none";
+  showErr("");showSpin(true);
+
+  var fd=new FormData();
+  fd.append("file",selectedFile);
+
+  try{
+    setStage("&#272;ang upload file...");
+    var resp=await fetch(url,{method:"POST",body:fd});
+    setStage("&#272;ang nh&#7853;n k&#7871;t qu&#7843;...");
+    var data=await resp.json();
+    if(!data.success)throw new Error(data.message||"Server tr&#7843; v&#7873; l&#7895;i");
+    renderResult(data.forensics);
+  }catch(e){
+    showErr(e.message);
+  }finally{
+    showSpin(false);
+    $("abtn").disabled=false;
+  }
+}
+
+function showErr(msg){var e=$("err");e.innerHTML=msg?"&#9888; "+msg:"";e.style.display=msg?"block":"none";}
+function showSpin(v){$("spin").style.display=v?"block":"none";}
+function setStage(t){$("stg").innerHTML=t;}
+
+function renderResult(f){
+  var vc=VC[f.verdict]||VC.suspicious;
+  var auth=f.authenticityScore||0;
+  var found=(f.signals||[]).filter(function(s){return s.found;});
+  var clean=(f.signals||[]).filter(function(s){return !s.found;});
+  var recC=f.recommendation==="approve"?"#22c55e":f.recommendation==="reject"?"#ef4444":"#f59e0b";
+  var recBg=f.recommendation==="approve"?"#052e16":f.recommendation==="reject"?"#1c0a0a":"#1c1408";
+  var recTxt=f.recommendation==="approve"?"&#10003; Duy&#7879;t":f.recommendation==="reject"?"&#10005; T&#7915; ch&#7889;i":"&#9873; Xem th&#7911; c&ocirc;ng";
+
+  var h="<button class='reset-btn' onclick='resetUI()'>&#8617; Ph&acirc;n t&iacute;ch file kh&aacute;c</button>";
+
+  // Verdict
+  h+="<div class='vc-card' style='background:"+vc.bg+";border:1px solid "+vc.bd+"'>";
+  h+="<div class='vc-score' style='color:"+sc(auth)+"'>"+auth+"<span>/ 100</span></div>";
+  h+="<div style='flex:1'>";
+  h+="<div class='vc-label' style='color:"+vc.c+"'>"+vc.label+"</div>";
+  h+="<div class='vc-summary'>"+esc(f.summary)+"</div>";
+  h+="<span class='rec-pill' style='background:"+recBg+";color:"+recC+"'>"+recTxt+"</span>";
+  h+="</div></div>";
+
+  // Found signals
+  if(found.length){
+    h+="<div class='card'><div class='card-title' style='color:#ef4444'>&#9679; D&#7845;u hi&#7879;u ph&aacute;t hi&#7879;n ("+found.length+")</div>";
+    found.forEach(function(s,i){h+=sigHTML(s,"f"+i);});
+    h+="</div>";
+  }
+
+  // Clean signals
+  if(clean.length){
+    h+="<div class='card'><div class='card-title' style='color:#22c55e'>&#10003; Kh&ocirc;ng ph&aacute;t hi&#7879;n ("+clean.length+")</div>";
+    clean.forEach(function(s,i){h+=sigHTML(s,"c"+i);});
+    h+="</div>";
+  }
+
+  // Bars
+  h+="<div class='card'><div class='card-title' style='color:#64748b'>BREAKDOWN</div>";
+  h+=barH("&#272;i&#7875;m x&aacute;c th&#7921;c",auth)+barH("&#272;i&#7875;m gi&#7843; m&#7841;o",f.forgeryScore||0);
+  h+="<div class='bar'><span class='bar-lbl'>T&iacute;n hi&#7879;u t&igrave;m th&#7845;y</span><span style='font-size:12px;color:#475569'>"+found.length+" / "+((f.signals||[]).length)+"</span></div>";
+  h+="</div>";
+
+  // Raw JSON
+  h+="<details><summary>RAW JSON</summary><pre>"+esc(JSON.stringify(f,null,2))+"</pre></details>";
+
+  $("result").innerHTML=h;
+  $("result").style.display="block";
+
+  // Toggle signals
+  document.querySelectorAll(".sig").forEach(function(el){
+    el.querySelector(".sig-head").addEventListener("click",function(){
+      var b=el.querySelector(".sig-body");
+      var a=el.querySelector(".sig-arr");
+      b.classList.toggle("open");
+      a.textContent=b.classList.contains("open")?"&#9650;":"&#9660;";
+    });
+  });
+}
+
+function sigHTML(s,id){
+  var m=SIG[s.type]||{label:s.type,icon:"&bull;"};
+  var hi=s.found&&s.confidence>70,md=s.found&&s.confidence<=70;
+  var fc=hi?"#ef4444":md?"#f59e0b":"#22c55e";
+  var br=hi?"#7f1d1d":md?"#78350f":"#14532d";
+  var bg=hi?"#0f0505":md?"#0f0900":"#020f06";
+  var badge=s.found?"Ph&aacute;t hi&#7879;n &middot; "+s.confidence+"%":"Kh&ocirc;ng ph&aacute;t hi&#7879;n";
+  return "<div class='sig' id='sig-"+id+"' style='border:1px solid "+br+";background:"+bg+"'>"
+    +"<div class='sig-head'>"
+    +"<span class='sig-ico'>"+m.icon+"</span>"
+    +"<span class='sig-name'>"+m.label+"</span>"
+    +"<span class='sig-tag' style='color:"+fc+";background:"+fc+"18;border:1px solid "+fc+"44'>"+badge+"</span>"
+    +"<span class='sig-arr'>"+(s.found?"&#9650;":"&#9660;")+"</span>"
+    +"</div>"
+    +"<div class='sig-body"+(s.found?" open":"")+"' style='border-top:1px solid "+br+"'>"
+    +(s.location?"<div class='sig-loc'>&#128205; "+esc(s.location)+"</div>":"")
+    +"<div class='sig-det'>"+esc(s.detail)+"</div>"
+    +"</div></div>";
+}
+
+function barH(lbl,val){
+  return "<div class='bar'><span class='bar-lbl'>"+lbl+"</span>"
+    +"<div class='bar-tr'><div class='bar-fi' style='width:"+val+"%;background:"+sc(val)+"'></div></div>"
+    +"<span class='bar-v' style='color:"+sc(val)+"'>"+val+"</span></div>";
+}
+
+function resetUI(){
+  selectedFile=null;
+  $("result").style.display="none";
+  $("result").innerHTML="";
+  showErr("");
+  $("dz-name").textContent="";
+  $("preview").style.display="none";
+  $("dz-ico").style.display="block";
+}
+
+// Auto ping on load
+window.addEventListener("load",function(){setTimeout(ping,500);});
+</script>
+</body>
+</html>

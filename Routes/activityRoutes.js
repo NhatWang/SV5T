@@ -61,6 +61,31 @@ router.post("/create", requireAdminAuth, async (req, res) => {
         className: p.className || ""
       }));
 
+    // Tenant isolation: admin chi Hội chỉ được tạo hoạt động cho sinh viên
+    // thực tế thuộc chi Hội của mình — không tin cột className gửi lên từ client.
+    if (req.admin.role === "admin") {
+      const participantStudentIds = cleanedParticipants.map((p) => p.studentId);
+
+      const studentsInDb = await Student.find({
+        studentId: { $in: participantStudentIds }
+      }).select("studentId className").lean();
+
+      const actualClassNameByStudentId = new Map(
+        studentsInDb.map((s) => [s.studentId, s.className])
+      );
+
+      const foreignClassStudentIds = participantStudentIds.filter(
+        (studentId) => actualClassNameByStudentId.get(studentId) !== req.admin.className
+      );
+
+      if (foreignClassStudentIds.length > 0) {
+        return res.status(403).json({
+          success: false,
+          message: `Admin chi Hội ${req.admin.className} không được tạo hoạt động cho sinh viên ngoài chi Hội: ${foreignClassStudentIds.join(", ")}`
+        });
+      }
+    }
+
     const activity = new Activity({
       title,
       category,

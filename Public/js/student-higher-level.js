@@ -76,32 +76,115 @@ async function checkStudentSession() {
   }
 }
 
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function setupPageTitle() {
+  const isThanh = currentAwardLevel === "thanh";
   const label = awardLevelLabels[currentAwardLevel];
+
+  if (isThanh) {
+    document.body.classList.add("theme-thanh-pho");
+    document.body.classList.remove("theme-dhqg");
+  } else {
+    document.body.classList.add("theme-dhqg");
+    document.body.classList.remove("theme-thanh-pho");
+  }
 
   const title = document.getElementById("higherLevelTitle");
   if (title) {
-    title.textContent = `Xét danh hiệu Sinh viên 5 tốt ${label}`;
+    title.textContent = isThanh
+      ? "Xét danh hiệu Sinh viên 5 tốt Cấp Thành phố Hồ Chí Minh"
+      : "Xét danh hiệu Sinh viên 5 tốt Cấp ĐHQG-HCM";
   }
 
   const progressTitle = document.getElementById("higherProgressTitle");
   if (progressTitle) {
-    progressTitle.textContent = `Tiến độ xét ${label}`;
+    progressTitle.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: ${isThanh ? "var(--tech-cyan)" : "var(--tech-cyan)"};"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Tiến độ xét ${label}`;
   }
 
-  document.title = `Xét SV5T ${label}`;
+  const topbarMainTitle = document.getElementById("topbarMainTitle");
+  if (topbarMainTitle) {
+    topbarMainTitle.textContent = isThanh
+      ? "Cổng thông tin Sinh viên 5 tốt Cấp Thành phố Hồ Chí Minh"
+      : "Cổng thông tin Sinh viên 5 tốt Cấp ĐHQG-HCM";
+  }
+
+  const topbarSubtitle = document.getElementById("topbarSubtitle");
+  if (topbarSubtitle) {
+    topbarSubtitle.textContent = isThanh
+      ? "Hội Sinh viên Việt Nam TP. Hồ Chí Minh • Thành phố mang tên Bác kính yêu"
+      : "Đại học Quốc gia TP. Hồ Chí Minh • Hệ thống thẩm định hồ sơ NCKH & Đổi mới sáng tạo";
+  }
+
+  const sidebarLevelPill = document.getElementById("sidebarLevelPill");
+  if (sidebarLevelPill) {
+    sidebarLevelPill.textContent = isThanh ? "★ CẤP THÀNH PHỐ" : "★ CẤP ĐHQG-HCM";
+  }
+
+  const candidateLevelBadge = document.getElementById("candidateLevelBadge");
+  if (candidateLevelBadge) {
+    candidateLevelBadge.textContent = isThanh ? "ỨNG VIÊN CẤP THÀNH PHỐ" : "ỨNG VIÊN ĐHQG-HCM";
+  }
+
+  const candidateOrgName = document.getElementById("candidateOrgName");
+  if (candidateOrgName) {
+    candidateOrgName.textContent = isThanh ? "Hội Sinh viên Việt Nam TP. Hồ Chí Minh" : "Đại học Quốc gia TP. Hồ Chí Minh";
+  }
+
+  const btnDhqg = document.getElementById("levelBtnDhqg");
+  const btnThanh = document.getElementById("levelBtnThanh");
+  if (btnDhqg && btnThanh) {
+    if (isThanh) {
+      btnThanh.classList.add("active");
+      btnDhqg.classList.remove("active");
+    } else {
+      btnDhqg.classList.add("active");
+    }
+  }
+
+  const saigonBanner = document.getElementById("saigonHeritageBanner");
+  if (saigonBanner) {
+    saigonBanner.style.display = isThanh ? "block" : "none";
+  }
+
+  document.title = isThanh 
+    ? "Xét SV5T Cấp Thành phố | TP. Hồ Chí Minh" 
+    : "Xét SV5T Cấp ĐHQG-HCM | Khoa học & Đổi mới";
+}
+
+function switchHigherLevel(level) {
+  if (level !== "dhqg" && level !== "thanh") return;
+  window.location.href = `/student-higher-level.html?level=${level}`;
 }
 
 function openSidebar() {
+  document.getElementById("mainSidebar")?.classList.add("active");
   document.getElementById("mainSidebar")?.classList.add("open");
   document.getElementById("sidebarOverlay")?.classList.add("active");
   document.body.style.overflow = "hidden";
 }
 
 function closeSidebar() {
+  document.getElementById("mainSidebar")?.classList.remove("active");
   document.getElementById("mainSidebar")?.classList.remove("open");
   document.getElementById("sidebarOverlay")?.classList.remove("active");
   document.body.style.overflow = "";
+}
+
+function openBarcodeModal() {
+  document.getElementById("barcodeModal")?.classList.remove("hidden");
+}
+
+function closeBarcodeModal() {
+  document.getElementById("barcodeModal")?.classList.add("hidden");
 }
 
 function showTab(tabId, button) {
@@ -121,7 +204,14 @@ function showTab(tabId, button) {
 
   if (button) {
     button.classList.add("active");
+  } else {
+    const matchingBtn = document.querySelector(`.tab-btn[onclick*="'${tabId}'"]`);
+    if (matchingBtn) {
+      matchingBtn.classList.add("active");
+    }
   }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
   if (window.innerWidth <= 768) closeSidebar();
 }
@@ -164,6 +254,25 @@ function renderOverview(data) {
   if (studentIdText) studentIdText.textContent = student.studentId || "";
   if (classNameText) classNameText.textContent = student.className || "Chưa cập nhật";
 
+  // Dynamic Candidate Card Metric Pills
+  const idCardDrlText = document.getElementById("idCardDrlText");
+  const idCardGpaText = document.getElementById("idCardGpaText");
+  const idCardNckhText = document.getElementById("idCardNckhText");
+  const idCardVolText = document.getElementById("idCardVolText");
+
+  if (idCardDrlText) {
+    idCardDrlText.textContent = currentAwardLevel === "thanh" ? "≥ 90đ (Xuất sắc)" : "≥ 80đ (Tốt)";
+  }
+  if (idCardGpaText) {
+    idCardGpaText.textContent = currentAwardLevel === "thanh" ? "GPA ≥ 3.4 (KHTN ≥ 3.2)" : "GPA ≥ 3.2";
+  }
+  if (idCardNckhText) {
+    idCardNckhText.textContent = currentAwardLevel === "thanh" ? "Giải Euréka / Cấp Thành" : "Đề tài NCKH / ĐMST";
+  }
+  if (idCardVolText) {
+    idCardVolText.textContent = currentAwardLevel === "thanh" ? "≥ 5 Ngày Tình nguyện" : "Chiến dịch Cấp Trường+";
+  }
+
   const schoolLevelStatus = document.getElementById("schoolLevelStatus");
 
   if (schoolLevelStatus) {
@@ -188,6 +297,70 @@ function renderOverview(data) {
     progressText.textContent =
       `${data.completedCount || 0}/5 tiêu chí đã đạt (${data.progressPercent || 0}%)`;
   }
+
+  // 1. Avatar Box Monogram
+  const avatarBox = document.getElementById("avatarBox");
+  if (avatarBox) {
+    const names = (student.fullName || "").trim().split(" ");
+    let monogram = "SV";
+    if (names.length >= 2) {
+      monogram = (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    } else if (names.length === 1 && names[0]) {
+      monogram = names[0].substring(0, 2).toUpperCase();
+    }
+    avatarBox.textContent = monogram;
+  }
+
+  // 2. Barcode Rendering
+  if (typeof JsBarcode === "function" && student.studentId) {
+    try {
+      JsBarcode("#studentBarcode", student.studentId, {
+        format: "CODE128",
+        width: 1.5,
+        height: 38,
+        displayValue: true,
+        fontSize: 10,
+        margin: 0,
+        textMargin: 2
+      });
+      JsBarcode("#studentBarcodeZoom", student.studentId, {
+        format: "CODE128",
+        width: 2.2,
+        height: 65,
+        displayValue: true,
+        fontSize: 14,
+        margin: 4
+      });
+    } catch (err) {
+      console.warn("JsBarcode render error:", err);
+    }
+  }
+
+  // 3. Status chip & KPI counters
+  const completed = Number(data.completedCount || 0);
+  const percent = Number(data.progressPercent || 0);
+  const statCompletedCount = document.getElementById("statCompletedCount");
+  const statMissingCount = document.getElementById("statMissingCount");
+  const progressStatusChip = document.getElementById("progressStatusChip");
+
+  if (statCompletedCount) statCompletedCount.textContent = `${completed}/5`;
+  if (statMissingCount) statMissingCount.textContent = `${Math.max(0, 5 - completed)}`;
+  if (progressStatusChip) {
+    progressStatusChip.textContent = `${completed}/5 Đạt (${percent}%)`;
+    progressStatusChip.style.background = completed === 5 ? "var(--success-bg)" : "var(--tech-cyan-light)";
+    progressStatusChip.style.color = completed === 5 ? "var(--success)" : "var(--tech-cyan)";
+  }
+
+  // 4. Update 5 Criteria Pills in Overview Grid
+  const progressMap = data.progress || {};
+  categories.forEach((cat) => {
+    const pill = document.getElementById(`pill-${cat}`);
+    if (pill) {
+      const isDone = progressMap[cat]?.isCompleted === true;
+      pill.textContent = isDone ? "Đạt" : "Chưa đạt";
+      pill.className = `preview-status-pill ${isDone ? "completed" : "missing"}`;
+    }
+  });
 
   const aiSuggestions = document.getElementById("aiSuggestions");
 
@@ -241,8 +414,8 @@ function renderCentralPrerequisiteCard(data) {
 
   content.innerHTML = `
   <div class="activity-item">
-    ${hasProvincialAward ? "Đạt" : "Chưa đạt"}
-    <strong>Đã đạt danh hiệu Sinh viên 5 tốt cấp tỉnh/cấp Thành phố:</strong>
+    ${hasProvincialAward ? "✅" : "❌"}
+    <strong>${hasProvincialAward ? "Đã đạt" : "Chưa đạt"} danh hiệu Sinh viên 5 tốt cấp tỉnh/cấp Thành phố:</strong>
     ${
       hasProvincialAward
         ? "Hệ thống tự động xác định vì bạn đã hoàn thành 5/5 tiêu chí cấp Thành phố."
@@ -696,16 +869,38 @@ const hoiNhapDescription =
             ? `
               <hr>
 
-              <h3>Upload minh chứng bổ sung cho ${awardLevelLabels[currentAwardLevel]}</h3>
+              <h3 style="margin-bottom: 6px;">Upload minh chứng bổ sung cho ${awardLevelLabels[currentAwardLevel]}</h3>
+              <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+                Tải lên tài liệu chứng minh cho tiêu chuẩn này để AI thẩm định và Ban Chấp hành đối chiếu.
+              </p>
 
-              <input
-                type="file"
-                id="file-${category}"
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-              />
+              <div
+                class="dropzone-box"
+                id="dropzone-${category}"
+                onclick="document.getElementById('file-${category}').click()"
+                ondragover="handleDragOver(event, '${category}')"
+                ondragleave="handleDragLeave(event, '${category}')"
+                ondrop="handleDrop(event, '${category}')"
+              >
+                <div class="dropzone-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </div>
+                <div class="dropzone-text">
+                  <h4>Kéo thả file minh chứng vào đây hoặc click để chọn</h4>
+                  <p>Hỗ trợ định dạng PDF, JPG, PNG, DOCX (Dung lượng tối đa 2MB)</p>
+                </div>
+                <div id="dropzone-file-info-${category}" class="dropzone-file-info"></div>
+                <input
+                  type="file"
+                  id="file-${category}"
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  style="display: none;"
+                  onchange="handleFileSelected('${category}')"
+                />
+              </div>
 
-              <button onclick="uploadEvidence('${category}')">
-                Gửi minh chứng
+              <button class="btn-primary" onclick="uploadEvidence('${category}')">
+                🚀 Tải lên & Phân tích bằng AI
               </button>
 
               <p id="upload-message-${category}" class="upload-message"></p>
@@ -717,23 +912,112 @@ const hoiNhapDescription =
   });
 }
 
-function renderStorage(evidences) {
-  const table = document.getElementById("storageTable");
+// ─────────────────────────────────────────
+// DRAG & DROP AND FILE SELECTION HELPERS
+// ─────────────────────────────────────────
+function handleDragOver(e, category) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById(`dropzone-${category}`);
+  if (dropzone) dropzone.classList.add("dragover");
+}
 
+function handleDragLeave(e, category) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById(`dropzone-${category}`);
+  if (dropzone) dropzone.classList.remove("dragover");
+}
+
+function handleDrop(e, category) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = document.getElementById(`dropzone-${category}`);
+  if (dropzone) dropzone.classList.remove("dragover");
+
+  const files = e.dataTransfer.files;
+  if (!files || files.length === 0) return;
+
+  const fileInput = document.getElementById(`file-${category}`);
+  if (fileInput) {
+    fileInput.files = files;
+    handleFileSelected(category);
+  }
+}
+
+function handleFileSelected(category) {
+  const fileInput = document.getElementById(`file-${category}`);
+  const info = document.getElementById(`dropzone-file-info-${category}`);
+  if (!fileInput || !info) return;
+
+  const file = fileInput.files[0];
+  if (file) {
+    info.innerHTML = `📄 <strong>${escapeHtml(file.name)}</strong> (${formatFileSize(file.size)})`;
+    info.classList.add("active");
+  } else {
+    info.innerHTML = "";
+    info.classList.remove("active");
+  }
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
+// ─────────────────────────────────────────
+// FILTERABLE HIGHER EVIDENCE STORAGE
+// ─────────────────────────────────────────
+let allHigherStorageEvidences = [];
+
+function renderStorage(evidences) {
+  allHigherStorageEvidences = evidences || [];
+  handleHigherStorageFilter();
+}
+
+function handleHigherStorageFilter() {
+  const table = document.getElementById("storageTable");
   if (!table) return;
+
+  const searchInput = document.getElementById("storageSearchInput");
+  const catFilter = document.getElementById("storageCategoryFilter");
+  const statusFilter = document.getElementById("storageStatusFilter");
+
+  const query = (searchInput?.value || "").toLowerCase().trim();
+  const category = catFilter?.value || "all";
+  const status = statusFilter?.value || "all";
+
+  const filtered = allHigherStorageEvidences.filter((item) => {
+    const matchName = !query || (item.fileName || "").toLowerCase().includes(query);
+    const matchCat = category === "all" || item.category === category;
+    let matchStatus = true;
+    if (status === "approved") {
+      matchStatus = item.status === "approved_by_admin" || item.status === "ai_valid";
+    } else if (status === "pending") {
+      matchStatus = item.status === "pending" || item.status === "manual_review";
+    } else if (status === "rejected") {
+      matchStatus = item.status === "rejected_by_admin" || item.status === "ai_invalid" || item.status === "need_more_info";
+    }
+    return matchName && matchCat && matchStatus;
+  });
 
   table.innerHTML = "";
 
-  if (!evidences || evidences.length === 0) {
+  if (filtered.length === 0) {
     table.innerHTML = `
       <tr>
-        <td colspan="5">Chưa có file minh chứng nào cho cấp xét hiện tại.</td>
+        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+          ${allHigherStorageEvidences.length === 0 ? "Chưa có file minh chứng nào cho cấp xét hiện tại." : "Không tìm thấy minh chứng phù hợp với bộ lọc."}
+        </td>
       </tr>
     `;
     return;
   }
 
-  evidences.forEach((evidence) => {
+  filtered.forEach((evidence) => {
     const row = document.createElement("tr");
 
     const fileUrl = evidence.fileUrl
@@ -743,14 +1027,15 @@ function renderStorage(evidences) {
       : "";
 
     row.innerHTML = `
-      <td>${evidence.fileName}</td>
-      <td>${categoryLabels[evidence.category] || evidence.category}</td>
       <td>
-        ${formatStatus(evidence.status)}
-        ${evidence.adminReview && evidence.adminReview.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Ghi chú: ${evidence.adminReview.note}</small>` : ""}
+        <strong>${escapeHtml(evidence.fileName)}</strong>
+        ${evidence.aiResult?.reason ? `<br><small style="color: var(--text-muted);">AI: ${escapeHtml(evidence.aiResult.reason)}</small>` : ""}
+        ${evidence.adminReview?.note ? `<br><small style="color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px">Admin: ${escapeHtml(evidence.adminReview.note)}</small>` : ""}
       </td>
+      <td><span class="benchmark-tag dhqg">${categoryLabels[evidence.category] || evidence.category}</span></td>
+      <td>${formatStatus(evidence.status)}</td>
       <td>${formatDate(evidence.createdAt)}</td>
-      <td>
+      <td style="text-align: right;">
         ${
           fileUrl
             ? `<a href="${fileUrl}" target="_blank" class="download-btn">Xem file</a>`
@@ -797,6 +1082,12 @@ async function uploadEvidence(category) {
     }
 
     fileInput.value = "";
+    const dropzoneInfo = document.getElementById(`dropzone-file-info-${category}`);
+    if (dropzoneInfo) {
+      dropzoneInfo.innerHTML = "";
+      dropzoneInfo.classList.remove("active");
+    }
+
     message.textContent = "Upload thành công. Minh chứng đang được xử lý...";
 
     if (data.evidence && data.evidence._id && data.aiProcessed) {
