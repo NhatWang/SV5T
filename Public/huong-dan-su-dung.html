@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sổ tay Hướng dẫn sử dụng Hệ thống SV5T HCMUS</title>
+  <link rel="icon" type="image/png" href="./images/Logo 2.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       RESET & BASE TYPOGRAPHY
+       ========================================================================== */
+    :root {
+      --primary: #154399;         /* HCMUS Royal Blue */
+      --primary-dark: #0b2559;
+      --primary-light: #e8f0fe;
+      --secondary: #d97706;       /* Gold / Amber */
+      --secondary-light: #fef3c7;
+      --accent: #059669;          /* Emerald Green */
+      --accent-light: #d1fae5;
+      --danger: #dc2626;          /* Red */
+      --danger-light: #fee2e2;
+      --dark: #0f172a;            /* Slate 900 */
+      --gray-800: #1e293b;
+      --gray-700: #334155;
+      --gray-600: #475569;
+      --gray-500: #64748b;
+      --gray-300: #cbd5e1;
+      --gray-200: #e2e8f0;
+      --gray-100: #f1f5f9;
+      --gray-50: #f8fafc;
+      --white: #ffffff;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--gray-700);
+      background-color: #f1f5f9;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==========================================================================
+       ACTION BAR (SCREEN ONLY)
+       ========================================================================== */
+    .action-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .action-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.2px;
+    }
+
+    .action-brand img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    .action-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .filter-btn {
+      background: rgba(255,255,255,0.08);
+      color: #e2e8f0;
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    .filter-btn.active {
+      background: var(--primary);
+      border-color: #3b82f6;
+      color: white;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    }
+
+    .print-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      padding: 8px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+      transition: all 0.2s;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.6);
+    }
+
+    /* ==========================================================================
+       CONTAINER & DOCUMENT SHEETS
+       ========================================================================== */
+    .document-container {
+      max-width: 960px;
+      margin: 30px auto 60px;
+      padding: 0 20px;
+    }
+
+    .doc-sheet {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 50px 60px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       COVER PAGE
+       ========================================================================== */
+    .cover-page {
+      text-align: center;
+      padding: 60px 40px 50px;
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at top right, #f0f7ff, #ffffff 60%, #fffcf5 100%);
+      border: 2px solid #e0e7ff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover-decor {
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(21, 67, 153, 0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .cover-header-unit {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--primary-dark);
+      margin-bottom: 4px;
+    }
+
+    .cover-header-sub {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 30px;
+    }
+
+    .cover-logo-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 35px;
+    }
+
+    .cover-logo {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(21, 67, 153, 0.15));
+    }
+
+    .cover-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .cover-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      line-height: 1.25;
+      margin-bottom: 15px;
+    }
+
+    .cover-subtitle {
+      font-size: 17px;
+      color: var(--gray-600);
+      max-width: 680px;
+      margin: 0 auto 35px;
+      font-weight: 400;
+    }
+
+    .cover-grid-levels {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 650px;
+      margin: 0 auto 40px;
+    }
+
+    .level-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .level-card strong {
+      display: block;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .level-card span {
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+
+    .cover-meta {
+      border-top: 1px dashed var(--gray-300);
+      padding-top: 25px;
+      display: flex;
+      justify-content: space-around;
+      font-size: 12px;
+      color: var(--gray-600);
+      text-align: left;
+    }
+
+    .cover-meta div strong {
+      display: block;
+      color: var(--dark);
+      font-size: 13px;
+    }
+
+    /* ==========================================================================
+       SECTION HEADINGS & ACCENTS
+       ========================================================================== */
+    .section-header {
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .section-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .tag-student {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .tag-admin {
+      background: #fdf2f8;
+      color: #be185d;
+      border: 1px solid #fbcfe8;
+    }
+
+    .tag-general {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    h3.sub-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--dark);
+      margin: 24px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h3.sub-title::before {
+      content: "";
+      width: 4px;
+      height: 18px;
+      background: var(--primary);
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    p {
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: var(--gray-700);
+    }
+
+    /* ==========================================================================
+       CALLOUT BOXES & TIPS
+       ========================================================================== */
+    .callout {
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin: 18px 0;
+      font-size: 13.5px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      line-height: 1.5;
+    }
+
+    .callout-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .callout-info {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      color: #1e3a8a;
+    }
+
+    .callout-warning {
+      background: var(--secondary-light);
+      border-left: 4px solid var(--secondary);
+      color: #92400e;
+    }
+
+    .callout-danger {
+      background: var(--danger-light);
+      border-left: 4px solid var(--danger);
+      color: #991b1b;
+    }
+
+    .callout-success {
+      background: var(--accent-light);
+      border-left: 4px solid var(--accent);
+      color: #065f46;
+    }
+
+    /* ==========================================================================
+       STEP BY STEP FLOW
+       ========================================================================== */
+    .steps-list {
+      list-style: none;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .steps-list::before {
+      content: "";
+      position: absolute;
+      left: 17px;
+      top: 15px;
+      bottom: 25px;
+      width: 2px;
+      background: var(--gray-200);
+      z-index: 1;
+    }
+
+    .step-item {
+      position: relative;
+      padding-left: 48px;
+      margin-bottom: 24px;
+      z-index: 2;
+    }
+
+    .step-num {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      box-shadow: 0 0 0 4px white;
+    }
+
+    .step-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+
+    .step-desc {
+      font-size: 13.5px;
+      color: var(--gray-600);
+      line-height: 1.55;
+    }
+
+    /* ==========================================================================
+       VISUAL UI MOCKUPS (VECTOR SCREENSHOTS)
+       ========================================================================== */
+    .ui-mockup {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 20px 0 25px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mockup-header {
+      background: #e2e8f0;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #cbd5e1;
+    }
+
+    .mockup-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mockup-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .mockup-title {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--gray-600);
+      letter-spacing: 0.3px;
+    }
+
+    .mockup-body {
+      padding: 20px;
+      background: white;
+    }
+
+    /* Mockup: Criteria Progress Card */
+    .mockup-progress-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .mockup-crit-card {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+      background: #fcfdfe;
+    }
+
+    .mockup-crit-icon {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .mockup-crit-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-700);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mockup-crit-status {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-top: 4px;
+    }
+    .status-done { background: #dcfce7; color: #166534; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-none { background: #f1f5f9; color: #64748b; }
+    .status-rejected { background: #fee2e2; color: #991b1b; }
+
+    /* Mockup: Review Evidence Dialog */
+    .mockup-review-split {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+
+    .mockup-preview-box {
+      background: #1e293b;
+      border-radius: 6px;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 12px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .mockup-preview-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid #059669;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .mockup-action-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .mockup-btn {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: default;
+    }
+    .btn-approve { background: #059669; color: white; }
+    .btn-reject { background: #dc2626; color: white; }
+    .btn-forensic { background: #4f46e5; color: white; }
+
+    /* ==========================================================================
+       DATA TABLES
+       ========================================================================== */
+    .table-container {
+      overflow-x: auto;
+      margin: 18px 0 24px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    table.data-table th {
+      background: var(--gray-100);
+      color: var(--dark);
+      font-weight: 700;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--gray-200);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table.data-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-700);
+      vertical-align: top;
+    }
+
+    table.data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.data-table tr:hover td {
+      background: #fafafa;
+    }
+
+    /* ==========================================================================
+       COMPARISON GRID (DO & DON'T)
+       ========================================================================== */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .compare-card {
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      font-size: 13px;
+    }
+
+    .compare-do {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .compare-do h4 {
+      color: #166534;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compare-dont {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+    }
+
+    .compare-dont h4 {
+      color: #991b1b;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .compare-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .compare-list li {
+      margin-bottom: 6px;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .compare-do .compare-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #16a34a;
+      font-weight: 800;
+    }
+
+    .compare-dont .compare-list li::before {
+      content: "✕";
+      position: absolute;
+      left: 0;
+      color: #dc2626;
+      font-weight: 800;
+    }
+
+    /* ==========================================================================
+       TOC (TABLE OF CONTENTS)
+       ========================================================================== */
+    .toc-card {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+
+    .toc-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+    }
+
+    .toc-item a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toc-item a:hover {
+      text-decoration: underline;
+    }
+
+    /* ==========================================================================
+       PRINT STYLES (@media print)
+       ========================================================================== */
+    @media print {
+      body {
+        background: white;
+        color: #111827;
+        font-size: 11pt;
+      }
+
+      .action-bar {
+        display: none !important;
+      }
+
+      .document-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      .doc-sheet {
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+        margin-bottom: 0;
+      }
+
+      .cover-page {
+        border: none;
+        background: white;
+        padding: 40px 0;
+        page-break-after: always;
+      }
+
+      .page-break {
+        page-break-before: always;
+        break-before: page;
+        padding-top: 20px;
+      }
+
+      .avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .ui-mockup {
+        border: 1px solid #94a3b8;
+        break-inside: avoid;
+      }
+
+      .table-container {
+        break-inside: avoid;
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 15mm 15mm 15mm 15mm;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================================
+       FLOATING ACTION BAR (SCREEN ONLY)
+       ========================================================================== -->
+  <header class="action-bar" id="actionBar">
+    <div class="action-brand">
+      <img src="./images/Logo 2.png" alt="Logo SV5T" />
+      <span>SỔ TAY HƯỚNG DẪN SV5T HCMUS</span>
+    </div>
+
+    <div class="action-controls">
+      <button class="filter-btn active" onclick="filterGuide('all')">Tất cả tài liệu</button>
+      <button class="filter-btn" onclick="filterGuide('student')">Dành cho Sinh viên</button>
+      <button class="filter-btn" onclick="filterGuide('admin')">Dành cho Cán bộ (Admin)</button>
+      <button class="print-btn" onclick="window.print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Xuất file PDF (A4)
+      </button>
+    </div>
+  </header>
+
+  <main class="document-container">
+
+    <!-- ==========================================================================
+         TRANG BÌA (COVER PAGE)
+         ========================================================================== -->
+    <section class="doc-sheet cover-page avoid-break">
+      <div class="cover-decor"></div>
+      <div class="cover-header-unit">ĐOÀN THANH NIÊN - HỘI SINH VIÊN VIỆT NAM TRƯỜNG ĐH KHOA HỌC TỰ NHIÊN ĐHQG-HCM</div>
+      <div class="cover-header-sub">LIÊN CHI HỘI SINH VIÊN KHOA HÓA HỌC • BAN XÉT CHỌN DANH HIỆU</div>
+
+      <div class="cover-logo-wrapper">
+        <img src="./images/Logo 2.png" alt="Logo SV5T" class="cover-logo" />
+      </div>
+
+      <span class="cover-badge">CẨM NANG HƯỚNG DẪN SỬ DỤNG HỆ THỐNG</span>
+      <h1 class="cover-title">HỆ THỐNG QUẢN LÝ VÀ XÉT DUYỆT DANH HIỆU SINH VIÊN 5 TỐT</h1>
+      <p class="cover-subtitle">
+        Tài liệu kỹ thuật và cẩm nang hướng dẫn trực quan dành cho Sinh viên nộp minh chứng và Cán bộ thẩm định, xét duyệt danh hiệu các cấp.
+      </p>
+
+      <div class="cover-grid-levels">
+        <div class="level-card">
+          <strong>CẤP KHOA / TRƯỜNG</strong>
+          <span>HCMUS Portal</span>
+        </div>
+        <div class="level-card">
+          <strong>CẤP THÀNH PHỐ</strong>
+          <span>TP. Hồ Chí Minh</span>
+        </div>
+        <div class="level-card">
+          <strong>CẤP TRUNG ƯƠNG</strong>
+          <span>TW Hội Sinh viên VN</span>
+        </div>
+      </div>
+
+      <div class="cover-meta">
+        <div>
+          <span>Phiên bản:</span>
+          <strong>2.5.0 Production</strong>
+        </div>
+        <div>
+          <span>Hệ thống Web:</span>
+          <strong>cungnhau5tot.id.vn</strong>
+        </div>
+        <div>
+          <span>Năm áp dụng:</span>
+          <strong>Năm học 2025 - 2026</strong>
+        </div>
+        <div>
+          <span>Cập nhật lần cuối:</span>
+          <strong>Tháng 10/2026</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         MỤC LỤC & TỔNG QUAN
+         ========================================================================== -->
+    <div class="doc-sheet avoid-break">
+      <div class="toc-card">
+        <div class="toc-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
+          MỤC LỤC TÀI LIỆU HƯỚNG DẪN
+        </div>
+        <div class="toc-grid">
+          <div class="toc-item"><a href="#sec-overview">Phần I: Tổng quan & Quy trình 5 bước</a></div>
+          <div class="toc-item"><a href="#sec-student-auth">Phần II: Dành cho Sinh viên - Đăng nhập & Bật Push</a></div>
+          <div class="toc-item"><a href="#sec-student-dashboard">Phần II: Sinh viên - Khám phá Dashboard</a></div>
+          <div class="toc-item"><a href="#sec-student-upload">Phần II: Sinh viên - Nộp minh chứng & AI OCR</a></div>
+          <div class="toc-item"><a href="#sec-student-checkin">Phần II: Sinh viên - Check-in QR Tình nguyện</a></div>
+          <div class="toc-item"><a href="#sec-admin-roles">Phần III: Dành cho Admin - Phân quyền cán bộ</a></div>
+          <div class="toc-item"><a href="#sec-admin-review">Phần III: Admin - Thẩm định & Giám định Forensics</a></div>
+          <div class="toc-item"><a href="#sec-admin-export">Phần III: Admin - Xuất báo cáo Excel & Cài đặt</a></div>
+          <div class="toc-item"><a href="#sec-faq">Phần IV: Quy chuẩn minh chứng & Câu hỏi FAQ</a></div>
+          <div class="toc-item"><a href="#sec-support">Phần V: Kênh tiếp nhận hỗ trợ kỹ thuật</a></div>
+        </div>
+      </div>
+
+      <!-- PHẦN 1: TỔNG QUAN -->
+      <section id="sec-overview">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">I</span>
+            Tổng quan Hệ thống & Quy trình xét duyệt
+          </div>
+          <span class="section-tag tag-general">KIẾN TRÚC TỔNG THỂ</span>
+        </div>
+
+        <p>
+          Hệ thống <strong>SV5T HCMUS</strong> được xây dựng nhằm tin học hóa và minh bạch hóa 100% quy trình đăng ký, nộp minh chứng, kiểm tra OCR và phê duyệt danh hiệu <strong>Sinh viên 5 tốt</strong>. Hệ thống tích hợp trực tiếp lưu trữ đám mây Cloudflare R2, cơ sở dữ liệu MongoDB Atlas, phân tích ảnh số chống gian lận và thông báo đẩy thời gian thực.
+        </p>
+
+        <h3 class="sub-title">Sơ đồ luồng xử lý hồ sơ 5 bước</h3>
+
+        <div class="ui-mockup avoid-break">
+          <div class="mockup-header">
+            <div class="mockup-dots">
+              <span class="mockup-dot dot-red"></span>
+              <span class="mockup-dot dot-yellow"></span>
+              <span class="mockup-dot dot-green"></span>
+            </div>
+            <span class="mockup-title">QUY TRÌNH DUYỆT HỒ SƠ TỪ SINH VIÊN ĐẾN HỘI ĐỒNG XÉT CHỌN</span>
+            <span style="font-size: 10px; color: var(--gray-500);">AUTO WORKFLOW</span>
+          </div>
+          <div class="mockup-body" style="padding: 25px;">
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; text-align: center; position: relative;">
+              <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 6px;">
+                <div style="font-size: 20px;">👤</div>
+                <strong style="font-size: 11px; display: block; color: #1e3a8a; margin-top: 4px;">1. Sinh viên</strong>
+                <span style="font-size: 10px; color: #64748b;">Nộp file / link Drive</span>
+              </div>
+              <div style="background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 8px; padding: 12px 6px;">
+                <div style="font-size: 20px;">🤖</div>
+                <strong style="font-size: 11px; display: block; color: #86198f; margin-top: 4px;">2. AI OCR</strong>
+                <span style="font-size: 10px; color: #64748b;">Trích xuất chữ & điểm</span>
+              </div>
+              <div style="background: #fefce8; border: 1px solid #fef08a; border-radius: 8px; padding: 12px 6px;">
+                <div style="font-size: 20px;">🔍</div>
+                <strong style="font-size: 11px; display: block; color: #854d0e; margin-top: 4px;">3. Cán bộ Lớp</strong>
+                <span style="font-size: 10px; color: #64748b;">Thẩm tra sơ khảo</span>
+              </div>
+              <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px 6px;">
+                <div style="font-size: 20px;">🏛️</div>
+                <strong style="font-size: 11px; display: block; color: #065f46; margin-top: 4px;">4. BTV Đoàn - Hội</strong>
+                <span style="font-size: 10px; color: #64748b;">Phê duyệt chung khảo</span>
+              </div>
+              <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 6px;">
+                <div style="font-size: 20px;">🏆</div>
+                <strong style="font-size: 11px; display: block; color: #9a3412; margin-top: 4px;">5. Công nhận</strong>
+                <span style="font-size: 10px; color: #64748b;">Xuất Quyết định & Bằng</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sub-title">Khung 5 Tiêu chuẩn Sinh viên 5 Tốt</h3>
+        <div class="table-container avoid-break">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Tiêu chuẩn</th>
+                <th style="width: 45%;">Tiêu chí bắt buộc trọng tâm</th>
+                <th style="width: 30%;">Minh chứng điển hình</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Đạo đức tốt</strong></td>
+                <td>ĐRL ≥ 80; Không vi phạm kỷ luật; Học tập nghị quyết, bài học lý luận chính trị.</td>
+                <td>Bảng điểm rèn luyện, Giấy khen Đoàn - Hội, Chứng chỉ 6 bài LLCT.</td>
+              </tr>
+              <tr>
+                <td><strong>2. Học tập tốt</strong></td>
+                <td>ĐTB năm học ≥ 2.8/4.0 (hoặc ≥ 7.0/10); Tham gia Nghiên cứu khoa học hoặc học thuật.</td>
+                <td>Bảng điểm học tập có mộc đỏ/xác thực số, Giấy khen NCKH.</td>
+              </tr>
+              <tr>
+                <td><strong>3. Thể lực tốt</strong></td>
+                <td>Đạt danh hiệu "Thanh niên khỏe" hoặc tham gia Hội thao cấp trường/khoa trở lên.</td>
+                <td>Giấy chứng nhận Thanh niên khỏe, Huy chương/Giấy khen hội thao.</td>
+              </tr>
+              <tr>
+                <td><strong>4. Tình nguyện tốt</strong></td>
+                <td>Tham gia ít nhất 2 ngày tình nguyện (hoặc chiến dịch Mùa hè xanh, Xuân tình nguyện, Hiến máu).</td>
+                <td>Chứng nhận Mùa hè xanh/XTN, Giấy chứng nhận hiến máu tình nguyện.</td>
+              </tr>
+              <tr>
+                <td><strong>5. Hội nhập tốt</strong></td>
+                <td>Chứng chỉ Ngoại ngữ (TOEIC, IELTS, VSTEP); Tham gia tập huấn kỹ năng hoặc giao lưu quốc tế.</td>
+                <td>Bằng Ngoại ngữ hợp lệ, Chứng nhận khóa kỹ năng mềm, Giấy khen giao lưu.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==========================================================================
+         PHẦN 2: DÀNH CHO SINH VIÊN
+         ========================================================================== -->
+    <div class="doc-sheet page-break guide-section-student">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-num">II</span>
+          Cẩm nang dành cho Sinh viên (Student Portal)
+        </div>
+        <span class="section-tag tag-student">USER / STUDENT GUIDE</span>
+      </div>
+
+      <!-- 2.1 ĐĂNG NHẬP -->
+      <section id="sec-student-auth">
+        <h3 class="sub-title">1. Đăng nhập hệ thống & Kích hoạt Thông báo đẩy</h3>
+        <p>Sinh viên sử dụng tài khoản được cấp từ đầu năm học để đăng nhập vào Cổng thông tin SV5T.</p>
+
+        <ul class="steps-list">
+          <li class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-title">Truy cập đường dẫn chính thức</div>
+            <div class="step-desc">
+              Mở trình duyệt (Chrome, Safari, Edge) và truy cập vào: <strong>http://161.248.146.34</strong> hoặc tên miền <strong>https://cungnhau5tot.id.vn</strong>.
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-title">Nhập thông tin xác thực</div>
+            <div class="step-desc">
+              • <strong>Tên đăng nhập / MSSV</strong>: Mã số sinh viên của bạn (Ví dụ: <code>21120001</code>).<br>
+              • <strong>Mật khẩu</strong>: Nhập mật khẩu đã được khởi tạo hoặc mật khẩu cá nhân của bạn.
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-title">Bật thông báo Web Push</div>
+            <div class="step-desc">
+              Khi đăng nhập thành công, trình duyệt sẽ hiển thị thông báo hỏi: <em>"cungnhau5tot.id.vn muốn gửi thông báo"</em>. Bạn hãy bấm <strong>"Cho phép" (Allow)</strong> để nhận thông báo tức thời ngay khi cán bộ duyệt hoặc phản hồi minh chứng của bạn.
+            </div>
+          </li>
+        </ul>
+
+        <div class="callout callout-warning avoid-break">
+          <div class="callout-icon">⚠️</div>
+          <div>
+            <strong>Lưu ý bảo mật:</strong> Nếu đây là lần đăng nhập đầu tiên, bạn hãy nhấp vào biểu tượng tài khoản góc trên bên phải, chọn <strong>"Đổi mật khẩu"</strong> để đảm bảo không ai khác can thiệp vào hồ sơ cá nhân của bạn.
+          </div>
+        </div>
+      </section>
+
+      <!-- 2.2 DASHBOARD -->
+      <section id="sec-student-dashboard" style="margin-top: 30px;">
+        <h3 class="sub-title">2. Giao diện Bảng điều khiển Sinh viên (Student Dashboard)</h3>
+        <p>Dashboard được thiết kế theo giao diện TP. Hồ Chí Minh hiện đại, cho phép bạn theo dõi độ hoàn thiện 5 tiêu chuẩn theo thời gian thực.</p>
+
+        <div class="ui-mockup avoid-break">
+          <div class="mockup-header">
+            <div class="mockup-dots">
+              <span class="mockup-dot dot-red"></span>
+              <span class="mockup-dot dot-yellow"></span>
+              <span class="mockup-dot dot-green"></span>
+            </div>
+            <span class="mockup-title">GIAO DIỆN BẢNG TIẾN ĐỘ SINH VIÊN (HCMUS DASHBOARD)</span>
+            <span style="font-size: 10px; color: var(--primary); font-weight: 700;">★ CẤP TRƯỜNG</span>
+          </div>
+          <div class="mockup-body">
+            <div style="background: linear-gradient(135deg, #154399, #0b2559); color: white; padding: 14px 18px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="font-size: 11px; opacity: 0.8; text-transform: uppercase;">Tiến độ hoàn thành danh hiệu</span>
+                <div style="font-size: 20px; font-weight: 800;">4 / 5 TIÊU CHUẨN ĐẠT (80%)</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                Còn thiếu: Thể lực tốt
+              </div>
+            </div>
+
+            <div class="mockup-progress-grid">
+              <div class="mockup-crit-card">
+                <div class="mockup-crit-icon">⚖️</div>
+                <div class="mockup-crit-name">1. Đạo đức tốt</div>
+                <span class="mockup-crit-status status-done">✓ ĐÃ ĐẠT</span>
+              </div>
+              <div class="mockup-crit-card">
+                <div class="mockup-crit-icon">📚</div>
+                <div class="mockup-crit-name">2. Học tập tốt</div>
+                <span class="mockup-crit-status status-done">✓ ĐÃ ĐẠT</span>
+              </div>
+              <div class="mockup-crit-card">
+                <div class="mockup-crit-icon">🏃</div>
+                <div class="mockup-crit-name">3. Thể lực tốt</div>
+                <span class="mockup-crit-status status-pending">⏳ CHỜ DUYỆT</span>
+              </div>
+              <div class="mockup-crit-card">
+                <div class="mockup-crit-icon">❤️</div>
+                <div class="mockup-crit-name">4. Tình nguyện tốt</div>
+                <span class="mockup-crit-status status-done">✓ ĐÃ ĐẠT</span>
+              </div>
+              <div class="mockup-crit-card">
+                <div class="mockup-crit-icon">🌐</div>
+                <div class="mockup-crit-name">5. Hội nhập tốt</div>
+                <span class="mockup-crit-status status-done">✓ ĐÃ ĐẠT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p><strong>Ý nghĩa các mã màu trạng thái:</strong></p>
+        <ul style="padding-left: 20px; font-size: 13.5px; margin-bottom: 15px;">
+          <li><span class="mockup-crit-status status-done">✓ ĐÃ ĐẠT</span>: Minh chứng đã được cán bộ kiểm tra và phê chuẩn.</li>
+          <li><span class="mockup-crit-status status-pending">⏳ CHỜ DUYỆT</span>: Minh chứng đã nộp thành công, đang nằm trong hàng đợi xét duyệt của cán bộ.</li>
+          <li><span class="mockup-crit-status status-rejected">✕ TỪ CHỐI / CẦN BỔ SUNG</span>: Minh chứng không đạt yêu cầu (mờ, sai thông tin). Bấm vào để xem lý do và nộp lại.</li>
+          <li><span class="mockup-crit-status status-none">CHƯA NỘP</span>: Tiêu chí chưa có minh chứng được tải lên.</li>
+        </ul>
+      </section>
+
+      <!-- 2.3 NỘP MINH CHỨNG -->
+      <section id="sec-student-upload" style="margin-top: 30px;">
+        <h3 class="sub-title">3. Quy trình tải lên & Nộp minh chứng hợp lệ</h3>
+        <p>Để đảm bảo hồ sơ được duyệt nhanh chóng, sinh viên cần thực hiện đúng các thao tác sau:</p>
+
+        <div class="compare-grid avoid-break">
+          <div class="compare-card compare-do">
+            <h4>HÌNH THỨC 1: TẢI TỆP TRỰC TIẾP</h4>
+            <ul class="compare-list">
+              <li>Hỗ trợ định dạng: <strong>PDF, JPG, PNG, JPEG</strong>.</li>
+              <li>Dung lượng tối đa: <strong>25MB</strong> mỗi tệp.</li>
+              <li>Chụp vuông góc, đủ sáng, rõ số quyết định, chữ ký và con dấu.</li>
+              <li>Tệp lưu trữ an toàn trên đám mây CDN Cloudflare R2 tốc độ cao.</li>
+            </ul>
+          </div>
+          <div class="compare-card compare-do">
+            <h4>HÌNH THỨC 2: LINK GOOGLE DRIVE</h4>
+            <ul class="compare-list">
+              <li>Dành cho video, album nhiều ảnh hoặc hồ sơ nghiên cứu dung lượng lớn.</li>
+              <li><strong>BẮT BUỘC:</strong> Mở quyền chia sẻ <em>"Bất kỳ ai có liên kết đều có thể xem"</em>.</li>
+              <li>Dán đường dẫn dạng <code>https://drive.google.com/file/d/...</code> vào ô nhập.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout callout-info avoid-break">
+          <div class="callout-icon">💡</div>
+          <div>
+            <strong>Tính năng Trợ lý AI OCR tự động:</strong> Khi bạn chọn tệp ảnh hoặc PDF chứng chỉ, hệ thống sẽ tự động quét OCR để nhận diện <em>Họ tên, Mã sinh viên, Tên chương trình, Ngày cấp và Điểm số</em> để gợi ý điền trước vào biểu mẫu. Bạn hãy kiểm tra lại và chỉnh sửa nếu cần trước khi bấm <strong>"Xác nhận Nộp minh chứng"</strong>.
+          </div>
+        </div>
+      </section>
+
+      <!-- 2.4 QR CHECK-IN -->
+      <section id="sec-student-checkin" style="margin-top: 30px;">
+        <h3 class="sub-title">4. Điểm danh hoạt động Tình nguyện bằng QR Code & GPS</h3>
+        <p>
+          Khi tham gia các hoạt động tình nguyện thực tế (Ngày Chủ nhật xanh, Tiếp sức mùa thi, Ngày hội việc làm), bạn có thể điểm danh tự động ghi nhận minh chứng mà không cần xin giấy xác nhận giấy:
+        </p>
+
+        <ol style="padding-left: 20px; font-size: 13.5px; line-height: 1.8;">
+          <li>Mở điện thoại, truy cập vào menu <strong>"Điểm danh tình nguyện"</strong> (hoặc đường dẫn <code>/checkin-volunteer.html</code>).</li>
+          <li>Cho phép trình duyệt truy cập <strong>Camera</strong> và <strong>Vị trí GPS</strong> của thiết bị.</li>
+          <li>Quét mã QR Code do Ban tổ chức cung cấp tại bàn check-in sự kiện.</li>
+          <li>Hệ thống tự động xác thực tọa độ có mặt thực tế và ghi nhận ngày tình nguyện vào tài khoản của bạn ngay lập tức!</li>
+        </ol>
+      </section>
+    </div>
+
+    <!-- ==========================================================================
+         PHẦN 3: DÀNH CHO CÁN BỘ QUẢN TRỊ (ADMIN)
+         ========================================================================== -->
+    <div class="doc-sheet page-break guide-section-admin">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-num">III</span>
+          Cẩm nang dành cho Cán bộ Quản trị (Admin Guide)
+        </div>
+        <span class="section-tag tag-admin">ADMINISTRATOR GUIDE</span>
+      </div>
+
+      <!-- 3.1 PHÂN QUYỀN -->
+      <section id="sec-admin-roles">
+        <h3 class="sub-title">1. Phân cấp thẩm quyền & Đăng nhập Ban Quản trị</h3>
+        <p>Hệ thống SV5T phân chia 3 cấp bậc quản trị nhằm đảm bảo tính phân cấp, bảo mật và đúng thẩm quyền duyệt hồ sơ:</p>
+
+        <div class="table-container avoid-break">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Vai trò (Role)</th>
+                <th>Phạm vi phụ trách</th>
+                <th>Thẩm quyền trên hệ thống</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Admin Chi hội / Lớp</strong></td>
+                <td>Sinh viên trong chi hội/lớp được chỉ định</td>
+                <td>Thẩm tra sơ bộ minh chứng; Xem hồ sơ lớp; Yêu cầu sinh viên bổ sung minh chứng.</td>
+              </tr>
+              <tr>
+                <td><strong>Admin Khoa (LCH)</strong></td>
+                <td>Toàn bộ sinh viên thuộc Khoa Hóa học</td>
+                <td>Thẩm định hồ sơ toàn khoa; Phê duyệt sơ khảo; Xuất danh sách Excel gửi Hội đồng khoa.</td>
+              </tr>
+              <tr>
+                <td><strong>Super Admin (Cấp Trường)</strong></td>
+                <td>Toàn hệ thống HCMUS</td>
+                <td>Phê duyệt chung khảo; Cấu hình tiêu chí; Khóa/mở đợt nộp hồ sơ; Bật chế độ bảo trì; Quản lý tài khoản cán bộ.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 3.2 THẨM ĐỊNH & FORENSICS -->
+      <section id="sec-admin-review" style="margin-top: 30px;">
+        <h3 class="sub-title">2. Quy trình Thẩm định & Giám định tính xác thực minh chứng</h3>
+        <p>Cán bộ sử dụng Bảng điều khiển Quản trị (Admin Dashboard) tại <code>/admin-dashboard.html</code> để duyệt hồ sơ hàng loạt một cách nhanh chóng và chính xác.</p>
+
+        <div class="ui-mockup avoid-break">
+          <div class="mockup-header">
+            <div class="mockup-dots">
+              <span class="mockup-dot dot-red"></span>
+              <span class="mockup-dot dot-yellow"></span>
+              <span class="mockup-dot dot-green"></span>
+            </div>
+            <span class="mockup-title">CỬA SỔ DUYỆT MINH CHỨNG & GIÁM ĐỊNH (EVIDENCE REVIEW MODAL)</span>
+            <span style="font-size: 10px; color: var(--danger); font-weight: 700;">ADMIN AUDIT</span>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-review-split">
+              <div class="mockup-preview-box">
+                <div style="font-size: 28px; margin-bottom: 6px;">📜</div>
+                <strong style="color: white; font-size: 13px;">CHỨNG NHẬN THANH NIÊN KHỎE 2025</strong>
+                <span style="font-size: 11px;">Sinh viên: Nguyễn Văn A • MSSV: 22120001</span>
+                <span class="mockup-preview-badge">✓ AI OCR: KHỚP 100% THÔNG TIN HỒ SƠ</span>
+              </div>
+              <div class="mockup-action-box">
+                <div style="font-size: 11px; color: var(--gray-500); margin-bottom: 4px;">THAO TÁC THẨM ĐỊNH:</div>
+                <button class="mockup-btn btn-approve">✓ Phê duyệt đạt chuẩn</button>
+                <button class="mockup-btn btn-reject">✕ Từ chối / Yêu cầu nộp lại</button>
+                <button class="mockup-btn btn-forensic">🔍 Quét Giám định Ảnh số</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sub-title">3 bước cán bộ cần thực hiện khi xét duyệt một minh chứng:</h3>
+        <ol style="padding-left: 20px; font-size: 13.5px; line-height: 1.8;">
+          <li><strong>So khớp thông tin định danh</strong>: Kiểm tra Họ tên và MSSV in trên tệp minh chứng có khớp với tài khoản sinh viên đang nộp hay không.</li>
+          <li><strong>Kiểm tra thời hạn công nhận</strong>: Hoạt động/chứng chỉ phải diễn ra trong khung thời gian của năm học đang xét duyệt (Ví dụ: từ 01/08/2025 đến 31/07/2026).</li>
+          <li><strong>Xử lý thao tác</strong>:
+            <br>• Nếu đạt: Bấm nút <strong>"Phê duyệt"</strong> (Hệ thống tự động tích lũy tiêu chuẩn cho sinh viên).
+            <br>• Nếu không đạt: Bấm nút <strong>"Từ chối"</strong> và <strong>BẮT BUỘC nhập lý do chi tiết</strong> (Ví dụ: <em>"Ảnh mờ không thấy rõ ngày ký", "Minh chứng không thuộc năm học xét duyệt"</em>). Sinh viên sẽ nhận được thông báo để bổ sung kịp thời.
+          </li>
+        </ol>
+
+        <h3 class="sub-title">Công cụ Giám định tính xác thực (Digital Forensics Tool)</h3>
+        <p>Hệ thống tích hợp mô-đun phân tích chống làm giả giấy tờ bằng Photoshop/Canva:</p>
+        <ul style="padding-left: 20px; font-size: 13.5px;">
+          <li><strong>Phân tích ELA (Error Level Analysis)</strong>: Phát hiện sự chênh lệch tỉ lệ nén ảnh kỹ thuật số tại các khu vực chữ số, điểm số hoặc con dấu bị chắp vá, tẩy xóa.</li>
+          <li><strong>Trích xuất siêu dữ liệu EXIF</strong>: Kiểm tra phần mềm chỉnh sửa (Photoshop, Pixelmator, Canva) và thời gian chụp gốc của tệp ảnh.</li>
+          <li><strong>Xác thực mã QR số</strong>: Quét tự động mã QR in trên các chứng chỉ điện tử để đối chiếu với liên kết chứng chỉ gốc của đơn vị cấp.</li>
+        </ul>
+      </section>
+
+      <!-- 3.3 XUẤT BÁO CÁO EXCEL -->
+      <section id="sec-admin-export" style="margin-top: 30px;">
+        <h3 class="sub-title">3. Xuất Báo cáo Excel & Cài đặt hệ thống</h3>
+        <p>Hệ thống hỗ trợ xuất dữ liệu ra file bảng tính Excel (<code>.xlsx</code>) theo mẫu quy chuẩn của Hội Sinh viên:</p>
+
+        <ul class="steps-list">
+          <li class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-title">Chọn phạm vi danh sách cần xuất</div>
+            <div class="step-desc">
+              Sử dụng thanh công cụ lọc để chọn: Khóa học, Chi hội cụ thể, hoặc toàn bộ sinh viên đạt từ 3 tiêu chuẩn trở lên.
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-title">Bấm nút "Xuất danh sách Excel (.xlsx)"</div>
+            <div class="step-desc">
+              Hệ thống tự động biên soạn bảng biểu chi tiết gồm: Họ tên, MSSV, Chi hội, Điểm từng tiêu chuẩn, Đường link xem minh chứng trực tiếp và Trạng thái kết luận (Đạt / Chưa đạt).
+            </div>
+          </li>
+          <li class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-title">Thiết lập Đợt xét & Bảo trì hệ thống (Dành cho Super Admin)</div>
+            <div class="step-desc">
+              Khi đến hạn chót nhận hồ sơ, Super Admin vào mục <strong>"Cài đặt hệ thống"</strong> ➔ Bật công tắc <strong>"Chế độ bảo trì / Khóa nộp hồ sơ"</strong> để đóng cổng tải lên của sinh viên, phục vụ công tác họp Hội đồng xét chọn.
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- ==========================================================================
+         PHẦN 4: QUY CHUẨN MINH CHỨNG & FAQ
+         ========================================================================== -->
+    <div class="doc-sheet page-break">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-num">IV</span>
+          Quy chuẩn Minh chứng & Câu hỏi thường gặp (FAQs)
+        </div>
+        <span class="section-tag tag-general">HƯỚNG DẪN ĐỊNH DẠNG</span>
+      </div>
+
+      <section id="sec-faq">
+        <h3 class="sub-title">Bảng so sánh: Minh chứng Hợp lệ vs Không hợp lệ</h3>
+
+        <div class="compare-grid avoid-break">
+          <div class="compare-card compare-do">
+            <h4>MINH CHỨNG HỢP LỆ (NÊN LÀM)</h4>
+            <ul class="compare-list">
+              <li>Hình chụp giấy khen/chứng nhận phẳng, vuông góc, đủ 4 góc.</li>
+              <li>Chụp dưới ánh sáng tự nhiên hoặc scan qua app CamScanner/Adobe Scan.</li>
+              <li>Thấy rõ mộc đỏ, chữ ký lãnh đạo và số quyết định khen thưởng.</li>
+              <li>File PDF bảng điểm tải trực tiếp từ Cổng đào tạo nhà trường có mã xác thực.</li>
+              <li>Link Google Drive đã cấp quyền xem công khai.</li>
+            </ul>
+          </div>
+          <div class="compare-card compare-dont">
+            <h4>MINH CHỨNG BỊ TỪ CHỐI (CẦN TRÁNH)</h4>
+            <ul class="compare-list">
+              <li>Hình chụp nghiêng, mờ nhòe chữ, mất góc, bóng chóa đèn flash.</li>
+              <li>Ảnh chụp màn hình (screenshot) tin nhắn, bài đăng Facebook chưa qua xác thực.</li>
+              <li>Minh chứng không có tên sinh viên hoặc sai mã số sinh viên.</li>
+              <li>Hoạt động diễn ra ngoài khung thời gian năm học xét duyệt.</li>
+              <li>Link Google Drive yêu cầu quyền truy cập (Access Denied).</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 class="sub-title">Giải đáp thắc mắc thường gặp (FAQs)</h3>
+
+        <div style="margin-top: 15px;">
+          <div style="margin-bottom: 16px;">
+            <strong style="color: var(--primary); font-size: 14.5px; display: block; margin-bottom: 4px;">
+              Q1: Em nộp minh chứng bị cán bộ từ chối thì có được nộp lại không?
+            </strong>
+            <p style="font-size: 13.5px; color: var(--gray-700);">
+              <strong>Trả lời:</strong> Có! Khi bị từ chối, tiêu chuẩn sẽ hiển thị trạng thái màu đỏ kèm lý do của cán bộ. Bạn chỉ cần mở lại tiêu chí đó, chọn tệp mới rõ nét hơn và bấm <em>"Nộp lại minh chứng"</em> trước khi cổng xét duyệt đóng.
+            </p>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <strong style="color: var(--primary); font-size: 14.5px; display: block; margin-bottom: 4px;">
+              Q2: Chứng chỉ tiếng Anh (TOEIC / IELTS) còn hạn bao lâu thì được công nhận?
+            </strong>
+            <p style="font-size: 13.5px; color: var(--gray-700);">
+              <strong>Trả lời:</strong> Chứng chỉ ngoại ngữ quốc tế được tính trong thời hạn 2 năm tính đến thời điểm xét duyệt, hoặc các chứng chỉ được trường ĐH Khoa học Tự nhiên công nhận chuẩn đầu ra.
+            </p>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <strong style="color: var(--primary); font-size: 14.5px; display: block; margin-bottom: 4px;">
+              Q3: Em tham gia Mùa hè xanh năm trước thì có dùng cho năm nay được không?
+            </strong>
+            <p style="font-size: 13.5px; color: var(--gray-700);">
+              <strong>Trả lời:</strong> Không. Theo quy chế của Hội Sinh viên, minh chứng chỉ được tính cho các hoạt động và thành tích diễn ra trong đúng năm học xét duyệt hiện tại.
+            </p>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <strong style="color: var(--primary); font-size: 14.5px; display: block; margin-bottom: 4px;">
+              Q4: Cán bộ phát hiện sinh viên cố tình làm giả minh chứng thì xử lý thế nào?
+            </strong>
+            <p style="font-size: 13.5px; color: var(--gray-700);">
+              <strong>Trả lời:</strong> Công cụ Forensics sẽ tự động đánh dấu đỏ các hồ sơ có dấu hiệu can thiệp ảnh số. Cán bộ sẽ gửi biên bản lên Hội đồng Kỷ luật Trường. Sinh viên gian lận sẽ bị hủy toàn bộ kết quả xét duyệt và trừ điểm rèn luyện theo quy chế.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PHẦN 5: LIÊN HỆ -->
+      <section id="sec-support" style="margin-top: 35px; border-top: 1px dashed var(--gray-300); padding-top: 25px;">
+        <div class="section-header" style="border-bottom: none; margin-bottom: 10px;">
+          <div class="section-title" style="font-size: 18px;">
+            <span class="section-num" style="width: 28px; height: 28px; font-size: 13px;">V</span>
+            Kênh tiếp nhận Hỗ trợ & Giải đáp kỹ thuật
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 15px;">
+          <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 14px;">
+            <div style="font-size: 18px; margin-bottom: 4px;">✉️</div>
+            <strong style="font-size: 13px; color: var(--dark); display: block;">Hộp thư Hỗ trợ:</strong>
+            <span style="font-size: 12px; color: var(--primary);">lchhh.hcmus@gmail.com</span>
+          </div>
+          <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 14px;">
+            <div style="font-size: 18px; margin-bottom: 4px;">🌐</div>
+            <strong style="font-size: 13px; color: var(--dark); display: block;">Fanpage chính thức:</strong>
+            <span style="font-size: 12px; color: var(--primary);">LCH Khoa Hóa học - HCMUS</span>
+          </div>
+          <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 14px;">
+            <div style="font-size: 18px; margin-bottom: 4px;">💬</div>
+            <strong style="font-size: 13px; color: var(--dark); display: block;">Cộng đồng hỗ trợ SV5T:</strong>
+            <span style="font-size: 12px; color: var(--primary);">Kênh Zalo giải đáp trực tuyến</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- ==========================================================================
+       CLIENT SCRIPT: INTERACTIVE FILTER & PRINT
+       ========================================================================== -->
+  <script>
+    function filterGuide(type) {
+      const studentSections = document.querySelectorAll('.guide-section-student');
+      const adminSections = document.querySelectorAll('.guide-section-admin');
+      const filterBtns = document.querySelectorAll('.filter-btn');
+
+      filterBtns.forEach(btn => btn.classList.remove('active'));
+
+      if (type === 'student') {
+        studentSections.forEach(el => el.style.display = 'block');
+        adminSections.forEach(el => el.style.display = 'none');
+        event.target.classList.add('active');
+      } else if (type === 'admin') {
+        studentSections.forEach(el => el.style.display = 'none');
+        adminSections.forEach(el => el.style.display = 'block');
+        event.target.classList.add('active');
+      } else {
+        studentSections.forEach(el => el.style.display = 'block');
+        adminSections.forEach(el => el.style.display = 'block');
+        event.target.classList.add('active');
+      }
+    }
+
+    // Auto-trigger print if URL contains ?print=true
+    if (new URLSearchParams(window.location.search).get('print') === 'true') {
+      window.addEventListener('load', () => {
+        setTimeout(() => window.print(), 600);
+      });
+    }
+  </script>
+</body>
+</html>
+

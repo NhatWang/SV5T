@@ -1,13 +1,26 @@
 const webpush = require("web-push");
 const PushSubscription = require("../Models/PushSubscription");
 
-webpush.setVapidDetails(
-  process.env.VAPID_CONTACT || "mailto:admin@example.com",
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+let pushEnabled = false;
+
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  try {
+    webpush.setVapidDetails(
+      process.env.VAPID_CONTACT || "mailto:admin@example.com",
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+    pushEnabled = true;
+  } catch (err) {
+    console.warn("⚠️ [Push] Failed to initialize webpush:", err.message);
+  }
+} else {
+  console.warn("⚠️ [Push] VAPID keys not configured in .env. Web push notifications disabled.");
+}
 
 async function sendPushToSubscriptions(subscriptions, payload) {
+  if (!pushEnabled || !subscriptions || subscriptions.length === 0) return;
+
   const data = JSON.stringify({
     title: payload.title || "SV5T",
     body: payload.body || "",
