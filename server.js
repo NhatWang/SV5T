@@ -102,6 +102,15 @@ const volunteerCheckinLimiter = rateLimit({
   message: { success: false, message: "Quá nhiều yêu cầu. Vui lòng thử lại sau." }
 });
 
+// Tích hợp server-to-server (vd Xuân Tình Nguyện xác thực đăng nhập) — chặn brute-force
+const integrationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Quá nhiều yêu cầu xác thực. Vui lòng thử lại sau 15 phút." }
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
 
@@ -122,6 +131,7 @@ app.use("/api/student/reset-password", resetPasswordLimiter);
 app.use("/api/admin/login", adminLoginLimiter);
 app.use("/api/admin/reset-password", resetPasswordLimiter);
 app.use("/api/evidence/upload", uploadLimiter);
+app.use("/api/integration", integrationLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -222,6 +232,7 @@ const chatbotRoutes = require("./Routes/chatbotRoutes");
 // FIX #1: Thêm activityRoutes (trước đây bị thiếu, khiến /api/activity/* trả 404)
 const activityRoutes = require("./Routes/activityRoutes");
 const checkinPublicRoutes = require("./Routes/checkinPublicRoutes");
+const integrationRoutes = require("./Routes/integrationRoutes");
 
 const { maintenanceMiddleware, getMaintenanceStatus } = require("./Middlewares/maintenanceMiddleware");
 const SystemSettings = require("./Models/SystemSettings");
@@ -245,6 +256,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/checkin", volunteerCheckinLimiter, checkinPublicRoutes);
+app.use("/api/integration", integrationRoutes);
 
 // ─────────────────────────────────────────
 // CENTRALIZED ERROR HANDLER — phải đặt sau tất cả routes
