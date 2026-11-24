@@ -14,6 +14,10 @@ dotenv.config();
 
 const app = express();
 
+// Chạy sau reverse proxy (Nginx) — cần để express-rate-limit đọc đúng IP
+// thật từ X-Forwarded-For thay vì báo lỗi ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+app.set("trust proxy", 1);
+
 // ─────────────────────────────────────────
 // SECURITY MIDDLEWARES
 // ─────────────────────────────────────────
