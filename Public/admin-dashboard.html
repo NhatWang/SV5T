@@ -174,6 +174,38 @@
           <p id="maintenanceResult" class="fix-result-msg"></p>
         </div>
 
+        <div id="aiStatusSection" class="criterion-card hidden">
+          <div class="maintenance-header">
+            <div>
+              <h3>Trạng thái AI (phân tích minh chứng)</h3>
+              <p style="margin:0;color:var(--text-secondary);font-size:0.9rem;">
+                Kiểm tra nhanh tình trạng kết nối AI (Azure OpenAI) dùng để tự động phân tích minh chứng sinh viên.
+              </p>
+            </div>
+            <span id="aiStatusBadge" class="sidebar-badge" style="position:static;">—</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px;">
+            <div style="padding:10px 12px;background:var(--surface-alt,#f9fafb);border:1px solid var(--border);border-radius:8px;">
+              <div style="font-size:0.78rem;color:var(--text-secondary);">Model</div>
+              <div id="aiStatusModel" style="font-weight:600;">—</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--surface-alt,#f9fafb);border:1px solid var(--border);border-radius:8px;">
+              <div style="font-size:0.78rem;color:var(--text-secondary);">Hoạt động gần nhất</div>
+              <div id="aiStatusLastActivity" style="font-weight:600;">—</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--surface-alt,#f9fafb);border:1px solid var(--border);border-radius:8px;">
+              <div style="font-size:0.78rem;color:var(--text-secondary);">Lượt xử lý 24h qua</div>
+              <div id="aiStatus24h" style="font-weight:600;">—</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <button id="aiStatusTestBtn" onclick="testAiConnection()">Kiểm tra kết nối ngay</button>
+            <p id="aiStatusTestResult" class="fix-result-msg" style="margin:0;"></p>
+          </div>
+        </div>
+
         <div id="broadcastPushSection" class="criterion-card hidden">
           <h3>Gửi thông báo Web Push</h3>
           <p style="margin-bottom:12px;color:var(--text-secondary);font-size:0.93rem;">

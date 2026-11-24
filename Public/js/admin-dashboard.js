@@ -379,6 +379,9 @@ function initAdminDashboard() {
     const maintenanceSection = document.getElementById("maintenanceSection");
     if (maintenanceSection) maintenanceSection.classList.remove("hidden");
 
+    const aiStatusSection = document.getElementById("aiStatusSection");
+    if (aiStatusSection) aiStatusSection.classList.remove("hidden");
+
     const broadcastPushSection = document.getElementById("broadcastPushSection");
     if (broadcastPushSection) broadcastPushSection.classList.remove("hidden");
 
@@ -386,6 +389,7 @@ function initAdminDashboard() {
     if (classSupportListSection) classSupportListSection.classList.remove("hidden");
 
     loadMaintenanceStatus();
+    loadAiStatus();
     loadClassSupportList();
 
     const collectiveEvaluationTabBtn = document.getElementById(
@@ -2810,6 +2814,88 @@ async function loadMaintenanceStatus() {
     }
   } catch (e) {
     console.error("Load maintenance status error:", e);
+  }
+}
+
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return "Chưa có dữ liệu";
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "Vừa xong";
+  if (diffMin < 60) return `${diffMin} phút trước`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} giờ trước`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay} ngày trước`;
+}
+
+async function loadAiStatus() {
+  const badge = document.getElementById("aiStatusBadge");
+  const modelEl = document.getElementById("aiStatusModel");
+  const lastActivityEl = document.getElementById("aiStatusLastActivity");
+  const last24hEl = document.getElementById("aiStatus24h");
+
+  try {
+    const res = await fetch("/api/admin-dashboard/ai-status", { credentials: "include" });
+    const data = await res.json();
+
+    if (!data.success) return;
+
+    if (badge) {
+      badge.textContent = data.configured ? "Đã cấu hình" : "Chưa cấu hình";
+      badge.style.background = data.configured ? "var(--green,#16a34a)" : "var(--red,#dc2626)";
+      badge.style.color = "#fff";
+    }
+
+    if (modelEl) modelEl.textContent = data.model || "—";
+    if (lastActivityEl) lastActivityEl.textContent = formatRelativeTime(data.lastActivityAt);
+
+    if (last24hEl) {
+      last24hEl.textContent = data.last24hErrorCount > 0
+        ? `${data.last24hCount} lượt (${data.last24hErrorCount} lỗi)`
+        : `${data.last24hCount} lượt`;
+    }
+  } catch (e) {
+    console.error("Load AI status error:", e);
+    if (badge) {
+      badge.textContent = "Lỗi tải trạng thái";
+      badge.style.background = "var(--red,#dc2626)";
+      badge.style.color = "#fff";
+    }
+  }
+}
+
+async function testAiConnection() {
+  const btn = document.getElementById("aiStatusTestBtn");
+  const resultEl = document.getElementById("aiStatusTestResult");
+  if (btn) btn.disabled = true;
+  if (resultEl) resultEl.textContent = "Đang kiểm tra kết nối...";
+
+  try {
+    const res = await fetch("/api/admin-dashboard/ai-status/test", {
+      method: "POST",
+      credentials: "include"
+    });
+    const data = await res.json();
+
+    if (data.reachable) {
+      if (resultEl) {
+        resultEl.textContent = `✅ Kết nối AI hoạt động bình thường (${data.latencyMs}ms).`;
+        resultEl.style.color = "var(--green,#16a34a)";
+      }
+    } else {
+      if (resultEl) {
+        resultEl.textContent = `❌ Không kết nối được AI: ${data.errorMessage || "Lỗi không xác định"}`;
+        resultEl.style.color = "var(--red,#dc2626)";
+      }
+    }
+  } catch (e) {
+    if (resultEl) {
+      resultEl.textContent = "❌ Lỗi khi kiểm tra kết nối AI.";
+      resultEl.style.color = "var(--red,#dc2626)";
+    }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 

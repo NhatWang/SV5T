@@ -49,6 +49,9 @@ const {
 const SystemSettings = require("../Models/SystemSettings");
 const { invalidateMaintenanceCache } = require("../Middlewares/maintenanceMiddleware");
 
+const AIReviewLog = require("../Models/AIReviewLog");
+const { callAzureOpenAI } = require("../Utils/azureAI");
+
 const ClassSupport = require("../Models/ClassSupport");
 
 const {
@@ -3785,6 +3788,79 @@ router.patch(
     } catch (error) {
       console.error("Patch maintenance mode error:", error);
       res.status(500).json({ success: false, message: "Lỗi server." });
+    }
+  }
+);
+
+// ===============================
+// AI STATUS
+// ===============================
+router.get(
+  "/ai-status",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const configured = Boolean(
+        process.env.AZURE_FOUNDRY_ENDPOINT && process.env.AZURE_FOUNDRY_KEY
+      );
+
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      const [lastLog, last24hLogs] = await Promise.all([
+        AIReviewLog.findOne().sort({ createdAt: -1 }).lean(),
+        AIReviewLog.find({ createdAt: { $gte: since24h } })
+          .select("errorMessage")
+          .lean()
+      ]);
+
+      const last24hCount = last24hLogs.length;
+      const last24hErrorCount = last24hLogs.filter(
+        (log) => !!log.errorMessage
+      ).length;
+
+      res.json({
+        success: true,
+        configured,
+        model: process.env.AZURE_FOUNDRY_MODEL || "",
+        lastActivityAt: lastLog?.createdAt || null,
+        last24hCount,
+        last24hErrorCount
+      });
+    } catch (error) {
+      console.error("Get AI status error:", error);
+      res.status(500).json({ success: false, message: "Lỗi server khi lấy trạng thái AI." });
+    }
+  }
+);
+
+router.post(
+  "/ai-status/test",
+  requireAdminAuth,
+  requireSuperAdmin,
+  async (req, res) => {
+    const startedAt = Date.now();
+
+    try {
+      await callAzureOpenAI({
+        system: "Trả lời đúng 1 chữ: OK",
+        messages: [{ role: "user", content: "ping" }],
+        maxTokens: 10
+      });
+
+      res.json({
+        success: true,
+        reachable: true,
+        latencyMs: Date.now() - startedAt
+      });
+    } catch (error) {
+      console.error("AI connectivity test error:", error.message);
+      res.json({
+        success: true,
+        reachable: false,
+        latencyMs: Date.now() - startedAt,
+        errorMessage: error.message
+      });
     }
   }
 );
