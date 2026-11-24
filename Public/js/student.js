@@ -23,6 +23,54 @@ function clearStudentSession() {
 }
 
 // ─────────────────────────────
+// OAuth redirect (đăng nhập hộ ứng dụng bên thứ 3, vd Xuân Tình Nguyện)
+// ─────────────────────────────
+
+function getOAuthParams() {
+  const params = new URLSearchParams(window.location.search);
+  const redirect_uri = params.get("redirect_uri");
+  const state = params.get("state");
+
+  if (!redirect_uri) return null;
+
+  return { redirect_uri, state };
+}
+
+async function finishLoginRedirect(defaultUrl) {
+  const oauth = getOAuthParams();
+
+  if (!oauth) {
+    window.location.href = defaultUrl;
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/oauth/code/student", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ redirect_uri: oauth.redirect_uri })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      window.location.href = defaultUrl;
+      return;
+    }
+
+    const url = new URL(oauth.redirect_uri);
+    url.searchParams.set("code", data.code);
+    if (oauth.state) url.searchParams.set("state", oauth.state);
+
+    window.location.href = url.toString();
+  } catch (error) {
+    console.error("OAuth redirect error:", error);
+    window.location.href = defaultUrl;
+  }
+}
+
+// ─────────────────────────────
 // TOGGLE PASSWORD
 // ─────────────────────────────
 
@@ -156,7 +204,7 @@ async function createPassword() {
       saveStudentSession(data.student);
 
       setTimeout(() => {
-        window.location.href = "/student-dashboard.html";
+        finishLoginRedirect("/student-dashboard.html");
       }, 1200);
     } else {
       showMessage(message2, data.message, "error");
@@ -203,7 +251,7 @@ async function loginStudent() {
       saveStudentSession(data.student);
 
       setTimeout(() => {
-        window.location.href = "/student-dashboard.html";
+        finishLoginRedirect("/student-dashboard.html");
       }, 1200);
     } else {
       showMessage(message3, data.message, "error");

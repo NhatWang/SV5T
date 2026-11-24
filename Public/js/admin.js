@@ -1,3 +1,47 @@
+function getOAuthParams() {
+  const params = new URLSearchParams(window.location.search);
+  const redirect_uri = params.get("redirect_uri");
+  const state = params.get("state");
+
+  if (!redirect_uri) return null;
+
+  return { redirect_uri, state };
+}
+
+async function finishAdminLoginRedirect(defaultUrl) {
+  const oauth = getOAuthParams();
+
+  if (!oauth) {
+    window.location.href = defaultUrl;
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/oauth/code/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ redirect_uri: oauth.redirect_uri })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      window.location.href = defaultUrl;
+      return;
+    }
+
+    const url = new URL(oauth.redirect_uri);
+    url.searchParams.set("code", data.code);
+    if (oauth.state) url.searchParams.set("state", oauth.state);
+
+    window.location.href = url.toString();
+  } catch (error) {
+    console.error("OAuth redirect error:", error);
+    window.location.href = defaultUrl;
+  }
+}
+
 async function loginAdmin() {
   const username = document.getElementById("adminUsername").value.trim();
   const password = document.getElementById("adminPassword").value;
@@ -32,7 +76,7 @@ async function loginAdmin() {
       localStorage.setItem("adminRole", data.admin.role);
       localStorage.setItem("adminClassName", data.admin.className || "");
 
-      window.location.href = "/admin-dashboard.html";
+      finishAdminLoginRedirect("/admin-dashboard.html");
     }
   } catch (error) {
     console.error("Admin login error:", error);

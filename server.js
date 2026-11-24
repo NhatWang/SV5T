@@ -136,6 +136,7 @@ app.use("/api/admin/login", adminLoginLimiter);
 app.use("/api/admin/reset-password", resetPasswordLimiter);
 app.use("/api/evidence/upload", uploadLimiter);
 app.use("/api/integration", integrationLimiter);
+app.use("/api/oauth", integrationLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -237,6 +238,7 @@ const chatbotRoutes = require("./Routes/chatbotRoutes");
 const activityRoutes = require("./Routes/activityRoutes");
 const checkinPublicRoutes = require("./Routes/checkinPublicRoutes");
 const integrationRoutes = require("./Routes/integrationRoutes");
+const oauthRoutes = require("./Routes/oauthRoutes");
 
 const { maintenanceMiddleware, getMaintenanceStatus } = require("./Middlewares/maintenanceMiddleware");
 const SystemSettings = require("./Models/SystemSettings");
@@ -261,6 +263,7 @@ app.use("/api/admin-dashboard", adminDashboardRoutes);
 app.use("/api/activity", activityRoutes);
 app.use("/api/checkin", volunteerCheckinLimiter, checkinPublicRoutes);
 app.use("/api/integration", integrationRoutes);
+app.use("/api/oauth", oauthRoutes);
 
 // ─────────────────────────────────────────
 // CENTRALIZED ERROR HANDLER — phải đặt sau tất cả routes
