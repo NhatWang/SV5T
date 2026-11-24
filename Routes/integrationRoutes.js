@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const Student = require("../Models/Student");
+const Admin = require("../Models/Admin");
 
 const router = express.Router();
 
@@ -68,6 +69,53 @@ router.post("/verify-student", requireIntegrationKey, async (req, res) => {
     });
   } catch (error) {
     console.error("Integration verify-student error:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi xác thực" });
+  }
+});
+
+// ===============================
+// POST /api/integration/verify-admin
+// Dùng cho hệ thống khác xác thực đăng nhập bằng tài khoản Admin SV5T.
+// ===============================
+router.post("/verify-admin", requireIntegrationKey, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập username và mật khẩu"
+      });
+    }
+
+    const admin = await Admin.findOne({ username: username.trim() });
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy admin"
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Sai mật khẩu"
+      });
+    }
+
+    res.json({
+      success: true,
+      admin: {
+        username: admin.username,
+        role: admin.role,
+        className: admin.className
+      }
+    });
+  } catch (error) {
+    console.error("Integration verify-admin error:", error);
     res.status(500).json({ success: false, message: "Lỗi server khi xác thực" });
   }
 });
